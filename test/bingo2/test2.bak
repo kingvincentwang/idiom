@@ -1,0 +1,50 @@
+<html>
+
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>成語測驗練習2</title>
+<meta name="generator" content="Namo WebEditor v6.0">
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="purple" alink="red">
+<table border="1" width="800" height="600" cellspacing="0" align="center" bordercolor="blue">
+    <tr>
+        <td width="1381"><img src="title.jpg" width="871" height="200" border="0"></td>
+    </tr>
+    <tr>
+        <td width="1381" bgcolor="blue">            
+            <p align="center"><font color="white">成語測驗練習(二)</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td width="1381">
+
+            <p><img src="dia_bluve.gif" width="10" height="10" border="0" alt="dia_bluve.gif">本程式是改編自<B><span style="font-size:12pt;"><a href="http://163.26.104.4/%5BWeb%202P%5D_20130128/" target="_blank">臺南市102學年度國小成語競賽練習網站</a></span></B>中之<font color="red">成語解釋賓果</font>，若有侵權之行為煩請告之，立即下架!!
+<br><img src="dia_bluve_1.gif" width="10" height="10" border="0" alt="dia_bluve_1.gif">本測驗內容是屬於<font color="red">成語解釋</font>，乃是配合成語教學網所做。</p>
+        </td>
+    </tr>
+    <tr>
+        <td width="1381">
+
+            <p align="center"><object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0" width="820" height="631">
+            <param name="movie" value="bingo2.swf">
+            <param name="play" value="true">
+            <param name="loop" value="true">
+            <param name="quality" value="high">
+<embed width="820" height="631" src="bingo2.swf" play="true" loop="true" quality="high" pluginspage="http://www.macromedia.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash"></embed></object></p>
+        </td>
+    </tr>
+    <tr>
+        <td width="1381" bgcolor="white">
+            <p align="center">使用人數：
+  <script src="http://163.19.66.7/dyna/counter/index.php?account=test2">
+</script>&nbsp;</p>
+        </td>
+    </tr>
+    <tr>
+        <td width="1381" bgcolor="blue">&nbsp;</td>
+    </tr>
+</table>
+</body>
+
+</html>

@@ -1,0 +1,7 @@
+﻿menuCount=6&datafolder=data&title=成語對對碰&
+&menu1=成語001~033,c1.txt&
+&menu2=成語034~066,c2.txt&
+&menu3=成語051~099,c3.txt&
+&menu4=成語100~133,c4.txt&
+&menu5=成語134~166,c5.txt&
+&menu6=成語167~201,c6.txt&

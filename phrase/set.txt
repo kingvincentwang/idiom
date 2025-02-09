@@ -1,0 +1,15 @@
+﻿menuCount=14&datafolder=data&title=成語大挑戰&
+&menu1=成語1~14,number.txt&
+&menu2=成語15~28,vector.txt&
+&menu3=成語29~42,season.txt&
+&menu4=成語43~56,sun.txt&
+&menu5=成語57~70,cloud.txt&
+&menu6=成語71~84,color.txt&
+&menu7=成語85~98,leave.txt&
+&menu8=成語99~112,tree.txt&
+&menu9=成語113~126,wawa.txt&
+&menu10=成語127~140,hand.txt&
+&menu11=成語141~154,heart.txt&
+&menu12=成語155~168,tiger.txt&
+&menu13=成語169~182,bird.txt&
+&menu14=成語183~201,feeling.txt&
