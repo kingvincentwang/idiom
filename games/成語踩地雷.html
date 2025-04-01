@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<!-- saved from url=(0062)https://wwwgseshccedutw1681688.on.drv.tw/web/minesweeper2.html -->
+<html lang="zh-Hant"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成語地雷解謎遊戲</title>
+	<head>
+    <style>
+		body {
+		font-family: 'Segoe UI', Arial, sans-serif;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin: 0;
+		background-color: #f5f7fa;
+		touch-action: pan-y;
+		min-height: 100vh;
+		}
+
+		#game-container {
+			text-align: center;
+			margin: 20px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			width: 100%;
+			position: relative;
+			max-width: 1200px;
+			padding: 20px;
+			box-sizing: border-box;
+		}
+
+		/* 新增遊戲區域包裝容器 */
+		.game-board-wrapper {
+			position: relative;
+			width: 100%;
+			z-index: 2;
+			background-color: #f5f7fa;
+			padding: 20px 0;
+			margin-bottom: 20px;
+			display: flex;
+			flex-direction: column;
+			align-items: center; /* 確保內容置中 */
+		}
+
+		#minefield {
+			display: grid;
+			grid-template-columns: repeat(10, 40px);
+			gap: 4px;
+			margin: 0 auto; /* 移除上方邊距 */
+			position: sticky;
+			top: 20px;
+			background-color: #f5f7fa;
+			z-index: 2;
+			padding: 15px;
+			border-radius: 10px;
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+			width: fit-content;
+			justify-self: center;
+		}
+
+		#level-indicator {
+			text-align: center;
+			font-size: 28px;
+			font-weight: bold;
+			color: #2ecc71;
+			text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+			position: relative;
+			z-index: 2;
+			width: 100%;
+			margin-bottom: 10px; /* 減少與按鈕的間距 */
+		}
+		/* 新增重新開始按鈕的容器 */
+		.restart-button-container {
+			margin: 10px 0 20px 0; /* 上下間距調整 */
+			width: 100%;
+			display: flex;
+			justify-content: center;
+			position: relative;
+			z-index: 2;
+		}
+		.cell {
+			width: 40px;
+			height: 40px;
+			background-color: #e3e8ec;
+			border: 2px solid #d1d8dc;
+			border-radius: 8px;
+			text-align: center;
+			line-height: 40px;
+			font-size: 16px;
+			font-weight: bold;
+			cursor: pointer;
+			transition: all 0.2s ease;
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+		}
+
+		.cell:hover {
+			transform: scale(1.05);
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+		}
+
+		.cell.revealed {
+			background-color: #ffffff;
+			border-color: #e1e8ed;
+			box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+		}
+
+		.cell.mine {
+			background-color: #ff6b6b;
+			color: white;
+		}
+
+		.cell.flagged {
+			background-color: #ffd93d;
+			color: #444;
+			border-color: #ffc107;
+		}
+
+		/* 修改問題區域的樣式 */
+		#questions {
+			margin: 30px 20px;
+			padding: 20px;
+			background-color: white;
+			border-radius: 15px;
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+			width: 100%;
+			max-width: 800px;
+			position: relative;
+			z-index: 1;
+		}
+
+		/* 確保問題容器在捲動時不會覆蓋遊戲區域 */
+		#questions-container {
+			position: relative;
+			z-index: 1;
+		}
+
+		.question {
+			margin-bottom: 20px;
+			padding: 15px;
+			border-radius: 8px;
+			background-color: #f8f9fa;
+		}
+
+		.answer-box {
+			display: inline-block;
+			width: 35px;
+			height: 35px;
+			border: 2px solid #3498db;
+			border-radius: 6px;
+			text-align: center;
+			line-height: 35px;
+			margin-right: 8px;
+			font-size: 16px;
+			background-color: white;
+		}
+
+		/* 按鈕樣式調整 */
+		#submit-btn, #restart-btn {
+			padding: 12px 30px;
+			font-size: 16px;
+			border: none;
+			border-radius: 25px;
+			cursor: pointer;
+			transition: all 0.3s ease;
+			font-weight: bold;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			position: relative;
+			z-index: 1;
+		}
+
+		#submit-btn {
+			background-color: #2ecc71;
+			color: white;
+			box-shadow: 0 4px 6px rgba(46, 204, 113, 0.2);
+		}
+
+		#restart-btn {
+			background-color: #3498db;
+			color: white;
+			padding: 10px 25px; /* 稍微縮小按鈕大小 */
+			font-size: 16px;
+			border: none;
+			border-radius: 25px;
+			cursor: pointer;
+			transition: all 0.3s ease;
+			font-weight: bold;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			box-shadow: 0 4px 6px rgba(52, 152, 219, 0.2);
+		}
+
+		#submit-btn:hover, #restart-btn:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+		}
+
+		#result {
+			margin: 20px auto;
+			padding: 15px 20px;
+			font-size: 18px;
+			font-weight:bold;
+			text-align: left;
+			background-color: white;
+			border-radius: 10px;
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+			max-width: 800px;
+			line-height: 1.6;
+			position: relative;
+			z-index: 1;
+		}
+
+		.red-text {
+			color: #e74c3c;
+		}
+
+		/* 平板適配 */
+		@media screen and (max-width: 1024px) {
+			#game-container {
+				padding: 15px;
+			}
+			
+			#minefield {
+				grid-template-columns: repeat(8, 35px);
+				gap: 3px;
+			}
+			
+			.cell {
+				width: 35px;
+				height: 35px;
+				font-size: 14px;
+				line-height: 35px;
+			}
+		}
+
+		/* 手機適配 */
+		@media screen and (max-width: 768px) {
+			.cell {
+				width: 30px;
+				height: 30px;
+				line-height: 30px;
+				font-size: 12px;
+				border-radius: 6px;
+			}
+			
+			#result {
+				font-size: 16px;
+				padding: 12px 15px;
+			}
+		}
+</style>
+</head>
+<body inmaintabuse="1">
+     <div id="game-container">
+		<h1>成語踩地雷解謎遊戲</h1>
+		
+		<div class="game-board-wrapper">
+			<!-- 關卡指示器 -->
+			<div id="level-indicator">關卡 1</div>
+			
+			<!-- 重新開始按鈕的新位置 -->
+			<div class="restart-button-container">
+				<button id="restart-btn">重新開始</button>
+			</div>
+			
+			<!-- 遊戲區域 -->
+			<div id="minefield"></div>
+		</div>
+		
+		<!-- 問題區域 -->
+		<div id="questions">
+			<div id="questions-container"></div>
+		</div>
+		
+		<!-- 提交按鈕 -->
+		<button id="submit-btn">提交答案</button>
+		
+		<!-- 結果顯示 -->
+		<div id="result"></div>
+	</div>
+
+    <script>
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        let longPressTimeout;
+        let touchMoved = false; // 判斷觸控是否移動，避免長按誤觸
+		const minefield = document.getElementById("minefield");
+		const questionsContainer = document.getElementById("questions-container");
+		const submitBtn = document.getElementById("submit-btn");
+		const restartBtn = document.getElementById("restart-btn");
+		const resultDiv = document.getElementById("result");
+		const gridSize = 10;
+		const idioms = [
+		  { term: "守株待兔", explanation: "比喻妄想不勞而獲。" },
+		  { term: "畫蛇添足", explanation: "比喻多此一舉，弄巧成拙。" },
+		  { term: "盲人摸象", explanation: "比喻以偏概全，不得要領。" },
+		  { term: "自相矛盾", explanation: "比喻說話或行事前後不一致。" },
+		  { term: "井底之蛙", explanation: "比喻眼界狹小，見識短淺。" },
+		  { term: "對牛彈琴", explanation: "比喻對不懂道理的人講道理。" },
+		  { term: "刻舟求劍", explanation: "比喻拘泥固執，不懂變通。" },
+		  { term: "掩耳盜鈴", explanation: "比喻自欺欺人。" },
+		  { term: "拔苗助長", explanation: "比喻急於求成，反而壞事。" },
+		  { term: "望梅止渴", explanation: "比喻用空想來安慰自己。" },
+		  { term: "守望相助", explanation: "比喻團結合作，互相幫助。" },
+		  { term: "驚弓之鳥", explanation: "比喻受過驚嚇的人遇事容易恐慌。" },
+		  { term: "兔死狐悲", explanation: "比喻同類的死亡或不幸而感到傷心。" },
+		  { term: "狼狽為奸", explanation: "比喻壞人互相勾結幹壞事。" },
+		  { term: "杯弓蛇影", explanation: "比喻因疑神疑鬼而自驚自擾。" },
+		  { term: "一箭雙鵰", explanation: "比喻一舉兩得。" },
+		  { term: "畫龍點睛", explanation: "比喻點出關鍵使之更加生動。" },
+		  { term: "青出於藍", explanation: "比喻後輩勝過前輩。" },
+		  { term: "百發百中", explanation: "比喻做事有充分把握，總能成功。" },
+		  { term: "一鼓作氣", explanation: "比喻趁勢行事，一氣呵成。" },
+		  { term: "朝三暮四", explanation: "比喻心意不定或反覆無常。" },
+		  { term: "九牛一毛", explanation: "比喻微不足道的小事。" },
+		  { term: "愚公移山", explanation: "比喻有堅強的毅力，不怕困難。" },
+		  { term: "水落石出", explanation: "比喻事情的真相終於顯現。" },
+		  { term: "口若懸河", explanation: "比喻能言善辯。" },
+		  { term: "聞雞起舞", explanation: "比喻及時奮發努力。" },
+		  { term: "紙上談兵", explanation: "比喻空談理論而無實際行動。" },
+		  { term: "畫餅充饑", explanation: "比喻徒有虛名，無法滿足實際需要。" },
+		  { term: "亡羊補牢", explanation: "比喻出現問題後及時補救。" },
+		  { term: "一目十行", explanation: "比喻看書極快。" },
+		  { term: "鷸蚌相爭", explanation: "比喻兩方爭執，第三方得利。" },
+		  { term: "拔山扛鼎", explanation: "比喻力大無窮或氣勢雄偉。" },
+		  { term: "披荊斬棘", explanation: "比喻克服重重困難，開闢道路。" },
+		  { term: "不破不立", explanation: "比喻必須徹底打破原有的束縛，才能創新。" },
+		  { term: "滄海桑田", explanation: "比喻世事變化很大。" },
+		  { term: "八面玲瓏", explanation: "比喻為人處事圓滑，面面俱到。" },
+		  { term: "四面楚歌", explanation: "比喻孤立無援，四面受敵。" },
+		  { term: "驚天動地", explanation: "形容聲勢極大或影響深遠。" },
+		  { term: "滾瓜爛熟", explanation: "比喻對事物非常熟練。" },
+		  { term: "名落孫山", explanation: "比喻考試落榜或選拔未被錄取。" },
+		  { term: "旗鼓相當", explanation: "比喻實力相當，難分高下。" },
+		  { term: "德高望重", explanation: "形容道德高尚，極受敬重。" },
+		  { term: "談笑風生", explanation: "形容談話時興致高昂，氣氛熱烈。" },
+		  { term: "氣宇軒昂", explanation: "形容人的精神充沛，氣度不凡。" },
+		  { term: "捉襟見肘", explanation: "比喻顧此失彼，窮於應付。" },
+		  { term: "不寒而慄", explanation: "形容非常害怕，渾身發抖。" },
+		  { term: "唾手可得", explanation: "形容事情極容易辦成。" },
+		  { term: "難兄難弟", explanation: "比喻處境或遭遇相似的人。" },
+		  { term: "無中生有", explanation: "比喻憑空捏造事物。" },
+		  { term: "螳臂當車", explanation: "比喻不自量力的行為。" },
+		  { term: "退避三舍", explanation: "比喻忍讓以避免衝突。" },
+		  { term: "天衣無縫", explanation: "比喻做事完美，毫無缺陷。" },
+		  { term: "鶴立雞群", explanation: "比喻才能或儀表超群出眾。" },
+		  { term: "杯水車薪", explanation: "比喻力量微薄，無濟於事。" },
+		  { term: "順手牽羊", explanation: "比喻乘機行事，順便取利。" },
+		  { term: "樂極生悲", explanation: "比喻樂過頭容易引發不幸。" },
+		  { term: "塞翁失馬", explanation: "比喻禍福相倚難以預料。" },
+		  { term: "鳥盡弓藏", explanation: "比喻事情成功後拋棄幫手。" },
+		  { term: "兵不厭詐", explanation: "比喻用計謀取得勝利。" },
+		  { term: "功敗垂成", explanation: "比喻事情將要成功時失敗。" },
+		  { term: "畫中有詩", explanation: "比喻畫面意境深遠，意味無窮。" },
+		  { term: "鯨吞蠶食", explanation: "比喻逐步吞併。" },
+		  { term: "白手起家", explanation: "比喻在無基礎的情況下創業成功。" },
+		  { term: "唇亡齒寒", explanation: "比喻關係密切，禍福相關。" },
+		  { term: "鳳毛麟角", explanation: "比喻稀少珍貴的人或物。" },
+		  { term: "近水樓臺", explanation: "比喻占得地利之便。" },
+		  { term: "精益求精", explanation: "比喻力求更完美。" },
+		  { term: "一鳴驚人", explanation: "比喻平時不顯露，突然令人震驚。" },
+		  { term: "落井下石", explanation: "比喻乘人危難時加以陷害。" }
+		];
+
+
+
+		const levelConfig = [
+			{ level: 1, idiomCount: 2 },
+			{ level: 2, idiomCount: 2 },
+			{ level: 3, idiomCount: 3 },
+			{ level: 4, idiomCount: 3 },
+			{ level: 5, idiomCount: 4 }
+		];
+		let currentLevel = 0;
+		let selectedIdioms = [];
+		let grid = [];
+		let flaggedCount = 0;
+		let correctFlaggedCount = 0;
+		let gameOver = false;
+		let usedIdioms = []; // 已使用的成語
+
+
+		// 初始化遊戲
+		function startGame() {
+			currentLevel = 0;
+			nextLevel();
+		}
+
+		
+		// 開始下一關
+		function nextLevel() {
+			if (currentLevel >= levelConfig.length) {
+				// 所有關卡完成
+				resultDiv.textContent = "恭喜！您已完成所有關卡！挑戰成功！";
+				resultDiv.style.color = "green";
+
+				// 隱藏送出按鈕
+				submitBtn.style.display = "none";
+
+				// 清空地圖和題目
+				minefield.innerHTML = "";
+				questionsContainer.innerHTML = "";
+
+				// 顯示遊戲結束提示
+				document.getElementById("level-indicator").textContent = "遊戲結束";
+				return;
+			}
+
+			// 設置當前關卡
+			const { level, idiomCount } = levelConfig[currentLevel];
+			currentLevel++;
+
+			// 更新關卡提示
+			const levelIndicator = document.getElementById("level-indicator");
+			levelIndicator.textContent = `目前是第 ${currentLevel} 關`;
+
+			resultDiv.innerHTML = "<span class='red-text'>遊戲說明：<br>1.本遊戲是將傳統的地雷改為成語單字。<br>2.請根據提示的數字，找出所有的地雷位置且須標示出來才會顯示所有提示的成語。<br>3.按右鍵可標示地雷，平板則為長按超過0.5秒為標示地雷。<br>4.最後請根據提示的成語輸入答案欄送出，全部正確才會進入下一關。</span>";
+			resultDiv.style.color = "black";
+
+			// 隨機選取成語
+			selectedIdioms = selectRandomIdioms(idiomCount); // 使用不重複的隨機抽題邏輯
+			createGrid();
+		}
+
+		function selectRandomIdioms(count) {
+			const availableIdioms = idioms.filter(idiom => !usedIdioms.includes(idiom.term));
+			const selected = shuffleArray(availableIdioms).slice(0, count);
+			usedIdioms.push(...selected.map(idiom => idiom.term)); // 記錄已使用的成語
+			return selected;
+		}
+
+		// 隨機打亂數組
+		function shuffleArray(array) {
+			return array.sort(() => Math.random() - 0.5);
+		}
+
+
+
+		// 創建遊戲網格
+		function createGrid() {
+			minefield.innerHTML = "";
+			grid = Array(gridSize)
+				.fill()
+				.map(() => Array(gridSize).fill(null));
+			minefield.style.gridTemplateColumns = `repeat(${gridSize}, 40px)`;
+
+			const characters = selectedIdioms.flatMap(idiom => idiom.term.split(""));
+			characters.sort(() => Math.random() - 0.5);
+
+			const mineCount = characters.length;
+			const minePositions = generateRandomPositions(mineCount, gridSize * gridSize);
+			let index = 0;
+
+			for (let row = 0; row < gridSize; row++) {
+				for (let col = 0; col < gridSize; col++) {
+					const cell = document.createElement("div");
+					cell.className = "cell";
+
+					if (minePositions.includes(index)) {
+						grid[row][col] = {
+							mine: true,
+							char: characters.length ? characters.pop() : "",
+							revealed: false,
+							flagged: false,
+							element: cell
+						};
+					} else {
+						grid[row][col] = {
+							mine: false,
+							char: "",
+							count: 0,
+							revealed: false,
+							flagged: false,
+							element: cell
+						};
+					}
+
+					cell.dataset.row = row;
+					cell.dataset.col = col;
+
+					// 記錄觸控相關狀態
+					let touchStartTime = 0;
+					let touchEndTime = 0;
+					let touchMoved = false;
+					let longPressTimer = null;  // 新增計時器變數
+
+					// 觸控開始
+					cell.addEventListener('touchstart', (e) => {
+						e.preventDefault();
+						touchStartTime = Date.now();
+						touchMoved = false;
+						
+						// 設置長按計時器
+						longPressTimer = setTimeout(() => {
+							if (!touchMoved) {
+								toggleFlag(cell, row, col);
+							}
+						}, 500);  // 0.5秒
+					});
+
+					// 觸控移動
+					cell.addEventListener('touchmove', (e) => {
+						e.preventDefault();
+						touchMoved = true;
+						clearTimeout(longPressTimer);  // 移動時清除計時器
+					});
+
+					// 觸控結束
+					cell.addEventListener('touchend', (e) => {
+						e.preventDefault();
+						touchEndTime = Date.now();
+						clearTimeout(longPressTimer);  // 結束時清除計時器
+						
+						if (!touchMoved) {
+							// 純粹的點擊（小於 500 毫秒）
+							if (touchEndTime - touchStartTime < 500) {
+								handleMineClick(cell, row, col);
+							}
+						}
+					});
+
+					// 為非觸控設備添加滑鼠事件
+					if (!isTouchDevice) {
+						cell.addEventListener("click", () => handleMineClick(cell, row, col));
+						cell.addEventListener("contextmenu", (e) => {
+							e.preventDefault();
+							toggleFlag(cell, row, col);
+						});
+					}
+
+					minefield.appendChild(cell);
+					index++;
+				}
+			}
+
+			calculateNumbers();
+			createQuestions();
+			submitBtn.style.display = "none";
+			gameOver = false;
+			flaggedCount = 0;
+			correctFlaggedCount = 0;
+		}
+
+		// 防止整個頁面滾動
+		document.body.addEventListener('touchmove', function(e) {
+			if (e.target.classList.contains('cell')) {
+				e.preventDefault();
+			}
+		}, { passive: false });
+
+        
+		// 標記或取消標記地雷
+		function toggleFlag(cell, row, col) {
+			const gridCell = grid[row][col];
+			if (gridCell.revealed || gameOver) return;
+
+			if (gridCell.flagged) {
+				// 取消標記
+				gridCell.flagged = false;
+				cell.classList.remove("flagged");
+				cell.textContent = "";
+				flaggedCount--;
+				if (gridCell.mine) correctFlaggedCount--;
+			} else {
+				// 標記地雷
+				gridCell.flagged = true;
+				cell.classList.add("flagged");
+				cell.textContent = "🚩";
+				flaggedCount++;
+				if (gridCell.mine) correctFlaggedCount++;
+			}
+
+			// 檢查是否所有地雷都被正確標記
+			if (correctFlaggedCount === selectedIdioms.flatMap(idiom => idiom.term.split("")).length &&
+				flaggedCount === correctFlaggedCount) {
+				gameOver = true;
+				revealAllIdioms();
+				submitBtn.style.display = "block";
+				resultDiv.textContent = "恭喜！您已找出所有字！請根據找到的字完成下方的成語。";
+				resultDiv.style.color = "green";
+			}
+		}
+		
+		// 顯示所有地雷格中的成語單字
+		function revealAllIdioms() {
+			grid.flat().forEach(cell => {
+				if (cell.mine) {
+					cell.element.textContent = cell.char; // 顯示地雷格的成語單字
+					cell.element.classList.add("revealed");
+				}
+			});
+		}
+
+		// 處理地雷格點擊
+		function handleMineClick(cell, row, col) {
+			if (gameOver || grid[row][col].flagged) return;
+
+			const gridCell = grid[row][col];
+
+			if (gridCell.mine) {
+				// 踩到地雷
+				cell.classList.add("mine");
+				cell.textContent = gridCell.char;
+				gridCell.revealed = true;
+				gameOver = true;
+				revealAllMines();
+				setTimeout(() => {
+					alert("遊戲結束！您踩到了地雷！");
+					createGrid(); // 重新開始遊戲
+				}, 100);
+			} else {
+				revealCell(cell, row, col);
+			}
+		}
+
+		// 顯示格子
+		function revealCell(cell, row, col) {
+			const gridCell = grid[row][col];
+			if (!gridCell.revealed) {
+				gridCell.revealed = true;
+				cell.classList.add("revealed");
+				if (gridCell.count > 0) {
+					cell.textContent = gridCell.count;
+				} else {
+					cell.textContent = "";
+					revealAdjacentCells(row, col);
+				}
+			}
+		}
+
+		// 顯示相鄰格子
+		function revealAdjacentCells(row, col) {
+			const directions = [
+				[-1, -1], [-1, 0], [-1, 1],
+				[0, -1],         [0, 1],
+				[1, -1], [1, 0], [1, 1]
+			];
+
+			directions.forEach(([dx, dy]) => {
+				const newRow = row + dx;
+				const newCol = col + dy;
+				if (newRow >= 0 && newRow < gridSize && newCol >= 0 && newCol < gridSize) {
+					const newCell = grid[newRow][newCol];
+					const cellElem = minefield.querySelector(`.cell[data-row="${newRow}"][data-col="${newCol}"]`);
+					if (!newCell.revealed && !newCell.mine && !newCell.flagged) {
+						revealCell(cellElem, newRow, newCol);
+					}
+				}
+			});
+		}
+
+		// 顯示所有地雷
+		function revealAllMines() {
+			grid.flat().forEach(cell => {
+				if (cell.mine && !cell.flagged) {
+					cell.element.classList.add("mine");
+					cell.element.textContent = cell.char;
+				}
+			});
+		}
+
+		
+		// 顯示填空題
+		function createQuestions() {
+			questionsContainer.innerHTML = "";
+			selectedIdioms.forEach((idiom, index) => {
+				const questionDiv = document.createElement("div");
+				questionDiv.className = "question";
+				questionDiv.innerHTML = `
+					<label>第 ${index + 1} 題：${idiom.explanation}</label>
+				`;
+				const answerBoxes = document.createElement("div");
+				answerBoxes.className = "answer-boxes";
+
+				for (let i = 0; i < idiom.term.length; i++) {
+					const box = document.createElement("input");
+					box.className = "answer-box";
+					box.maxLength = 1;
+					box.dataset.index = `${index}-${i}`;
+					answerBoxes.appendChild(box);
+				}
+
+				questionDiv.appendChild(answerBoxes);
+				questionsContainer.appendChild(questionDiv);
+			});
+		}
+
+		// 計算每個格子周圍的地雷數量
+		function calculateNumbers() {
+			const directions = [
+				[-1, -1], [-1, 0], [-1, 1],
+				[0, -1],         [0, 1],
+				[1, -1], [1, 0], [1, 1]
+			];
+
+			for (let row = 0; row < gridSize; row++) {
+				for (let col = 0; col < gridSize; col++) {
+					if (grid[row][col].mine) continue;
+
+					let count = 0;
+					directions.forEach(([dx, dy]) => {
+						const newRow = row + dx;
+						const newCol = col + dy;
+						if (newRow >= 0 && newRow < gridSize && newCol >= 0 && newCol < gridSize) {
+							if (grid[newRow][newCol].mine) count++;
+						}
+					});
+					grid[row][col].count = count;
+				}
+			}
+		}
+
+		// 生成隨機的地雷位置
+		function generateRandomPositions(count, total) {
+			const positions = new Set();
+			while (positions.size < count) {
+				positions.add(Math.floor(Math.random() * total));
+			}
+			return Array.from(positions);
+		}
+
+
+		// 隨機打亂數組
+		function shuffleArray(array) {
+			return array.sort(() => Math.random() - 0.5);
+		}
+
+		// 修改提交邏輯，完成後自動進入下一關，並判斷是否為最後一關，若是則顯示：恭喜！您已完成所有關卡！挑戰成功！
+		function handleSubmit() {
+			const results = selectedIdioms.map((idiom, idiomIndex) => {
+				const userAnswer = [];
+				for (let i = 0; i < idiom.term.length; i++) {
+					const box = document.querySelector(`.answer-box[data-index="${idiomIndex}-${i}"]`);
+					userAnswer.push(box.value);
+				}
+				return {
+					expected: idiom.term,
+					actual: userAnswer.join(""),
+					correct: idiom.term === userAnswer.join("")
+				};
+			});
+
+			const allCorrect = results.every(r => r.correct);
+
+			if (allCorrect) {
+				if (currentLevel >= levelConfig.length) {
+					// 最後一關完成
+					resultDiv.textContent = "恭喜！您已完成所有關卡！挑戰成功！";
+					resultDiv.style.color = "green";
+
+					// 隱藏提交按鈕
+					submitBtn.style.display = "none";
+
+					// 清空地圖和題目
+					minefield.innerHTML = "";
+					questionsContainer.innerHTML = "";
+
+					// 顯示遊戲結束提示
+					document.getElementById("level-indicator").textContent = "遊戲結束";
+				} else {
+					// 非最後一關，進入下一關
+					resultDiv.textContent = "恭喜！該關卡完成，進入下一關！";
+					resultDiv.style.color = "green";
+					nextLevel();
+				}
+			} else {
+				let message = "還不完全正確，請重新檢查：\n";
+				results.forEach((result, index) => {
+					if (!result.correct) {
+						message += `\n第 ${index + 1} 題需要修改`;
+					}
+				});
+				resultDiv.textContent = message;
+				resultDiv.style.color = "red";
+			}
+		}
+
+
+		// 初始化遊戲
+		restartBtn.addEventListener("click", startGame);
+		submitBtn.addEventListener("click", handleSubmit);
+		startGame();
+
+    </script>
+   </body>
+   </html>

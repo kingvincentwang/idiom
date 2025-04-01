@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pac-Man 風格迷宮遊戲</title>
+    <style>
+	body {
+    margin: 0;
+    background-color: black;
+    font-family: 'Arial', sans-serif;
+}
+
+#maze {
+    position: relative;
+    width: 600px;
+    height: 200px;
+    background-color: black;
+    margin: 50px auto;
+    border: 10px solid blue;
+    box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    background-color: pink;
+    position: absolute;
+    border-radius: 50%;
+}
+
+#player {
+    width: 20px;
+    height: 20px;
+    background-color: yellow;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+}
+</style>
+</head>
+<body>
+    <div id="maze">
+        <div class="dot" style="top: 20px; left: 20px;"></div>
+        <!-- 在這裡添加更多點或其他元素 -->
+        <div id="player"></div>
+    </div>
+
+    <script>
+	document.addEventListener('keydown', movePlayer);
+
+function movePlayer(event) {
+    const player = document.getElementById('player');
+    const step = 10; // 每次移動的距離
+
+    // 取得玩家的當前位置
+    let top = parseFloat(window.getComputedStyle(player).top);
+    let left = parseFloat(window.getComputedStyle(player).left);
+
+    // 根據按鍵方向移動玩家
+    switch (event.key) {
+        case 'ArrowUp':
+            player.style.top = (top - step) + 'px';
+            break;
+        case 'ArrowDown':
+            player.style.top = (top + step) + 'px';
+            break;
+        case 'ArrowLeft':
+            player.style.left = (left - step) + 'px';
+            break;
+        case 'ArrowRight':
+            player.style.left = (left + step) + 'px';
+            break;
+    }
+
+    // 檢查是否碰到點
+    checkCollisionWithDots(player);
+}
+
+function checkCollisionWithDots(player) {
+    const dots = document.querySelectorAll('.dot');
+
+    dots.forEach(dot => {
+        if (isColliding(player, dot)) {
+            dot.style.display = 'none'; // 碰到點後消失
+        }
+    });
+}
+
+function isColliding(player, element) {
+    const playerRect = player.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
+
+    return !(
+        playerRect.top > elementRect.bottom ||
+        playerRect.bottom < elementRect.top ||
+        playerRect.left > elementRect.right ||
+        playerRect.right < elementRect.left
+    );
+}
+
+	</script>
+</body>
+</html>

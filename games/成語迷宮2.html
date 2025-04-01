@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成語迷宮遊戲</title>
+    <style>
+        body {
+            background-color: #4B0082;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        #game-container {
+            text-align: center;
+            position: relative;
+        }
+        #game-board {
+            width: 600px;
+            height: 600px;
+            border: 2px solid #FFD700;
+            position: relative;
+            background-color: #2F4F4F;
+            margin-bottom: 10px;
+            box-shadow: 0 0 10px #FFD700;
+            overflow: hidden;
+        }
+        .wall {
+            background-color: #4682B4;
+            position: absolute;
+            border: 1px solid #FFD700;
+            box-shadow: 0 0 5px #FFD700;
+        }
+        .idiom-room {
+            color: white;
+            position: absolute;
+            font-size: 24px;
+            text-align: center;
+            width: 180px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(45deg, #4B0082, #8A2BE2);
+            border: 2px solid #FFD700;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #FFD700;
+        }
+        #player {
+            width: 30px;
+            height: 30px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="white"/><circle cx="30" cy="30" r="10" fill="black"/><path d="M 30 70 Q 50 90 70 70" fill="none" stroke="black" stroke-width="5"/></svg>');
+            background-size: contain;
+            position: absolute;
+            transition: all 0.1s linear;
+        }
+        #question {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #FFD700;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            position: absolute;
+            top: -60px;
+            left: 0;
+            right: 0;
+        }
+        #message {
+            font-size: 24px;
+            margin-top: 20px;
+            height: 30px;
+            color: #FF69B4;
+            position: absolute;
+            bottom: -60px;
+            left: 0;
+            right: 0;
+        }
+        .control-pad {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .control-button {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            cursor: pointer;
+        }
+        #up {
+            border-width: 0 30px 40px 30px;
+            border-color: transparent transparent #FFD700 transparent;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        #down {
+            border-width: 40px 30px 0 30px;
+            border-color: #FFD700 transparent transparent transparent;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        #left {
+            border-width: 30px 40px 30px 0;
+            border-color: transparent #FFD700 transparent transparent;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        #right {
+            border-width: 30px 0 30px 40px;
+            border-color: transparent transparent transparent #FFD700;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="question"></div>
+        <div id="game-board"></div>
+        <div id="message"></div>
+        <div class="control-pad">
+            <div id="up" class="control-button"></div>
+            <div id="down" class="control-button"></div>
+            <div id="left" class="control-button"></div>
+            <div id="right" class="control-button"></div>
+        </div>
+    </div>
+
+    <script>
+        const gameBoard = document.getElementById('game-board');
+        const questionDisplay = document.getElementById('question');
+        const messageDisplay = document.getElementById('message');
+        let player;
+
+        const CELL_SIZE = 30;
+        const ROWS = 20;
+        const COLS = 20;
+        const MOVE_INTERVAL = 150;
+
+        let grid = [];
+        let currentDirection = null;
+        let idioms = [
+            { idiom: "惶恐大悟", meaning: "驚慌中突然明白" },
+            { idiom: "水滴石穿", meaning: "日積月累終有成效" },
+            { idiom: "多多益善", meaning: "越多越好" },
+            { idiom: "心不在焉", meaning: "注意力不集中" }
+        ];
+        let currentQuestion;
+        let idiomElements = [];
+        let moveInterval;
+
+        function createMaze() {
+            gameBoard.innerHTML = '';
+            grid = [];
+
+            // Initialize grid with paths
+            for (let i = 0; i < ROWS; i++) {
+                grid[i] = [];
+                for (let j = 0; j < COLS; j++) {
+                    grid[i][j] = 0; // 0 represents path
+                }
+            }
+
+            // Create walls
+            createWalls();
+        }
+
+        function createWalls() {
+            // Outer walls
+            createWall(0, 0, COLS * CELL_SIZE, CELL_SIZE);
+            createWall(0, 0, CELL_SIZE, ROWS * CELL_SIZE);
+            createWall((COLS - 1) * CELL_SIZE, 0, CELL_SIZE, ROWS * CELL_SIZE);
+            createWall(0, (ROWS - 1) * CELL_SIZE, COLS * CELL_SIZE, CELL_SIZE);
+
+            // Inner walls
+            createWall(2 * CELL_SIZE, 2 * CELL_SIZE, 6 * CELL_SIZE, CELL_SIZE);
+            createWall(12 * CELL_SIZE, 2 * CELL_SIZE, 6 * CELL_SIZE, CELL_SIZE);
+            createWall(2 * CELL_SIZE, 2 * CELL_SIZE, CELL_SIZE, 6 * CELL_SIZE);
+            createWall(8 * CELL_SIZE, 2 * CELL_SIZE, CELL_SIZE, 6 * CELL_SIZE);
+            createWall(11 * CELL_SIZE, 2 * CELL_SIZE, CELL_SIZE, 6 * CELL_SIZE);
+            createWall(17 * CELL_SIZE, 2 * CELL_SIZE, CELL_SIZE, 6 * CELL_SIZE);
+
+            createWall(2 * CELL_SIZE, 11 * CELL_SIZE, 6 * CELL_SIZE, CELL_SIZE);
+            createWall(12 * CELL_SIZE, 11 * CELL_SIZE, 6 * CELL_SIZE, CELL_SIZE);
+            createWall(2 * CELL_SIZE, 12 * CELL_SIZE, CELL_SIZE, 6 * CELL_SIZE);
+            createWall(8 * CELL_SIZE, 12 * CELL_SIZE, CELL_SIZE, 6 * CELL_SIZE);
+            createWall(11 * CELL_SIZE, 12 * CELL_SIZE, CELL_SIZE, 6 * CELL_SIZE);
+            createWall(17 * CELL_SIZE, 12 * CELL_SIZE, CELL_SIZE, 6 * CELL_SIZE);
+
+            // Central area
+            createWall(9 * CELL_SIZE, 8 * CELL_SIZE, 2 * CELL_SIZE, 4 * CELL_SIZE);
+        }
+
+        function createWall(x, y, width, height) {
+            const wall = document.createElement('div');
+            wall.className = 'wall';
+            wall.style.left = x + 'px';
+            wall.style.top = y + 'px';
+            wall.style.width = width + 'px';
+            wall.style.height = height + 'px';
+            gameBoard.appendChild(wall);
+            
+            // Update grid
+            for (let i = y / CELL_SIZE; i < (y + height) / CELL_SIZE; i++) {
+                for (let j = x / CELL_SIZE; j < (x + width) / CELL_SIZE; j++) {
+                    if (grid[i] && grid[i][j] !== undefined) {
+                        grid[i][j] = 1; // 1 represents wall
+                    }
+                }
+            }
+        }
+
+        function placeIdioms() {
+            idiomElements = [];
+            const positions = [
+                { x: 3, y: 3 },
+                { x: 13, y: 3 },
+                { x: 3, y: 13 },
+                { x: 13, y: 13 }
+            ];
+
+            for (let i = 0; i < idioms.length; i++) {
+                const idiomElement = document.createElement('div');
+                idiomElement.className = 'idiom-room';
+                idiomElement.textContent = idioms[i].idiom;
+                idiomElement.style.left = positions[i].x * CELL_SIZE + 'px';
+                idiomElement.style.top = positions[i].y * CELL_SIZE + 'px';
+                idiomElement.dataset.idiom = idioms[i].idiom;
+                gameBoard.appendChild(idiomElement);
+                idiomElements.push(idiomElement);
+            }
+        }
+
+        function createPlayer() {
+            player = document.createElement('div');
+            player.id = 'player';
+            player.style.left = CELL_SIZE + 'px';
+            player.style.top = CELL_SIZE + 'px';
+            gameBoard.appendChild(player);
+        }
+
+        function setDirection(direction) {
+            currentDirection = direction;
+        }
+
+        function movePlayer() {
+            if (!currentDirection) return;
+
+            let left = parseInt(player.style.left);
+            let top = parseInt(player.style.top);
+            let newLeft = left;
+            let newTop = top;
+
+            switch (currentDirection) {
+                case 'left':
+                    newLeft = left - CELL_SIZE;
+                    break;
+                case 'right':
+                    newLeft = left + CELL_SIZE;
+                    break;
+                case 'up':
+                    newTop = top - CELL_SIZE;
+                    break;
+                case 'down':
+                    newTop = top + CELL_SIZE;
+                    break;
+            }
+
+            if (isValidMove(newLeft, newTop)) {
+                player.style.left = newLeft + 'px';
+                player.style.top = newTop + 'px';
+                checkCollision();
+            }
+        }
+
+        function isValidMove(x, y) {
+            const row = Math.floor(y / CELL_SIZE);
+            const col = Math.floor(x / CELL_SIZE);
+            return grid[row] && grid[row][col] === 0;
+        }
+
+        function checkCollision() {
+            const playerRect = player.getBoundingClientRect();
+            for (let idiomElement of idiomElements) {
+                const idiomRect = idiomElement.getBoundingClientRect();
+                if (isColliding(playerRect, idiomRect)) {
+                    checkAnswer(idiomElement.dataset.idiom);
+                    break;
+                }
+            }
+        }
+
+        function isColliding(rect1, rect2) {
+            return !(rect1.right < rect2.left || 
+                     rect1.left > rect2.right || 
+                     rect1.bottom < rect2.top || 
+                     rect1.top > rect2.bottom);
+        }
+
+        function setQuestion() {
+            currentQuestion = idioms[Math.floor(Math.random() * idioms.length)];
+            questionDisplay.textContent = `題目：${currentQuestion.meaning}`;
+        }
+
+        function checkAnswer(selectedIdiom) {
+            if (selectedIdiom === currentQuestion.idiom) {
+                messageDisplay.textContent = "恭喜你答對了！遊戲結束。";
+                messageDisplay.style.color = "#00FF00";
+                clearInterval(moveInterval);
+            } else {
+                messageDisplay.textContent = "答錯了，請繼續尋找正確的成語。";
+                messageDisplay.style.color = "#FF0000";
+                setTimeout(() => {
+                    messageDisplay.textContent = "";
+                }, 2000);
+            }
+        }
+
+        function startGame() {
+            createMaze();
+            placeIdioms();
+            createPlayer();
+            setQuestion();
+            moveInterval = setInterval(movePlayer, MOVE_INTERVAL);
+
+            // Set up control buttons
+            document.getElementById('up').addEventListener('click', () => setDirection('up'));
+            document.getElementById('down').addEventListener('click', () => setDirection('down'));
+            document.getElementById('left').addEventListener('click', () => setDirection('left'));
+            document.getElementById('right').addEventListener('click', () => setDirection('right'));
+
+            // Set up keyboard controls
+            document.addEventListener('keydown', (e) => {
+                switch (e.key) {
+                    case 'ArrowUp':
+                        setDirection('up');
+                        break;
+                    case 'ArrowDown':
+                        setDirection('down');
+                        break;
+                    case 'ArrowLeft':
+                        setDirection('left');
+                        break;
+                    case 'ArrowRight':
+                        setDirection('right');
+                        break;
+                }
+            });
+        }
+
+        startGame();
+    </script>
+</body>
+</html>

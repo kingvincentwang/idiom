@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>成語華容道</title>
+    <style>
+        .container {
+            width: 400px;
+            margin: 50px auto;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        
+        .board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin: 20px 0;
+        }
+        
+        .cell {
+            width: 80px;
+            height: 80px;
+            background: #4CAF50;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .cell:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        
+        .empty {
+            background: #eee !important;
+            cursor: default;
+        }
+        
+        .empty:hover {
+            transform: none;
+        }
+
+        .top-row {
+            background: #2196F3;
+        }
+        
+        .top-row:hover {
+            background: #1976D2;
+        }
+        
+        .moves {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+        
+        .hint {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            border-left: 4px solid #2196F3;
+            text-align: left;
+            font-size: 18px;
+        }
+        
+        .level-info {
+            margin: 20px 0;
+            font-size: 20px;
+            color: #1976D2;
+            font-weight: bold;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #2196F3;
+            transition: width 0.5s ease;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #1976D2;
+            transform: scale(1.05);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .win-message {
+            color: #4CAF50;
+            font-size: 24px;
+            margin: 20px 0;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .feedback {
+            margin: 20px 0;
+            padding: 15px;
+            background: #E8F5E9;
+            border-radius: 5px;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stars {
+            margin: 10px 0;
+            font-size: 24px;
+            color: #FFD700;
+        }
+
+        .sound-control {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 1000;
+        }
+        
+        .sound-control button {
+            padding: 5px 10px;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .final-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+            animation: fadeIn 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="sound-control">
+        <button onclick="toggleSound()" id="soundBtn">🔊 音效: 開</button>
+    </div>
+
+    <audio id="moveSound">
+        <source src="https://taira-komori.jpn.org/sound_os2/game01/jump12.mp3">
+		</audio>
+    <audio id="winSound">
+        <source src="https://taira-komori.jpn.org/sound_os2/game01/powerup09.mp3">
+	</audio>
+
+    <div class="container">
+        <h1>成語華容道</h1>
+        <div class="level-info">第 <span id="currentLevel">1</span> 關</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar" style="width: 20%"></div>
+        </div>
+        <p>找出符合提示的成語，將四個字按順序移到最上面一排</p>
+        <div class="hint" id="hint"></div>
+        <div class="board" id="board"></div>
+        <div class="moves">移動次數: <span id="moveCount">0</span></div>
+        <button onclick="restartLevel()" id="restartBtn">重新開始本關</button>
+        <button onclick="nextLevel()" id="nextBtn" style="display: none">下一關</button>
+        <div class="feedback" id="feedback"></div>
+		<div><hr><b>設計者：VincentWang</div>
+    </div>
+
+    <div class="final-message" id="finalMessage">
+        恭喜你完成了所有關卡！
+        <div class="stars">★★★★★</div>
+        <button onclick="restartGame()">重新開始遊戲</button>
+    </div>
+
+<script>
+let board = [];
+let moves = 0;
+const SIZE = 4;
+let emptyCell = { row: SIZE-1, col: SIZE-1 };
+let currentLevel = 1;
+let soundEnabled = true;
+
+const LEVELS = [
+    {
+        hint: "形容做事有條理，按部就班，不慌不忙。",
+        idiom: ["有", "條", "不", "紊"],
+        feedback: "太棒了！你已經掌握了第一個成語！繼續挑戰下一關吧！",
+        otherIdioms: [["專", "心", "致", "志"], ["一", "帆", "風", "順"], ["持", "之", "以", "恆"]]
+    },
+    {
+        hint: "形容內心清靜，沒有雜念。",
+        idiom: ["心", "如", "止", "水"],
+        feedback: "excellent！你的表現越來越好了！",
+        otherIdioms: [["守", "株", "待", "兔"], ["緣", "木", "求", "魚"], ["繼", "往", "開", "來"]]
+    },
+    {
+        hint: "比喻做事情有規律，有條理。",
+        idiom: ["井", "然", "有", "序"],
+        feedback: "太厲害了！你已經完成了三關！",
+        otherIdioms: [["得", "心", "應", "手"], ["名", "列", "前", "茅"], ["學", "富", "五", "車"]]
+    },
+    {
+        hint: "比喻做事有計劃，按步就班地進行。",
+        idiom: ["循", "序", "漸", "進"],
+        feedback: "太了不起了！只剩最後一關了！",
+        otherIdioms: [["勢", "如", "破", "竹"], ["風", "雲", "萬", "里"], ["龍", "騰", "虎", "躍"]]
+    },
+    {
+        hint: "形容做事認真，專心致志。",
+        idiom: ["全", "神", "貫", "注"],
+        feedback: "恭喜你完成了所有關卡！你是成語大師！",
+        otherIdioms: [["揚", "長", "避", "短"], ["日", "新", "月", "異"], ["精", "益", "求", "精"]]
+    }
+];
+
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    document.getElementById('soundBtn').textContent = 
+        `🔊 音效: ${soundEnabled ? '開' : '關'}`;
+}
+
+function playMoveSound() {
+    if (soundEnabled) {
+        const moveSound = document.getElementById('moveSound');
+        moveSound.currentTime = 0;
+        moveSound.play().catch(e => console.log('音效播放失敗:', e));
+    }
+}
+
+function playWinSound() {
+    if (soundEnabled) {
+        const winSound = document.getElementById('winSound');
+        winSound.currentTime = 0;
+        winSound.play().catch(e => console.log('音效播放失敗:', e));
+    }
+}
+
+function initializeLevel(level) {
+    const levelData = LEVELS[level - 1];
+    document.getElementById('hint').textContent = levelData.hint;
+    document.getElementById('currentLevel').textContent = level;
+    document.getElementById('progressBar').style.width = `${level * 20}%`;
+    
+    let cells = [...levelData.idiom];
+    levelData.otherIdioms.forEach(idiom => cells.push(...idiom));
+    
+    while (cells.length > SIZE * SIZE - 1) {
+        const randomIndex = Math.floor(Math.random() * cells.length);
+        if (!levelData.idiom.includes(cells[randomIndex])) {
+            cells.splice(randomIndex, 1);
+        }
+    }
+    cells.push('');
+    
+    do {
+        for (let i = cells.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [cells[i], cells[j]] = [cells[j], cells[i]];
+        }
+    } while (!isSolvable(cells) || isAlreadySolved(cells, levelData.idiom));
+    
+    board = [];
+    for (let i = 0; i < SIZE; i++) {
+        board[i] = cells.slice(i * SIZE, (i + 1) * SIZE);
+        const emptyIndex = board[i].indexOf('');
+        if (emptyIndex !== -1) {
+            emptyCell = { row: i, col: emptyIndex };
+        }
+    }
+}
+
+function isSolvable(cells) {
+    let inversions = 0;
+    const currentIdiom = LEVELS[currentLevel - 1].idiom;
+    const arr = cells.filter(x => x !== '').map(x => {
+        const idx = currentIdiom.indexOf(x);
+        return idx === -1 ? 999 : idx;
+    });
+    
+    for (let i = 0; i < arr.length - 1; i++) {
+        for (let j = i + 1; j < arr.length; j++) {
+            if (arr[i] > arr[j]) inversions++;
+        }
+    }
+    
+    const emptyRowFromBottom = SIZE - Math.floor(cells.indexOf('') / SIZE);
+    return (emptyRowFromBottom % 2 === 0) === (inversions % 2 === 0);
+}
+
+function isAlreadySolved(cells, targetIdiom) {
+    return cells.slice(0, 4).every((cell, index) => cell === targetIdiom[index]);
+}
+
+function renderBoard() {
+    const boardElement = document.getElementById('board');
+    boardElement.innerHTML = '';
+    
+    for (let i = 0; i < SIZE; i++) {
+        for (let j = 0; j < SIZE; j++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell' + (board[i][j] === '' ? ' empty' : '');
+            if (i === 0) {
+                cell.className += ' top-row';
+            }
+            cell.textContent = board[i][j];
+            cell.onclick = () => moveCell(i, j);
+            boardElement.appendChild(cell);
+        }
+    }
+}
+
+function moveCell(row, col) {
+    if (isAdjacent(row, col, emptyCell.row, emptyCell.col)) {
+        [board[row][col], board[emptyCell.row][emptyCell.col]] = 
+        [board[emptyCell.row][emptyCell.col], board[row][col]];
+        
+        emptyCell = { row, col };
+        moves++;
+        document.getElementById('moveCount').textContent = moves;
+        
+        playMoveSound();
+        
+        renderBoard();
+        
+        if (checkWin()) {
+            playWinSound();
+            showLevelComplete();
+        }
+    }
+}
+
+function isAdjacent(row1, col1, row2, col2) {
+    return (Math.abs(row1 - row2) === 1 && col1 === col2) ||
+           (Math.abs(col1 - col2) === 1 && row1 === row2);
+}
+
+function checkWin() {
+    const targetIdiom = LEVELS[currentLevel - 1].idiom;
+    for (let j = 0; j < SIZE; j++) {
+        if (board[0][j] !== targetIdiom[j]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function showLevelComplete() {
+    const feedback = document.getElementById('feedback');
+    feedback.style.display = 'block';
+    feedback.innerHTML = LEVELS[currentLevel - 1].feedback + 
+                       `<div class="stars">★★★</div>`;
+    
+    if (currentLevel < 5) {
+        document.getElementById('nextBtn').style.display = 'inline-block';
+    } else {
+        showFinalMessage();
+    }
+    document.getElementById('restartBtn').disabled = true;
+}
+
+function showFinalMessage() {
+    document.getElementById('finalMessage').style.display = 'block';
+}
+
+function nextLevel() {
+    if (currentLevel < 5) {
+        currentLevel++;
+        resetLevel();
+    }
+}
+
+function resetLevel() {
+    moves = 0;
+    document.getElementById('moveCount').textContent = moves;
+    document.getElementById('feedback').style.display = 'none';
+    document.getElementById('nextBtn').style.display = 'none';
+    document.getElementById('restartBtn').disabled = false;
+    document.getElementById('finalMessage').style.display = 'none';
+    initializeLevel(currentLevel);
+    renderBoard();
+}
+
+function restartLevel() {
+    resetLevel();
+}
+
+function restartGame() {
+    currentLevel = 1;
+    resetLevel();
+}
+
+// 初始化遊戲
+initializeLevel(1);
+renderBoard();
+</script>
+</body>
+</html>

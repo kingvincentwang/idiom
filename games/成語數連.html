@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成語配對遊戲</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f8ff;
+            user-select: none;
+        }
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(5, 80px);
+            grid-gap: 5px;
+            position: relative;
+        }
+        .cell {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+            font-size: 18px;
+				font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+            line-height: 1.2;
+        }
+        .cell.selected {
+            background-color: #add8e6;
+        }
+        .cell.completed {
+            background-color: #90ee90;
+            cursor: default;
+        }
+        .line {
+            position: absolute;
+            background-color: #000;
+            transform-origin: top left;
+        }
+        .line.horizontal {
+            height: 4px;
+        }
+        .line.vertical {
+            width: 4px;
+        }
+        .reset-button {
+				padding: 10px 20px;
+				margin-top:15px;
+				font-size: 16px;
+				background-color: #2196F3;
+				color: white;
+				border: none;
+				border-radius: 5px;
+				cursor: pointer;
+				transition: background-color 0.3s ease;
+			}
+			.reset-button:hover {
+				background-color: #1976D2;
+				
+			}
+			.question-selector label {
+				font-size: 18px;
+				font-weight: bold;
+				margin-right: 10px;
+				margin-bottom: 10px;
+				margin-top:5px;
+				padding:5px;
+			}
+			.question-selector button {
+				padding: 10px 20px;
+				font-size: 16px;
+				margin: 5px;
+				border: none;
+				background-color: #4CAF50;
+				color: white;
+				border-radius: 5px;
+				cursor: pointer;
+				transition: background-color 0.3s ease, transform 0.1s ease;
+			}
+			.question-selector button:hover {
+				background-color: #45a049;
+			}
+			.question-selector button:active {
+				transform: scale(0.98);
+			}
+			.divider {
+				width: 80%;
+				margin: 20px auto;
+				border: none;
+				border-top: 1px solid #ccc;
+			}
+			.footer {
+				margin-top: 20px;
+				font-size: 14px;
+				color: #555;
+				text-align: center;
+				font-weight: bold;
+			}
+			.game-instructions {
+				text-align: center;
+				margin-top: 20px;
+				font-size: 16px;
+				color: #333;
+			}
+			.game-instructions h2 {
+				font-size: 20px;
+				font-weight: bold;
+				margin-bottom: 10px;
+			}
+			.game-instructions p {
+				margin: 0;
+				padding: 0 20px;
+			}
+			
+    </style>
+</head>
+<body>
+	<div class="game-instructions">
+		<h1>成語數連</h1>
+		<font color="red" align="left">
+		<b><p>*請將正確的成語配對組合、並連接。</p><p>*當所有成語正確配對時即完成遊戲。</p><p>*請注意!線條不能交叉或重疊!!</p></b></font>
+	</div>
+	<hr class="divider">
+
+    <div class="question-selector">
+        <label for="questionSelect">選擇題目：</label>
+        <select id="questionSelect" onchange="loadQuestion()">
+            <option value="1">題目一</option>
+            <option value="2">題目二</option>
+            <option value="3">題目三</option>
+			   <option value="4">題目四</option>
+			   <option value="5">題目五</option>
+        </select>
+    </div>
+    <div class="game-container" id="gameContainer"></div>
+    <button class="reset-button" onclick="resetGame()">重新開始</button>
+    <div class="feedback" id="feedback"></div>
+		<hr class="divider">
+		<div class="footer">設計者：Vincent Wang</div>
+    <script>
+        const gridSize = 5;
+        const cellSize = 80;
+
+        const questions = {
+            1: {
+                positions: {
+                    "守株": [0, 0],
+                    "待兔": [4, 2],
+                    "鷸蚌": [0, 1],
+                    "相爭": [2, 2],
+                    "畫蛇": [0, 2],
+                    "添足": [4, 3],
+                    "聞雞": [1, 3],
+                    "起舞": [2, 1]
+                },
+                pairingPositions: [
+                    [[0, 0], [4, 2]], 
+                    [[0, 1], [2, 2]], 
+                    [[0, 2], [4, 3]], 
+                    [[1, 3], [2, 1]]
+                ]
+            },
+            2: {
+                positions: {
+                    "孟母": [0, 0],
+                    "三遷": [4, 1],
+                    "自相": [0, 2],
+                    "矛盾": [3, 1],
+                    "不知": [3, 3],
+                    "輕重": [0, 4],
+                    "百發": [4, 3],
+                    "百中": [1, 4]
+                },
+                pairingPositions: [
+                    [[0, 0], [4, 1]], 
+                    [[0, 2], [3, 1]], 
+                    [[3, 3], [0, 4]], 
+                    [[4, 3], [1, 4]]
+                ]
+            },
+            3: {
+                positions: {
+                    "螳臂": [0, 0],
+                    "當車": [3, 4],
+                    "打草": [3, 0],
+                    "驚蛇": [4, 4],
+                    "愚公": [4, 0],
+                    "移山": [3, 2],
+                    "老馬": [3, 1],
+                    "識途": [2, 2]
+                },
+                pairingPositions: [
+                    [[0, 0], [3, 4]], 
+                    [[3, 0], [4, 4]], 
+                    [[4, 0], [3, 2]], 
+                    [[3, 1], [2, 2]]
+                ]
+            },
+					5: {
+                positions: {
+                    "狐假\n虎威": [0, 1],
+                    "狗仗\n人勢": [3, 0],
+                    "半途\n而廢": [4, 0],
+                    "前功\n盡棄": [0, 2],
+                    "杯弓\n蛇影": [2, 2],
+                    "草木\n皆兵": [1, 3],
+                    "朝三\n暮四": [0, 3],
+                    "反覆\n無常": [4, 3]
+                },
+                pairingPositions: [
+                    [[0, 1], [3, 0]], 
+                    [[4, 0], [0, 2]], 
+                    [[2, 2], [1, 3]], 
+                    [[0, 3], [4, 3]]
+                ]
+            },
+					4: {
+                positions: {
+                    "望梅": [3, 0],
+                    "止渴": [0, 1],
+                    "樑上": [4, 0],
+                    "君子": [0, 2],
+                    "貪小": [2, 2],
+                    "失大": [1, 3],
+                    "一飯": [4, 2],
+                    "千金": [3, 3],
+								  "一毛": [0, 3],
+									"不拔": [3, 4]
+                },
+                pairingPositions: [
+                    [[3, 0], [0, 1]], 
+                    [[4, 0], [0, 2]], 
+                    [[2, 2], [1, 3]], 
+                    [[4, 2], [3, 3]],
+								  [[0, 3], [3, 4]]
+                ]
+            }
+        };
+
+        let selectedQuestion = 1;
+        let selectedCell = null;
+        let currentPath = [];
+        let isDrawing = false;
+        let lines = [];
+        let completedPairs = new Set();
+        let occupiedPositions = new Set(); // 新增儲存已經繪製的格子位置
+
+        function loadQuestion() {
+            selectedQuestion = parseInt(document.getElementById("questionSelect").value);
+            resetGame();
+        }
+
+        function createGrid() {
+            const { positions } = questions[selectedQuestion];
+            gameContainer.innerHTML = ''; // Clear previous grid
+            feedback.textContent = ''; // Clear feedback message
+            lines.forEach(line => line.remove()); // Clear previous lines
+            lines = [];
+            completedPairs.clear();
+            occupiedPositions.clear(); // 清除占用的格子
+            for (let i = 0; i < gridSize * gridSize; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.index = i;
+                cell.addEventListener('mousedown', (e) => { e.preventDefault(); startDrawing(cell); });
+                cell.addEventListener('mouseover', () => continueDrawing(cell));
+                gameContainer.appendChild(cell);
+            }
+            initializeIdioms(positions);
+            document.body.addEventListener('mouseup', stopDrawing);
+        }
+
+        function initializeIdioms(positions) {
+            Object.keys(positions).forEach(idiom => {
+                const [x, y] = positions[idiom];
+                const index = x * gridSize + y;
+                const cell = document.querySelector(`.cell[data-index='${index}']`);
+                cell.innerHTML = idiom.replace(/\n/g, "<br>"); // 將每兩個字換行
+            });
+        }
+
+        function startDrawing(cell) {
+            isDrawing = true;
+            const index = parseInt(cell.dataset.index);
+            const [x, y] = [Math.floor(index / gridSize), index % gridSize];
+            selectedCell = cell;
+            currentPath.push([x, y]);
+            cell.classList.add('selected');
+        }
+
+        function continueDrawing(cell) {
+            if (!isDrawing) return;
+            const index = parseInt(cell.dataset.index);
+            const [x, y] = [Math.floor(index / gridSize), index % gridSize];
+            const lastPosition = currentPath[currentPath.length - 1];
+
+            // 檢查是否已經繪製過該位置
+            if (occupiedPositions.has(`${x},${y}`)) {
+                feedback.textContent = "已存在線條，無法重疊繪製。";
+                return;
+            }
+
+            if (currentPath.length > 1) {
+                const secondLastPosition = currentPath[currentPath.length - 2];
+                if (x === secondLastPosition[0] && y === secondLastPosition[1]) {
+                    currentPath.pop();
+                    const lastLine = lines.pop();
+                    if (lastLine) lastLine.remove();
+                    cell.classList.remove('selected');
+                    return;
+                }
+            }
+
+            if (isAdjacent(lastPosition, [x, y]) && !currentPath.some(pos => pos[0] === x && pos[1] === y)) {
+                currentPath.push([x, y]);
+                drawLine(lastPosition, [x, y]);
+                cell.classList.add('selected');
+                occupiedPositions.add(`${x},${y}`); // 標記此位置為已繪製
+            }
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                const isPairComplete = checkIfPairComplete();
+                if (isPairComplete) {
+                    markPathCompleted();
+                    completedPairs.add(isPairComplete);
+                    const { pairingPositions } = questions[selectedQuestion];
+                    if (completedPairs.size === pairingPositions.length) {
+                        feedback.textContent = "成功！所有成語配對已完成！";
+                    } else {
+                        feedback.textContent = `配對完成: ${isPairComplete}`;
+                    }
+                } else {
+                    clearCurrentPath(); // 如果配對失敗則清除當前路徑
+                }
+                currentPath = [];
+                selectedCell = null;
+            }
+        }
+
+        function drawLine(start, end) {
+            const [x1, y1] = start;
+            const [x2, y2] = end;
+
+            const line = document.createElement('div');
+            line.classList.add('line');
+            if (x1 === x2) {
+                line.classList.add('horizontal');
+                line.style.width = `${Math.abs(y2 - y1) * cellSize}px`;
+                line.style.height = `4px`;
+                line.style.top = `${x1 * cellSize + cellSize / 2 - 2}px`;
+                line.style.left = `${Math.min(y1, y2) * cellSize + cellSize / 2 - 2}px`;
+            } else if (y1 === y2) {
+                line.classList.add('vertical');
+                line.style.height = `${Math.abs(x2 - x1) * cellSize}px`;
+                line.style.width = `4px`;
+                line.style.top = `${Math.min(x1, x2) * cellSize + cellSize / 2 - 2}px`;
+                line.style.left = `${y1 * cellSize + cellSize / 2 - 2}px`;
+            }
+            gameContainer.appendChild(line);
+            lines.push(line);
+        }
+
+        function isAdjacent(pos1, pos2) {
+            const [x1, y1] = pos1;
+            const [x2, y2] = pos2;
+            return (Math.abs(x1 - x2) === 1 && y1 === y2) || (Math.abs(y1 - y2) === 1 && x1 === x2);
+        }
+
+        function checkIfPairComplete() {
+            const { pairingPositions } = questions[selectedQuestion];
+            if (currentPath.length < 2) return null;
+            const start = currentPath[0];
+            const end = currentPath[currentPath.length - 1];
+            for (const pair of pairingPositions) {
+                if ((pair[0].toString() === start.toString() && pair[1].toString() === end.toString()) ||
+                    (pair[0].toString() === end.toString() && pair[1].toString() === start.toString())) {
+                    return `${getIdiomAtPosition(pair[0])} 和 ${getIdiomAtPosition(pair[1])}`;
+                }
+            }
+            return null;
+        }
+
+        function getIdiomAtPosition([x, y]) {
+            const index = x * gridSize + y;
+            const cell = document.querySelector(`.cell[data-index='${index}']`);
+            return cell.textContent;
+        }
+
+        function markPathCompleted() {
+            currentPath.forEach(([px, py]) => {
+                const cellIndex = px * gridSize + py;
+                const cell = document.querySelector(`.cell[data-index='${cellIndex}']`);
+                cell.classList.add('completed');
+                cell.classList.remove('selected');
+            });
+        }
+
+        function clearCurrentPath() {
+            currentPath.forEach(([px, py]) => {
+                occupiedPositions.delete(`${px},${py}`); // 清除占用標記
+                const cellIndex = px * gridSize + py;
+                const cell = document.querySelector(`.cell[data-index='${cellIndex}']`);
+                cell.classList.remove('selected');
+            });
+            lines.forEach(line => line.remove()); // 清除所有線條
+            lines = [];
+        }
+
+        function resetGame() {
+            currentPath = [];
+            selectedCell = null;
+            isDrawing = false;
+            createGrid();
+        }
+
+        createGrid();
+    </script>
+</body>
+</html>
