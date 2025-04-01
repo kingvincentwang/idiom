@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: "Microsoft YaHei", "微軟正黑體", sans-serif;
+            background-color: #2a5a3b;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .game-container {
+            background-color: #357a4f;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(11, 1fr);
+            gap: 4px;
+            margin: 20px 0;
+            position: relative;
+            background-color: #2a5a3b;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .tile {
+            width: 50px;
+            height: 70px;
+            background-color: #fff;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            user-select: none;
+        }
+
+        .tile span {
+            font-size: 18px;
+            line-height: 1.2;
+            text-align: center;
+            display: block;
+            padding: 2px;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .attitude { color: #0d904f; }
+        .method { color: #e60012; }
+        .result { color: #2b4490; }
+
+        .tile:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+            background-color: #f8f8f8;
+        }
+
+        .selected {
+            border-color: #ff0;
+            background-color: #fffff0;
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+            transform: translateY(-5px);
+        }
+
+        .invalid-match {
+            animation: shake 0.5s;
+        }
+
+        .meaning-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            text-align: center;
+            animation: fadeIn 0.3s;
+            min-width: 200px;
+            max-width: 80%;
+        }
+
+        .meaning-popup .idiom {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #2a5a3b;
+            font-weight: bold;
+        }
+
+        .meaning-popup .meaning {
+            font-size: 18px;
+            line-height: 1.5;
+            color: #333;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -60%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translate(-50%, -50%); }
+            to { opacity: 0; transform: translate(-50%, -40%); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 100px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .info-panel {
+            color: white;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 18px;
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            background-color: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .footer {
+            color: white;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 16px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 音效元素 -->
+    <audio id="clickSound" src="https://taira-komori.jpn.org/sound_os2/game01/select01.mp3"></audio>
+    <audio id="matchSound" src="https://taira-komori.jpn.org/sound_os2/game01/powerup10.mp3"></audio>
+    <audio id="failSound" src="https://taira-komori.jpn.org/sound_os2/game01/blip01.mp3"></audio>
+	<h1><font color="white">四川麻將成語版</font></h1>
+    <div class="game-container">
+        <div class="info-panel">
+            <div>分數: <span id="score">0</span></div>
+            <div>剩餘: <span id="remainingCount">108</span></div>
+        </div>
+        
+        <div class="controls">
+            <button onclick="startNewGame()">新局</button>
+            <button onclick="hint()">提示</button>
+        </div>
+
+        <div class="game-board" id="gameBoard"></div>
+    </div>
+
+    <div class="footer">
+        設計者：Vincent Wang
+    </div>
+
+<script>
+let gameBoard = [];
+let selectedTiles = [];
+let score = 0;
+
+const BOARD_SIZE = {
+    rows: 10,
+    cols: 11
+};
+
+const TILES_CONFIG = {
+    attitude: {
+        symbols: [
+            {text: '學而\n不厭', meaning: '學習不知疲倦，永不厭煩'},
+            {text: '溫故\n知新', meaning: '複習學過的知識，得到新的理解'},
+            {text: '專心\n致志', meaning: '全神貫注，專注於做一件事'},
+            {text: '一絲\n不苟', meaning: '做事認真仔細，毫不馬虎'},
+            {text: '勤能\n補拙', meaning: '以勤奮彌補資質的不足'},
+            {text: '力學\n不倦', meaning: '努力學習不知疲倦'},
+            {text: '孜孜\n不倦', meaning: '形容勤奮好學，不知疲倦'},
+            {text: '全神\n貫注', meaning: '完全集中精神，專心致志'},
+            {text: '專心\n一意', meaning: '專心專意，沒有雜念'}
+        ],
+        class: 'attitude'
+    },
+    method: {
+        symbols: [
+            {text: '舉一\n反三', meaning: '從一件事情類推到其他相關的事'},
+            {text: '觸類\n旁通', meaning: '從一事物的特點類推到別的相關事物'},
+            {text: '融會\n貫通', meaning: '充分理解，完全掌握'},
+            {text: '學以\n致用', meaning: '把所學知識運用到實際中'},
+            {text: '循序\n漸進', meaning: '按順序慢慢前進，不急於求成'},
+            {text: '熟能\n生巧', meaning: '熟練掌握就能產生技巧'},
+            {text: '學無\n止境', meaning: '學習是沒有止境的'},
+            {text: '思深\n悟遠', meaning: '思考深刻，理解透徹'},
+            {text: '博學\n多聞', meaning: '學識淵博，見聞廣泛'}
+        ],
+        class: 'method'
+    },
+    result: {
+        symbols: [
+            {text: '突飛\n猛進', meaning: '進步特別快，成績顯著'},
+            {text: '青出\n於藍', meaning: '學生的成就超過老師'},
+            {text: '臨淵\n履冰', meaning: '處境艱難，一步一步謹慎前行'},
+            {text: '精益\n求精', meaning: '已經很好了還要求更好'},
+            {text: '明察\n秋毫', meaning: '視察入微，觀察非常仔細'},
+            {text: '卓爾\n不群', meaning: '超群出眾，與眾不同'},
+            {text: '揮灑\n自如', meaning: '形容做事毫不費力，得心應手'},
+            {text: '爐火\n純青', meaning: '形容技術或學問達到極高的境界'},
+            {text: '爛熟\n於心', meaning: '把知識掌握得非常熟練'}
+        ],
+        class: 'result'
+    }
+};
+
+function showMeaning(idiom, meaning) {
+    const popup = document.createElement('div');
+    popup.className = 'meaning-popup';
+    popup.innerHTML = `
+        <div class="idiom">${idiom.replace('\n', '')}</div>
+        <div class="meaning">${meaning}</div>
+    `;
+    document.body.appendChild(popup);
+    
+    setTimeout(() => {
+        popup.style.animation = 'fadeOut 0.3s forwards';
+        popup.addEventListener('animationend', () => {
+            document.body.removeChild(popup);
+        });
+    }, 2000);
+}
+
+function generateTiles() {
+    let tiles = [];
+    Object.values(TILES_CONFIG).forEach(type => {
+        type.symbols.forEach(symbol => {
+            for (let i = 0; i < 4; i++) {
+                tiles.push({
+                    symbol: symbol.text,
+                    meaning: symbol.meaning,
+                    class: type.class
+                });
+            }
+        });
+    });
+    return shuffleArray(tiles);
+}
+
+function shuffleArray(array) {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+}
+
+function createTile(tileInfo, row, col) {
+    const tile = document.createElement('div');
+    tile.className = `tile ${tileInfo.class}`;
+    tile.dataset.row = row;
+    tile.dataset.col = col;
+    tile.dataset.meaning = tileInfo.meaning;
+    
+    const span = document.createElement('span');
+    span.textContent = tileInfo.symbol;
+    tile.appendChild(span);
+    
+    tile.onclick = () => selectTile(tile);
+    return tile;
+}
+
+function initializeBoard() {
+    gameBoard = Array(BOARD_SIZE.rows).fill().map(() => 
+        Array(BOARD_SIZE.cols).fill(null));
+}
+
+function getTileAt(row, col) {
+    if (row < 0 || row >= BOARD_SIZE.rows || col < 0 || col >= BOARD_SIZE.cols) {
+        return null;
+    }
+    return gameBoard[row][col];
+}
+
+function isVisible(tile) {
+    return tile && tile.style.visibility !== 'hidden';
+}
+
+function hasDirectPath(start, end) {
+    if (start.row === end.row) {
+        const minCol = Math.min(start.col, end.col);
+        const maxCol = Math.max(start.col, end.col);
+        for (let col = minCol + 1; col < maxCol; col++) {
+            if (isVisible(getTileAt(start.row, col))) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    if (start.col === end.col) {
+        const minRow = Math.min(start.row, end.row);
+        const maxRow = Math.max(start.row, end.row);
+        for (let row = minRow + 1; row < maxRow; row++) {
+            if (isVisible(getTileAt(row, start.col))) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    return false;
+}
+
+function hasOneCornerPath(start, end) {
+    const corner1 = { row: start.row, col: end.col };
+    const corner2 = { row: end.row, col: start.col };
+    
+    if (!isVisible(getTileAt(corner1.row, corner1.col))) {
+        if (hasDirectPath(start, corner1) && hasDirectPath(corner1, end)) {
+            return corner1;
+        }
+    }
+    
+    if (!isVisible(getTileAt(corner2.row, corner2.col))) {
+        if (hasDirectPath(start, corner2) && hasDirectPath(corner2, end)) {
+            return corner2;
+        }
+    }
+    
+    return null;
+}
+
+function hasTwoCornerPath(start, end) {
+    for (let row = -1; row <= BOARD_SIZE.rows; row++) {
+        for (let col = -1; col <= BOARD_SIZE.cols; col++) {
+            if ((row === start.row && col === start.col) || 
+                (row === end.row && col === end.col)) continue;
+                
+            const corner = { row, col };
+            
+            const firstCorner = hasOneCornerPath(start, corner);
+            if (!firstCorner) continue;
+            
+            const secondCorner = hasOneCornerPath(corner, end);
+            if (!secondCorner) continue;
+            
+            return {
+                corner1: firstCorner,
+                middle: corner,
+                corner2: secondCorner
+            };
+        }
+    }
+    
+    return null;
+}
+function findPath(tile1, tile2) {
+    const start = {
+        row: parseInt(tile1.dataset.row),
+        col: parseInt(tile1.dataset.col)
+    };
+    
+    const end = {
+        row: parseInt(tile2.dataset.row),
+        col: parseInt(tile2.dataset.col)
+    };
+    
+    if (hasDirectPath(start, end)) {
+        return { type: 'direct' };
+    }
+    
+    const oneCorner = hasOneCornerPath(start, end);
+    if (oneCorner) {
+        return { type: 'oneCorner', corner: oneCorner };
+    }
+    
+    const twoCorners = hasTwoCornerPath(start, end);
+    if (twoCorners) {
+        return { type: 'twoCorners', ...twoCorners };
+    }
+    
+    return null;
+}
+
+function selectTile(tile) {
+    if (selectedTiles.length < 2 && !tile.classList.contains('selected')) {
+        document.getElementById('clickSound').play();
+        tile.classList.add('selected');
+        selectedTiles.push(tile);
+        
+        if (selectedTiles.length === 2) {
+            checkMatch();
+        }
+    }
+}
+
+function checkMatch() {
+    const [tile1, tile2] = selectedTiles;
+    
+    if (tile1.querySelector('span').textContent === tile2.querySelector('span').textContent) {
+        const path = findPath(tile1, tile2);
+        if (path) {
+            document.getElementById('matchSound').play();
+            setTimeout(() => {
+                showMeaning(tile1.querySelector('span').textContent, tile1.dataset.meaning);
+                
+                tile1.style.visibility = 'hidden';
+                tile2.style.visibility = 'hidden';
+                score += 10;
+                const row1 = parseInt(tile1.dataset.row);
+                const col1 = parseInt(tile1.dataset.col);
+                const row2 = parseInt(tile2.dataset.row);
+                const col2 = parseInt(tile2.dataset.col);
+                gameBoard[row1][col1] = null;
+                gameBoard[row2][col2] = null;
+                updateUI();
+                
+                checkGameEnd();
+            }, 300);
+        } else {
+            document.getElementById('failSound').play();
+            selectedTiles.forEach(tile => {
+                tile.classList.add('invalid-match');
+                setTimeout(() => tile.classList.remove('invalid-match'), 500);
+            });
+        }
+    } else {
+        document.getElementById('failSound').play();
+        selectedTiles.forEach(tile => {
+            tile.classList.add('invalid-match');
+            setTimeout(() => tile.classList.remove('invalid-match'), 500);
+        });
+    }
+    
+    setTimeout(() => {
+        selectedTiles.forEach(tile => tile.classList.remove('selected'));
+        selectedTiles = [];
+    }, 500);
+}
+
+function hint() {
+    const visibleTiles = Array.from(document.querySelectorAll('.tile'))
+        .filter(tile => tile.style.visibility !== 'hidden');
+    
+    for (let i = 0; i < visibleTiles.length; i++) {
+        for (let j = i + 1; j < visibleTiles.length; j++) {
+            const tile1 = visibleTiles[i];
+            const tile2 = visibleTiles[j];
+            
+            if (tile1.querySelector('span').textContent === tile2.querySelector('span').textContent && 
+                findPath(tile1, tile2)) {
+                [tile1, tile2].forEach(tile => {
+                    tile.classList.add('selected');
+                    setTimeout(() => tile.classList.remove('selected'), 1000);
+                });
+                return;
+            }
+        }
+    }
+}
+
+function startNewGame() {
+    initializeBoard();
+    selectedTiles = [];
+    score = 0;
+    
+    const board = document.getElementById('gameBoard');
+    board.innerHTML = '';
+    
+    const tiles = generateTiles();
+    
+    for (let i = 0; i < tiles.length; i++) {
+        const row = Math.floor(i / BOARD_SIZE.cols);
+        const col = i % BOARD_SIZE.cols;
+        
+        if (row < BOARD_SIZE.rows) {
+            const tile = createTile(tiles[i], row, col);
+            gameBoard[row][col] = tile;
+            board.appendChild(tile);
+        }
+    }
+    
+    updateUI();
+}
+
+function checkGameEnd() {
+    const visibleTiles = document.querySelectorAll('.tile:not([style*="visibility: hidden"])');
+    if (visibleTiles.length === 0) {
+        setTimeout(() => {
+            alert('恭喜完成遊戲！\n得分：' + score);
+            startNewGame();
+        }, 500);
+    }
+}
+
+function updateUI() {
+    document.getElementById('score').textContent = score;
+    const remainingTiles = document.querySelectorAll('.tile:not([style*="visibility: hidden"])').length;
+    document.getElementById('remainingCount').textContent = remainingTiles;
+}
+
+startNewGame();
+</script>
+</body>
+</html>
