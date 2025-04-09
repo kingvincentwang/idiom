@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成語方塊遊戲</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f5f5f5;
+            font-family: "Microsoft YaHei", sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        #game-board {
+            width: 300px;
+            height: 600px;
+            border: 2px solid #8b4513;
+            position: relative;
+            background-color: #fff8dc;
+        }
+        .cell {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #d2b48c;
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .filled {
+            background-color: #d2691e;
+            color: white;
+        }
+        #score-board {
+            padding: 20px;
+            background-color: #fff8dc;
+            border: 2px solid #8b4513;
+            width: 300px;
+        }
+        #current-idiom {
+            margin-top: 5px;
+            font-size: 24px;
+            color: #8b4513;
+            text-align: center;
+        }
+        #idiom-meaning {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #666;
+            line-height: 1.5;
+            text-align: center;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #d2691e;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            touch-action: manipulation;
+        }
+        button:active {
+            background-color: #8b4513;
+        }
+        #control-panel {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #d2691e;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            touch-action: manipulation;
+        }
+        #rotate-btn { grid-column: 2; }
+        #down-btn { grid-column: 2; }
+        footer {
+            width: 100%;
+            text-align: center;
+            background-color: #8b4513;
+            color: white;
+            padding: 10px 0;
+            margin-top: auto;
+        }
+        @media (min-width: 768px) {
+            #game-container {
+                flex-direction: row;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h2>俄羅斯方塊遊戲-成語問答版</h2>
+    <div id="current-idiom"></div>
+    <div id="idiom-meaning"></div>
+    <div id="game-container">
+        <div id="game-board"></div>
+        <div id="score-board">
+            <h2>分數: <span id="score">0</span></h2>
+            <h3>等級: <span id="level">1</span></h3>
+            <button id="start-btn">開始遊戲</button>
+            <p>操作說明:</p>
+            <ul>
+                <li>← →: 左右移動</li>
+                <li>旋轉: 順時針旋轉</li>
+                <li>↓: 加速下落</li>
+            </ul>
+            <div id="control-panel">
+                <button class="control-btn" id="left-btn">←</button>
+                <button class="control-btn" id="rotate-btn">↻</button>
+                <button class="control-btn" id="right-btn">→</button>
+                <button class="control-btn" id="down-btn">↓</button>
+            </div>
+        </div>
+    </div>
+    <div id="quiz-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; border: 2px solid #8b4513; padding: 20px; z-index: 1000;">
+        <h3>答題挑戰</h3>
+        <p id="quiz-question"></p>
+        <input type="text" id="quiz-answer" placeholder="輸入成語"/>
+        <button onclick="game.checkAnswer()">提交</button>
+    </div>
+    <footer>設計者：Vincent Wang</footer>
+
+    <script>
+    const Game = function() {
+        this.BOARD_WIDTH = 10;
+        this.BOARD_HEIGHT = 20;
+        this.CELL_SIZE = 30;
+        this.board = [];
+        this.currentPiece = null;
+        this.score = 0;
+        this.level = 1;
+        this.gameInterval = null;
+        this.isGameOver = true;
+        this.paused = false;
+        this.currentIdiom = null;
+        this.currentMeaning = null;
+        this.gameStarted = false;
+
+        // 定義所有形狀和成語
+        this.SHAPES = {
+            I: {
+					shape: [[1, 1, 1, 1]],
+					idioms: [
+						{ chars: ['一', '心', '一', '意'], meaning: '專心一致，不分心' },
+						{ chars: ['一', '絲', '不', '苟'], meaning: '形容非常細心和嚴謹' },
+						{ chars: ['一', '鳴', '驚', '人'], meaning: '形容平時不顯露，突然讓人驚艷' },
+						{ chars: ['一', '箭', '雙', '鵰'], meaning: '一個行動同時達到兩個目的' },
+						{ chars: ['一', '帆', '風', '順'], meaning: '事情進展非常順利' },
+						{ chars: ['一', '往', '無', '前'], meaning: '比喻奮勇前進，毫不猶豫' },
+						{ chars: ['一', '波', '三', '折'], meaning: '比喻事情進行中曲折多變' },
+						{ chars: ['一', '模', '一', '樣'], meaning: '完全相同，沒有差別' },
+						{ chars: ['一', '成', '不', '變'], meaning: '形容一直保持原樣，沒有改變' },
+						{ chars: ['一', '鼓', '作', '氣'], meaning: '比喻趁勢迅速完成' },
+						{ chars: ['一', '視', '同', '仁'], meaning: '平等對待，不分親疏' },
+						{ chars: ['一', '飛', '沖', '天'], meaning: '比喻迅速成就' },
+						{ chars: ['一', '念', '之', '間'], meaning: '比喻轉瞬即逝的想法' },
+						{ chars: ['一', '勞', '永', '逸'], meaning: '一次辛苦就永遠安逸' },
+						{ chars: ['一', '目', '十', '行'], meaning: '形容閱讀速度非常快' },
+						{ chars: ['一', '夫', '當', '關'], meaning: '形容極具膽識和勇氣' },
+						{ chars: ['一', '手', '遮', '天'], meaning: '比喻極大權勢，無人能比' },
+						{ chars: ['一', '拍', '即', '合'], meaning: '比喻非常默契' },
+						{ chars: ['一', '片', '冰', '心'], meaning: '形容心地純潔' },
+						{ chars: ['一', '清', '二', '楚'], meaning: '形容事情明白、清楚' }
+					],
+					color: '#00f0f0'
+				},
+				O: {
+					shape: [[1, 1], [1, 1]],
+					idioms: [
+						{ chars: ['同', '心', '圓', '滿'], meaning: '心意相同，圓滿和諧' },
+						{ chars: ['四', '海', '升', '平'], meaning: '天下太平，和平安定' },
+						{ chars: ['心', '心', '相', '印'], meaning: '彼此心意一致' },
+						{ chars: ['圓', '融', '通', '達'], meaning: '性格圓滑，善於溝通' },
+						{ chars: ['團', '結', '一', '心'], meaning: '比喻眾人齊心協力' },
+						{ chars: ['相', '輔', '相', '成'], meaning: '形容互相幫助' },
+						{ chars: ['平', '步', '青', '雲'], meaning: '比喻順利晉升' },
+						{ chars: ['萬', '象', '更', '新'], meaning: '形容世間一片煥然一新' },
+						{ chars: ['天', '衣', '無', '縫'], meaning: '形容事情毫無破綻' },
+						{ chars: ['相', '敬', '如', '賓'], meaning: '夫妻之間互相尊敬' },
+						{ chars: ['百', '花', '齊', '放'], meaning: '比喻事物蓬勃發展' },
+						{ chars: ['相', '得', '益', '彰'], meaning: '比喻合作後效果更好' },
+						{ chars: ['五', '福', '臨', '門'], meaning: '比喻幸福美滿' },
+						{ chars: ['春', '暖', '花', '開'], meaning: '比喻美好的時光' },
+						{ chars: ['十', '全', '十', '美'], meaning: '形容完美無缺' },
+						{ chars: ['鴻', '運', '當', '頭'], meaning: '形容運氣極佳' },
+						{ chars: ['和', '氣', '生', '財'], meaning: '形容團結友善能帶來好處' },
+						{ chars: ['美', '滿', '如', '意'], meaning: '比喻萬事順利' },
+						{ chars: ['花', '好', '月', '圓'], meaning: '比喻美滿幸福' },
+						{ chars: ['祥', '和', '安', '泰'], meaning: '比喻和平安定' }
+					],
+					color: '#f0f000'
+				},
+				T: {
+					shape: [[0, 1, 0], [1, 1, 1]],
+					idioms: [
+						{ chars: ['日', '月', '山', '水'], meaning: '形容自然景色優美' },
+						{ chars: ['如', '日', '中', '天'], meaning: '比喻事業正值全盛時期' },
+						{ chars: ['天', '地', '久', '長'], meaning: '比喻事物經久不衰' },
+						{ chars: ['山', '明', '水', '秀'], meaning: '形容山水景色十分秀麗' },
+						{ chars: ['九', '霄', '雲', '外'], meaning: '比喻極高的地方' },
+						{ chars: ['乘', '風', '破', '浪'], meaning: '比喻不畏艱難勇往直前' },
+						{ chars: ['力', '挽', '狂', '瀾'], meaning: '比喻挽救艱難危局' },
+						{ chars: ['大', '智', '若', '愚'], meaning: '形容非常聰明的人表面看起來愚鈍' },
+						{ chars: ['水', '滴', '石', '穿'], meaning: '比喻持之以恆' },
+						{ chars: ['山', '高', '水', '長'], meaning: '比喻友誼深厚' },
+						{ chars: ['高', '山', '仰', '止'], meaning: '比喻令人崇敬' },
+						{ chars: ['遠', '山', '如', '黛'], meaning: '形容風景如畫' },
+						{ chars: ['登', '高', '望', '遠'], meaning: '形容目光遠大' },
+						{ chars: ['如', '虎', '添', '翼'], meaning: '比喻如虎加翼更強大' },
+						{ chars: ['堅', '如', '磐', '石'], meaning: '比喻極其穩固' },
+						{ chars: ['披', '星', '戴', '月'], meaning: '形容辛勤勞動' },
+						{ chars: ['海', '闊', '天', '高'], meaning: '比喻心胸開闊' },
+						{ chars: ['近', '水', '樓', '台'], meaning: '形容因靠近得利' },
+						{ chars: ['千', '山', '萬', '水'], meaning: '形容行程遙遠' },
+						{ chars: ['白', '雲', '青', '山'], meaning: '形容自然景色優美' }
+					],
+					color: '#a000f0'
+				},
+				L: {
+					shape: [[1, 0], [1, 0], [1, 1]],
+					idioms: [
+						{ chars: ['春', '暖', '花', '開'], meaning: '春天氣候溫暖，百花盛開' },
+						{ chars: ['後', '來', '居', '上'], meaning: '後起之秀超越前人' },
+						{ chars: ['功', '成', '名', '就'], meaning: '事業有成，名聲鵲起' },
+						{ chars: ['自', '強', '不', '息'], meaning: '努力奮鬥，永不放棄' },
+						{ chars: ['前', '赴', '後', '繼'], meaning: '形容連續不斷前進' },
+						{ chars: ['乘', '勝', '追', '擊'], meaning: '抓住勝利的機會，繼續追擊敵人' },
+						{ chars: ['高', '瞻', '遠', '矚'], meaning: '形容目光遠大' },
+						{ chars: ['金', '科', '玉', '律'], meaning: '比喻重要的規範或準則' },
+						{ chars: ['雷', '厲', '風', '行'], meaning: '形容辦事果斷、迅速' },
+						{ chars: ['萬', '象', '更', '新'], meaning: '形容世間一片煥然一新' },
+						{ chars: ['行', '雲', '流', '水'], meaning: '形容自然不造作的事物' },
+						{ chars: ['鴻', '篇', '巨', '制'], meaning: '形容文章或著作篇幅巨大' },
+						{ chars: ['氣', '宇', '軒', '昂'], meaning: '形容氣概不凡' },
+						{ chars: ['目', '不', '暇', '接'], meaning: '形容美好的事物太多，目不暇接' },
+						{ chars: ['日', '積', '月', '累'], meaning: '形容長期累積而成' },
+						{ chars: ['鳳', '凰', '于', '飛'], meaning: '比喻夫妻和睦' },
+						{ chars: ['驚', '天', '動', '地'], meaning: '形容聲勢極大' },
+						{ chars: ['蒸', '蒸', '日', '上'], meaning: '形容事物不斷進步' },
+						{ chars: ['披', '荊', '斬', '棘'], meaning: '形容克服種種困難' },
+						{ chars: ['苦', '盡', '甘', '來'], meaning: '形容艱苦過後，美好到來' }
+					],
+					color: '#f0a000'
+				},
+				J: {
+					shape: [[0, 1], [0, 1], [1, 1]],
+					idioms: [
+						{ chars: ['四', '海', '為', '家'], meaning: '形容胸懷寬廣' },
+						{ chars: ['腳', '踏', '實', '地'], meaning: '形容做事穩重、踏實' },
+						{ chars: ['飛', '黃', '騰', '達'], meaning: '形容事業快速成功' },
+						{ chars: ['功', '虧', '一', '簣'], meaning: '最後關頭因失誤而前功盡棄' },
+						{ chars: ['心', '安', '理', '得'], meaning: '形容做事問心無愧' },
+						{ chars: ['隨', '遇', '而', '安'], meaning: '形容能適應任何環境' },
+						{ chars: ['海', '闊', '天', '高'], meaning: '形容心胸開闊' },
+						{ chars: ['冰', '清', '玉', '潔'], meaning: '形容人品高尚，純潔無瑕' },
+						{ chars: ['光', '明', '磊', '落'], meaning: '形容為人正直，無私心' },
+						{ chars: ['齊', '心', '協', '力'], meaning: '形容大家一起努力' },
+						{ chars: ['百', '折', '不', '撓'], meaning: '形容意志堅定，不畏艱難' },
+						{ chars: ['不', '拘', '一', '格'], meaning: '形容不拘泥於固定的規則' },
+						{ chars: ['堅', '持', '不', '懈'], meaning: '形容一直努力不放棄' },
+						{ chars: ['如', '履', '薄', '冰'], meaning: '形容行事極為謹慎' },
+						{ chars: ['事', '半', '功', '倍'], meaning: '形容做事效率高' },
+						{ chars: ['天', '馬', '行', '空'], meaning: '形容非常自由奔放' },
+						{ chars: ['前', '車', '之', '鑑'], meaning: '形容從前人的失敗中吸取教訓' },
+						{ chars: ['金', '玉', '滿', '堂'], meaning: '形容非常富有' },
+						{ chars: ['樂', '此', '不', '疲'], meaning: '形容對某事非常熱愛' },
+						{ chars: ['融', '會', '貫', '通'], meaning: '形容知識或經驗能融匯運用' }
+					],
+					color: '#0000f0'
+				},
+				S: {
+					shape: [[0, 1, 1], [1, 1, 0]],
+					idioms: [
+						{ chars: ['溫', '故', '知', '新'], meaning: '複習舊知識有助於學新知識' },
+						{ chars: ['學', '無', '止', '境'], meaning: '形容學習沒有盡頭' },
+						{ chars: ['讀', '萬', '卷', '書'], meaning: '讀書增長知識' },
+						{ chars: ['聞', '一', '知', '十'], meaning: '形容非常聰明，學一點就通曉更多' },
+						{ chars: ['書', '香', '門', '第'], meaning: '形容家世代都有讀書人' },
+						{ chars: ['學', '以', '致', '用'], meaning: '形容學習的知識能派上用場' },
+						{ chars: ['百', '家', '爭', '鳴'], meaning: '形容多種觀點競爭和交流' },
+						{ chars: ['讀', '書', '破', '萬'], meaning: '形容學識淵博' },
+						{ chars: ['萬', '世', '師', '表'], meaning: '形容品德極高，令人學習' },
+						{ chars: ['才', '高', '八', '斗'], meaning: '形容才華出眾' },
+						{ chars: ['孜', '孜', '不', '倦'], meaning: '形容勤奮努力' },
+						{ chars: ['博', '學', '多', '聞'], meaning: '形容學問豐富' },
+						{ chars: ['持', '之', '以', '恆'], meaning: '形容做事堅持不懈' },
+						{ chars: ['循', '序', '漸', '進'], meaning: '形容按步驟逐漸推進' },
+						{ chars: ['豐', '功', '偉', '績'], meaning: '形容成就巨大' },
+						{ chars: ['集', '思', '廣', '益'], meaning: '形容吸收眾人的意見' },
+						{ chars: ['學', '貫', '古', '今'], meaning: '形容學問博大精深' },
+						{ chars: ['披', '荊', '斬', '棘'], meaning: '形容克服種種困難' },
+						{ chars: ['樂', '善', '好', '施'], meaning: '形容樂於助人' },
+						{ chars: ['博', '聞', '強', '記'], meaning: '形容見多識廣，記憶力強' }
+					],
+					color: '#00f000'
+				},
+				Z: {
+					shape: [[1, 1, 0], [0, 1, 1]],
+					idioms: [
+						{ chars: ['學', '而', '時', '習'], meaning: '經常溫習所學知識' },
+						{ chars: ['集', '思', '廣', '益'], meaning: '吸取眾人的意見有益處' },
+						{ chars: ['博', '學', '多', '才'], meaning: '學問淵博，才能多樣' },
+						{ chars: ['腳', '踏', '實', '地'], meaning: '形容腳踏實地做事' },
+						{ chars: ['筆', '耕', '不', '輟'], meaning: '形容不斷寫作' },
+						{ chars: ['百', '戰', '百', '勝'], meaning: '形容無往不利' },
+						{ chars: ['行', '雲', '流', '水'], meaning: '形容自然不造作' },
+						{ chars: ['融', '會', '貫', '通'], meaning: '形容知識能融匯運用' },
+						{ chars: ['孜', '孜', '不', '倦'], meaning: '形容勤奮努力' },
+						{ chars: ['學', '貫', '古', '今'], meaning: '形容學問博大精深' },
+						{ chars: ['獨', '樹', '一', '幟'], meaning: '形容有獨特風格' },
+						{ chars: ['才', '高', '八', '斗'], meaning: '形容才華出眾' },
+						{ chars: ['一', '以', '貫', '之'], meaning: '形容一貫始終' },
+						{ chars: ['融', '會', '貫', '通'], meaning: '形容學識豐富' },
+						{ chars: ['鐵', '杵', '成', '針'], meaning: '形容努力不懈' },
+						{ chars: ['聞', '雞', '起', '舞'], meaning: '形容勤奮努力' },
+						{ chars: ['精', '益', '求', '精'], meaning: '形容對事物不斷追求完美' },
+						{ chars: ['堅', '韌', '不', '拔'], meaning: '形容非常堅定' },
+						{ chars: ['才', '思', '敏', '捷'], meaning: '形容思考快速靈活' },
+						{ chars: ['厚', '積', '薄', '發'], meaning: '形容長期積累後取得巨大成功' }
+					],
+					color: '#f00000'
+				}
+        };
+
+        this.init();
+    };
+
+    Game.prototype = {
+    init: function() {
+        this.initBoard();
+        this.bindControls();
+        document.addEventListener('keydown', this.handleKeyPress.bind(this));
+    },
+
+    initBoard: function() {
+        const gameBoard = document.getElementById('game-board');
+        gameBoard.innerHTML = '';
+        this.board = Array(this.BOARD_HEIGHT).fill().map(() => Array(this.BOARD_WIDTH).fill(0));
+        
+        for (let y = 0; y < this.BOARD_HEIGHT; y++) {
+            for (let x = 0; x < this.BOARD_WIDTH; x++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.style.left = x * this.CELL_SIZE + 'px';
+                cell.style.top = y * this.CELL_SIZE + 'px';
+                gameBoard.appendChild(cell);
+            }
+        }
+    },
+
+    bindControls: function() {
+        document.getElementById('start-btn').onclick = () => this.startGame();
+
+        const controls = {
+            'left-btn': () => this.moveLeft(),
+            'right-btn': () => this.moveRight(),
+            'rotate-btn': () => this.rotatePiece(),
+            'down-btn': () => this.moveDown()
+        };
+
+        Object.entries(controls).forEach(([id, action]) => {
+            const button = document.getElementById(id);
+            
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (this.gameStarted && !this.isGameOver && !this.paused) {
+                    action();
+                }
+            });
+
+            button.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                if (this.gameStarted && !this.isGameOver && !this.paused) {
+                    action();
+                }
+            });
+        });
+
+        document.getElementById('game-board').addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+    },
+
+    startGame: function() {
+        this.isGameOver = false;
+        this.paused = false;
+        this.gameStarted = true;
+        this.score = 0;
+        this.level = 1;
+        this.board = Array(this.BOARD_HEIGHT).fill().map(() => Array(this.BOARD_WIDTH).fill(0));
+        
+        document.getElementById('score').textContent = '0';
+        document.getElementById('level').textContent = '1';
+
+        if (this.gameInterval) {
+            clearInterval(this.gameInterval);
+        }
+
+        this.currentPiece = this.createNewPiece();
+        this.draw();
+
+        this.gameInterval = setInterval(() => this.gameLoop(), 1000);
+    },
+
+    createNewPiece: function() {
+        const shapes = Object.keys(this.SHAPES);
+        const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+        const shapeData = this.SHAPES[randomShape];
+        
+        const randomIdiom = shapeData.idioms[Math.floor(Math.random() * shapeData.idioms.length)];
+        
+        document.getElementById('current-idiom').textContent = randomIdiom.chars.join('');
+        document.getElementById('idiom-meaning').textContent = randomIdiom.meaning;
+        
+        // 創建形狀並填充字元
+        let charIndex = 0;
+        const shape = shapeData.shape.map(row => 
+            row.map(cell => {
+                if (cell) {
+                    return {
+                        value: 1,
+                        char: randomIdiom.chars[charIndex++],
+                        color: shapeData.color
+                    };
+                }
+                return null;
+            })
+        );
+
+        // 確保每個方塊有正確的初始位置
+        const shapeWidth = shape[0].length;
+        const centerPosition = Math.floor((this.BOARD_WIDTH - shapeWidth) / 2);
+
+        return {
+            shape: shape,
+            x: centerPosition,
+            y: 0,
+            color: shapeData.color,
+            idiom: randomIdiom.chars.join(''),
+            meaning: randomIdiom.meaning
+        };
+    },
+
+    moveLeft: function() {
+        if (!this.gameStarted || !this.currentPiece || this.isGameOver || this.paused) return;
+        if (this.canMove(this.currentPiece, this.currentPiece.x - 1, this.currentPiece.y)) {
+            this.currentPiece.x--;
+            this.draw();
+        }
+    },
+
+    moveRight: function() {
+        if (!this.gameStarted || !this.currentPiece || this.isGameOver || this.paused) return;
+        if (this.canMove(this.currentPiece, this.currentPiece.x + 1, this.currentPiece.y)) {
+            this.currentPiece.x++;
+            this.draw();
+        }
+    },
+
+    moveDown: function() {
+        if (!this.gameStarted || !this.currentPiece || this.isGameOver || this.paused) return;
+        if (this.canMove(this.currentPiece, this.currentPiece.x, this.currentPiece.y + 1)) {
+            this.currentPiece.y++;
+            this.draw();
+        } else {
+            this.mergePiece();
+            this.clearLines();
+            this.currentPiece = null;
+        }
+    },
+
+    rotatePiece: function() {
+        if (!this.gameStarted || !this.currentPiece || this.isGameOver || this.paused) return;
+
+        // 獲取當前形狀的實際尺寸
+        const currentShape = this.currentPiece.shape;
+        const height = currentShape.length;
+        const width = Math.max(...currentShape.map(row => row.length));
+
+        // 創建新的旋轉後的形狀矩陣
+        const newShape = Array(width).fill().map(() => Array(height).fill(null));
+        
+        // 執行旋轉 (順時針90度)
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < currentShape[y].length; x++) {
+                if (currentShape[y][x]) {
+                    newShape[x][height - 1 - y] = currentShape[y][x];
+                }
+            }
+        }
+
+        // 保存原始形狀
+        const oldShape = this.currentPiece.shape;
+        
+        // 嘗試套用新形狀
+        this.currentPiece.shape = newShape;
+
+        // 檢查新形狀是否能夠適應當前位置
+        if (!this.canMove(this.currentPiece, this.currentPiece.x, this.currentPiece.y)) {
+            // 如果不行，嘗試調整位置
+            
+            // 檢查是否可以向左移動以適應
+            let adjusted = false;
+            const originalX = this.currentPiece.x;
+            
+            // 嘗試左右移動以適應新形狀
+            for (let offset = 1; offset <= width; offset++) {
+                // 嘗試向左移動
+                if (this.canMove(this.currentPiece, originalX - offset, this.currentPiece.y)) {
+                    this.currentPiece.x = originalX - offset;
+                    adjusted = true;
+                    break;
+                }
+                
+                // 嘗試向右移動
+                if (this.canMove(this.currentPiece, originalX + offset, this.currentPiece.y)) {
+                    this.currentPiece.x = originalX + offset;
+                    adjusted = true;
+                    break;
+                }
+            }
+            
+            // 如果仍然無法適應，恢復原始形狀
+            if (!adjusted) {
+                this.currentPiece.shape = oldShape;
+                this.currentPiece.x = originalX;
+            }
+        }
+
+        this.draw();
+    },
+
+    canMove: function(piece, newX, newY) {
+        if (!piece) return false;
+
+        return piece.shape.every((row, y) => {
+            return row.every((cell, x) => {
+                // 忽略空白格
+                if (!cell) return true;
+                
+                const boardX = newX + x;
+                const boardY = newY + y;
+                
+                // 檢查是否在遊戲邊界內
+                // 並檢查目標位置是否已有方塊
+                return (
+                    boardX >= 0 && 
+                    boardX < this.BOARD_WIDTH &&
+                    boardY < this.BOARD_HEIGHT &&
+                    (boardY < 0 || !this.board[boardY][boardX])
+                );
+            });
+        });
+    },
+
+    mergePiece: function() {
+        if (!this.currentPiece) return;
+
+        this.currentPiece.shape.forEach((row, y) => {
+            row.forEach((cell, x) => {
+                if (cell) {
+                    const boardY = this.currentPiece.y + y;
+                    const boardX = this.currentPiece.x + x;
+                    if (boardY >= 0 && boardY < this.BOARD_HEIGHT) {
+                        this.board[boardY][boardX] = {
+                            value: 1,
+                            char: cell.char,
+                            color: this.currentPiece.color
+                        };
+                    }
+                }
+            });
+        });
+    },
+
+    clearLines: function() {
+        let linesCleared = 0;
+
+        for (let y = this.BOARD_HEIGHT - 1; y >= 0; y--) {
+            if (this.board[y].every(cell => cell && cell.value)) {
+                if (this.currentPiece && this.currentPiece.meaning) {
+                    this.showQuiz(this.currentPiece.meaning, this.currentPiece.idiom);
+                }
+                
+                this.board.splice(y, 1);
+                this.board.unshift(Array(this.BOARD_WIDTH).fill(0));
+                linesCleared++;
+                y++;
+            }
+        }
+
+        if (linesCleared > 0) {
+            this.score += linesCleared * 100 * this.level;
+            document.getElementById('score').textContent = this.score;
+            
+            if (this.score >= this.level * 1000) {
+                this.level++;
+                document.getElementById('level').textContent = this.level;
+                clearInterval(this.gameInterval);
+                this.gameInterval = setInterval(() => this.gameLoop(), Math.max(100, 1000 - this.level * 50));
+            }
+        }
+    },
+
+    showQuiz: function(meaning, idiom) {
+        this.paused = true;
+        this.currentIdiom = idiom;
+        
+        const modal = document.getElementById('quiz-modal');
+        document.getElementById('quiz-question').textContent = `請根據解釋輸入正確的成語：${meaning}`;
+        document.getElementById('quiz-answer').value = '';
+        modal.style.display = 'block';
+    },
+
+    checkAnswer: function() {
+        const userAnswer = document.getElementById('quiz-answer').value.trim();
+        const modal = document.getElementById('quiz-modal');
+
+        if (userAnswer === this.currentIdiom) {
+            alert('答對了！');
+            modal.style.display = 'none';
+            this.paused = false;
+            this.score += 200;
+            document.getElementById('score').textContent = this.score;
+        } else {
+            alert('答錯了，請再試一次！');
+        }
+    },
+
+    gameLoop: function() {
+        if (!this.gameStarted || this.paused || this.isGameOver) return;
+
+        if (!this.currentPiece) {
+            this.currentPiece = this.createNewPiece();
+            if (!this.canMove(this.currentPiece, this.currentPiece.x, this.currentPiece.y)) {
+                this.gameOver();
+                return;
+            }
+        }
+
+        this.moveDown();
+        this.draw();
+    },
+
+    draw: function() {
+        const cells = document.getElementsByClassName('cell');
+        
+        [...cells].forEach(cell => {
+            cell.classList.remove('filled');
+            cell.textContent = '';
+            cell.style.backgroundColor = '';
+        });
+        
+        this.board.forEach((row, y) => {
+            row.forEach((cell, x) => {
+                if (cell && cell.value) {
+                    const index = y * this.BOARD_WIDTH + x;
+                    cells[index].classList.add('filled');
+                    cells[index].textContent = cell.char;
+                    cells[index].style.backgroundColor = cell.color;
+                }
+            });
+        });
+        
+        if (this.currentPiece) {
+            this.currentPiece.shape.forEach((row, y) => {
+                row.forEach((cell, x) => {
+                    if (cell && cell.value) {
+                        const boardY = this.currentPiece.y + y;
+                        const boardX = this.currentPiece.x + x;
+                        if (boardY >= 0) {
+                            const index = boardY * this.BOARD_WIDTH + boardX;
+                            cells[index].classList.add('filled');
+                            cells[index].textContent = cell.char;
+                            cells[index].style.backgroundColor = this.currentPiece.color;
+                        }
+                    }
+                });
+            });
+        }
+    },
+
+    handleKeyPress: function(e) {
+        if (!this.gameStarted || this.isGameOver || this.paused) return;
+
+        switch (e.keyCode) {
+            case 37: // 左箭頭
+                e.preventDefault();
+                this.moveLeft();
+                break;
+            case 39: // 右箭頭
+                e.preventDefault();
+                this.moveRight();
+                break;
+            case 40: // 下箭頭
+                e.preventDefault();
+                this.moveDown();
+                break;
+            case 32: // 空白鍵
+            case 38: // 上箭頭
+                e.preventDefault();
+                this.rotatePiece();
+                break;
+        }
+    },
+
+    gameOver: function() {
+        this.isGameOver = true;
+        this.gameStarted = false;
+        clearInterval(this.gameInterval);
+        alert(`遊戲結束！\n最終得分：${this.score}`);
+    }
+};
+
+    // 建立遊戲實例
+    const game = new Game();
+</script>
+</body>
+</html>
