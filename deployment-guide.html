@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>代課代理管理系統 - 完整部署指南</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1a5f7a;
+      --primary-light: #57c5b6;
+      --primary-dark: #0d3b4c;
+      --accent: #ff6b35;
+      --accent-soft: #ffa07a;
+      --bg-main: #fafbfc;
+      --bg-card: #ffffff;
+      --bg-code: #1e293b;
+      --text-main: #2d3748;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      --border: #e2e8f0;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.8;
+      font-size: 16px;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
+      color: white;
+      padding: 4rem 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: 0.5;
+    }
+
+    .header-content {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .header .subtitle {
+      font-size: 1.2rem;
+      opacity: 0.9;
+      font-weight: 300;
+    }
+
+    .version-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: white;
+      padding: 0.3rem 1rem;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      margin-top: 1rem;
+      font-weight: 500;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 3rem;
+    }
+
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+      }
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: sticky;
+      top: 2rem;
+      height: fit-content;
+    }
+
+    @media (max-width: 900px) {
+      .sidebar {
+        position: static;
+      }
+    }
+
+    .toc {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .toc-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--primary-light);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .toc-title::before {
+      content: '📋';
+    }
+
+    .toc ul {
+      list-style: none;
+    }
+
+    .toc li {
+      margin: 0.4rem 0;
+    }
+
+    .toc a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      display: block;
+      padding: 0.4rem 0.75rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+    }
+
+    .toc a:hover {
+      color: var(--primary);
+      background: rgba(26, 95, 122, 0.08);
+      border-left-color: var(--primary-light);
+    }
+
+    /* Main Content */
+    .main-content {
+      min-width: 0;
+    }
+
+    .section {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .section h2 {
+      font-size: 1.5rem;
+      color: var(--primary-dark);
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .section h3 {
+      font-size: 1.15rem;
+      color: var(--primary);
+      margin: 1.5rem 0 1rem;
+      font-weight: 600;
+    }
+
+    .section h4 {
+      font-size: 1rem;
+      color: var(--text-main);
+      margin: 1.25rem 0 0.75rem;
+      font-weight: 600;
+    }
+
+    .section p {
+      margin-bottom: 1rem;
+      color: var(--text-main);
+    }
+
+    /* Feature List */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .feature-item {
+      background: linear-gradient(135deg, rgba(26, 95, 122, 0.05) 0%, rgba(87, 197, 182, 0.05) 100%);
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      border-left: 4px solid var(--primary-light);
+    }
+
+    .feature-item strong {
+      color: var(--primary);
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .feature-item span {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* Steps */
+    .steps {
+      counter-reset: step;
+    }
+
+    .step {
+      position: relative;
+      padding-left: 3.5rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px dashed var(--border);
+    }
+
+    .step:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 2.5rem;
+      height: 2.5rem;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .step h4 {
+      margin-top: 0;
+      color: var(--primary-dark);
+    }
+
+    /* Code blocks */
+    code {
+      font-family: 'JetBrains Mono', 'Consolas', monospace;
+      background: var(--bg-code);
+      color: #e2e8f0;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    pre {
+      background: var(--bg-code);
+      padding: 1.25rem;
+      border-radius: 12px;
+      overflow-x: auto;
+      margin: 1rem 0;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    /* Tables */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 1rem 0;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    th {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    td {
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:nth-child(even) {
+      background: rgba(26, 95, 122, 0.03);
+    }
+
+    /* Alerts */
+    .alert {
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      margin: 1rem 0;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .alert-warning {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      color: #92400e;
+    }
+
+    .alert-info {
+      background: #dbeafe;
+      border: 1px solid #3b82f6;
+      color: #1e40af;
+    }
+
+    .alert-success {
+      background: #d1fae5;
+      border: 1px solid #10b981;
+      color: #065f46;
+    }
+
+    .alert-icon {
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    /* Lists */
+    ul, ol {
+      margin: 1rem 0;
+      padding-left: 1.5rem;
+    }
+
+    li {
+      margin: 0.5rem 0;
+    }
+
+    /* Q&A */
+    .qa-item {
+      background: linear-gradient(135deg, rgba(26, 95, 122, 0.03) 0%, rgba(87, 197, 182, 0.03) 100%);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin: 1rem 0;
+      border: 1px solid var(--border);
+    }
+
+    .qa-item h4 {
+      color: var(--accent);
+      margin-top: 0;
+      font-weight: 600;
+    }
+
+    .qa-item .solution {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 0.75rem;
+      border-left: 4px solid var(--primary-light);
+    }
+
+    .qa-item .solution strong {
+      color: var(--primary);
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      background: var(--primary-dark);
+      color: white;
+      margin-top: 2rem;
+    }
+
+    .footer p {
+      opacity: 0.8;
+      font-size: 0.95rem;
+    }
+
+    /* Print styles */
+    @media print {
+      .sidebar {
+        display: none;
+      }
+      .container {
+        grid-template-columns: 1fr;
+      }
+      .section {
+        box-shadow: none;
+        border: 1px solid #ddd;
+        break-inside: avoid;
+      }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-main);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--text-light);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    /* Back to top */
+    .back-to-top {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 48px;
+      height: 48px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+
+    .back-to-top.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .back-to-top:hover {
+      background: var(--primary-dark);
+      transform: translateY(-3px);
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <h1>📚 代課代理管理系統</h1>
+      <p class="subtitle">完整部署指南 - 從零開始建立您的學校代課管理平台</p>
+      <span class="version-badge">第二版 v2.0</span>
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar">
+      <nav class="toc">
+        <h3 class="toc-title">目錄導航</h3>
+        <ul>
+          <li><a href="#overview">系統概述</a></li>
+          <li><a href="#prerequisites">前置準備</a></li>
+          <li><a href="#create-sheet">建立 Google 試算表</a></li>
+          <li><a href="#deploy-code">部署程式碼</a></li>
+          <li><a href="#initialize">初始化系統</a></li>
+          <li><a href="#setup-auth">設定帳號密碼</a></li>
+          <li><a href="#publish">發布為網頁應用程式</a></li>
+          <li><a href="#features">系統功能說明</a></li>
+          <li><a href="#troubleshooting">常見問題排解</a></li>
+          <li><a href="#update">版本更新方法</a></li>
+          <li><a href="#backup">備份建議</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <!-- 系統概述 -->
+      <section id="overview" class="section">
+        <h2>🎯 系統概述</h2>
+        <p>本系統用於管理學校代課代理相關業務，提供完整的教師代課、代理紀錄與統計功能：</p>
+        
+        <div class="feature-grid">
+          <div class="feature-item">
+            <strong>公假代課</strong>
+            <span>公假期間的代課安排</span>
+          </div>
+          <div class="feature-item">
+            <strong>公假代理</strong>
+            <span>公假期間的職務代理</span>
+          </div>
+          <div class="feature-item">
+            <strong>事病假代課</strong>
+            <span>事病假期間的代課安排</span>
+          </div>
+          <div class="feature-item">
+            <strong>事病假代理</strong>
+            <span>事病假期間的職務代理</span>
+          </div>
+          <div class="feature-item">
+            <strong>超鐘點教師</strong>
+            <span>超鐘點教師管理與統計</span>
+          </div>
+          <div class="feature-item">
+            <strong>鐘點教師</strong>
+            <span>鐘點教師管理、請假與統計</span>
+          </div>
+          <div class="feature-item">
+            <strong>請假者統計</strong>
+            <span>請假者的扣款統計</span>
+          </div>
+          <div class="feature-item">
+            <strong>代課者統計</strong>
+            <span>代課者的鐘點費統計</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 前置準備 -->
+      <section id="prerequisites" class="section">
+        <h2>📦 前置準備</h2>
+        
+        <h3>需要的檔案</h3>
+        <p>請確認您有以下檔案：</p>
+        <ol>
+          <li><code>Code.gs</code> - 主程式碼</li>
+          <li><code>OvertimeTeacher.gs</code> - 超鐘點教師模組</li>
+          <li><code>HourlyTeacher.gs</code> - 鐘點教師模組</li>
+          <li><code>index.html</code> - 前端介面</li>
+        </ol>
+
+        <h3>需要的權限</h3>
+        <ul>
+          <li>Google 帳號</li>
+          <li>可建立 Google 試算表</li>
+          <li>可建立 Google Apps Script 專案</li>
+        </ul>
+      </section>
+
+      <!-- 建立 Google 試算表 -->
+      <section id="create-sheet" class="section">
+        <h2>📊 建立 Google 試算表</h2>
+        
+        <div class="steps">
+          <div class="step">
+            <h4>建立新試算表</h4>
+            <ol>
+              <li>前往 <a href="https://drive.google.com" target="_blank">Google 雲端硬碟</a></li>
+              <li>點擊「新增」→「Google 試算表」→「空白試算表」</li>
+              <li>將試算表命名為「代課代理管理系統」（或您想要的名稱）</li>
+            </ol>
+          </div>
+          
+          <div class="step">
+            <h4>記下試算表 ID</h4>
+            <p>查看瀏覽器網址列，格式如下：</p>
+            <pre><code>https://docs.google.com/spreadsheets/d/【試算表ID】/edit</code></pre>
+            <p>複製中間的試算表 ID，稍後會用到</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 部署程式碼 -->
+      <section id="deploy-code" class="section">
+        <h2>💻 部署程式碼</h2>
+        
+        <div class="steps">
+          <div class="step">
+            <h4>開啟 Apps Script 編輯器</h4>
+            <ol>
+              <li>在試算表中，點擊選單「擴充功能」→「Apps Script」</li>
+              <li>會開啟新的 Apps Script 編輯器視窗</li>
+            </ol>
+          </div>
+          
+          <div class="step">
+            <h4>建立程式檔案</h4>
+            
+            <h4>2.1 設定 Code.gs</h4>
+            <ol>
+              <li>編輯器中預設會有一個 <code>Code.gs</code> 檔案</li>
+              <li>刪除預設內容，貼上 <code>Code.gs</code> 的完整程式碼</li>
+            </ol>
+
+            <h4>2.2 建立 OvertimeTeacher.gs</h4>
+            <ol>
+              <li>點擊左側「檔案」旁的「+」號</li>
+              <li>選擇「指令碼」</li>
+              <li>將檔案命名為 <code>OvertimeTeacher</code>（不需要加 .gs）</li>
+              <li>貼上 <code>OvertimeTeacher.gs</code> 的完整程式碼</li>
+            </ol>
+
+            <h4>2.3 建立 HourlyTeacher.gs</h4>
+            <ol>
+              <li>點擊左側「檔案」旁的「+」號</li>
+              <li>選擇「指令碼」</li>
+              <li>將檔案命名為 <code>HourlyTeacher</code></li>
+              <li>貼上 <code>HourlyTeacher.gs</code> 的完整程式碼</li>
+            </ol>
+
+            <h4>2.4 建立 index.html</h4>
+            <ol>
+              <li>點擊左側「檔案」旁的「+」號</li>
+              <li>選擇「HTML」</li>
+              <li>將檔案命名為 <code>index</code>（不需要加 .html）</li>
+              <li>貼上 <code>index.html</code> 的完整程式碼</li>
+            </ol>
+          </div>
+          
+          <div class="step">
+            <h4>儲存專案</h4>
+            <ol>
+              <li>點擊上方的「專案名稱」（預設為「未命名專案」）</li>
+              <li>輸入專案名稱，例如「代課代理管理系統」</li>
+              <li>按 <code>Ctrl+S</code> 或點擊儲存圖示儲存所有檔案</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- 初始化系統 -->
+      <section id="initialize" class="section">
+        <h2>⚙️ 初始化系統</h2>
+        
+        <div class="steps">
+          <div class="step">
+            <h4>執行初始化函式</h4>
+            <ol>
+              <li>在 Apps Script 編輯器中，確認選擇的檔案是 <code>Code.gs</code></li>
+              <li>在上方函式下拉選單中選擇 <code>initializeSheets</code></li>
+              <li>點擊「執行」按鈕（▶）</li>
+            </ol>
+          </div>
+          
+          <div class="step">
+            <h4>授權應用程式</h4>
+            <p>首次執行時會要求授權：</p>
+            <ol>
+              <li>點擊「審查權限」</li>
+              <li>選擇您的 Google 帳號</li>
+              <li>如果出現「這個應用程式未經 Google 驗證」，點擊「進階」→「前往（專案名稱）」</li>
+              <li>點擊「允許」授予權限</li>
+            </ol>
+          </div>
+          
+          <div class="step">
+            <h4>確認工作表已建立</h4>
+            <p>回到 Google 試算表，應該會看到以下工作表：</p>
+            <div class="feature-grid">
+              <div class="feature-item"><strong>公假代課</strong></div>
+              <div class="feature-item"><strong>公假代理</strong></div>
+              <div class="feature-item"><strong>事病假代課</strong></div>
+              <div class="feature-item"><strong>事病假代理</strong></div>
+              <div class="feature-item"><strong>超鐘點教師</strong></div>
+              <div class="feature-item"><strong>鐘點教師</strong></div>
+              <div class="feature-item"><strong>鐘點教師請假</strong></div>
+              <div class="feature-item"><strong>請假者統計</strong></div>
+              <div class="feature-item"><strong>代課者統計</strong></div>
+              <div class="feature-item"><strong>帳密</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 設定帳號密碼 -->
+      <section id="setup-auth" class="section">
+        <h2>🔐 設定帳號密碼</h2>
+        
+        <div class="steps">
+          <div class="step">
+            <h4>開啟帳密工作表</h4>
+            <ol>
+              <li>在試算表中，點擊「帳密」工作表</li>
+              <li>會看到標題列：帳號、密碼</li>
+            </ol>
+          </div>
+          
+          <div class="step">
+            <h4>新增管理員帳號</h4>
+            <p>在第 2 列輸入：</p>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr><th>帳號</th><th>密碼</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>admin</td><td>您設定的密碼</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div class="step">
+            <h4>新增其他使用者（可選）</h4>
+            <p>可以繼續新增更多使用者帳號：</p>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr><th>帳號</th><th>密碼</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>admin</td><td>admin123</td></tr>
+                  <tr><td>user1</td><td>password1</td></tr>
+                  <tr><td>user2</td><td>password2</td></tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="alert alert-warning">
+              <span class="alert-icon">⚠️</span>
+              <div><strong>注意：</strong>密碼以明文儲存，請勿使用重要密碼</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 發布為網頁應用程式 -->
+      <section id="publish" class="section">
+        <h2>🚀 發布為網頁應用程式</h2>
+        
+        <div class="steps">
+          <div class="step">
+            <h4>部署設定</h4>
+            <ol>
+              <li>在 Apps Script 編輯器中，點擊右上角「部署」→「新增部署作業」</li>
+              <li>點擊「選取類型」旁的齒輪圖示，選擇「網頁應用程式」</li>
+            </ol>
+          </div>
+          
+          <div class="step">
+            <h4>填寫部署資訊</h4>
+            <ul>
+              <li><strong>說明：</strong>輸入版本說明，例如「初始版本」</li>
+              <li><strong>執行身分：</strong>選擇「我」（您的帳號）</li>
+              <li><strong>誰可以存取：</strong>
+                <ul>
+                  <li>選擇「只有我自己」（僅供測試）</li>
+                  <li>或選擇「所有人」（開放給他人使用，需登入 Google）</li>
+                  <li>或選擇「任何人」（完全公開，不需登入 Google）</li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+          
+          <div class="step">
+            <h4>完成部署</h4>
+            <ol>
+              <li>點擊「部署」</li>
+              <li>複製顯示的「網頁應用程式網址」</li>
+              <li>這就是系統的存取網址</li>
+            </ol>
+          </div>
+          
+          <div class="step">
+            <h4>存取系統</h4>
+            <ol>
+              <li>在瀏覽器中開啟複製的網址</li>
+              <li>使用在「帳密」工作表中設定的帳號密碼登入</li>
+            </ol>
+            <div class="alert alert-success">
+              <span class="alert-icon">✅</span>
+              <div>恭喜！系統部署完成，您現在可以開始使用代課代理管理系統了！</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 系統功能說明 -->
+      <section id="features" class="section">
+        <h2>📖 系統功能說明</h2>
+        
+        <h3>登入功能</h3>
+        <ul>
+          <li>系統需要登入後才能使用</li>
+          <li>帳號密碼儲存在「帳密」工作表中</li>
+          <li>登入後會顯示使用者名稱和登出按鈕</li>
+        </ul>
+
+        <h3>公假代課</h3>
+        <ul>
+          <li>登記公假期間的代課安排</li>
+          <li>記錄請假者、代課者、一般節數、超鐘點節數</li>
+          <li>支援最多 5 位代課者</li>
+        </ul>
+
+        <h3>公假代理</h3>
+        <ul>
+          <li>登記公假期間的職務代理</li>
+          <li>記錄代理者、代理職務、當日超鐘點節數</li>
+        </ul>
+
+        <h3>事病假代課</h3>
+        <ul>
+          <li>登記事病假期間的代課安排</li>
+          <li>記錄請假類別（事假/病假/其他）</li>
+          <li>支援最多 5 位代課者</li>
+        </ul>
+
+        <h3>事病假代理</h3>
+        <ul>
+          <li>登記事病假期間的職務代理</li>
+          <li>記錄代理者、代理職務、當日超鐘點節數</li>
+        </ul>
+
+        <h3>超鐘點教師</h3>
+        <ul>
+          <li><strong>新增教師：</strong>登記超鐘點教師基本資料</li>
+          <li><strong>教師列表：</strong>查看、編輯、刪除教師資料</li>
+          <li><strong>匯出統計：</strong>計算並匯出超鐘點統計
+            <ul>
+              <li>給付節數、給付金額</li>
+              <li>各類扣除節數</li>
+              <li>實際給付節數、金額</li>
+              <li>包含合計列</li>
+            </ul>
+          </li>
+        </ul>
+
+        <h3>鐘點教師</h3>
+        <ul>
+          <li><strong>新增教師：</strong>登記鐘點教師基本資料</li>
+          <li><strong>教師列表：</strong>查看、編輯、刪除教師資料</li>
+          <li><strong>請假登記：</strong>登記鐘點教師請假</li>
+          <li><strong>請假紀錄：</strong>查看、編輯、刪除請假紀錄</li>
+          <li><strong>匯出統計：</strong>計算並匯出鐘點教師統計
+            <ul>
+              <li>鐘點節數合計</li>
+              <li>因故未上課節數</li>
+              <li>實際授課節數、實領金額</li>
+              <li>包含合計列</li>
+            </ul>
+          </li>
+        </ul>
+
+        <h3>請假者統計</h3>
+        <ul>
+          <li>統計指定日期範圍內的請假者資料</li>
+          <li>顯示各類請假節數和天數</li>
+          <li>計算應扣薪天數、應扣節數、應扣總金額</li>
+          <li>展開明細可查看詳細扣款項目</li>
+          <li>匯出到工作表（包含合計列）</li>
+          <li>支援列印功能</li>
+        </ul>
+
+        <h3>代課者統計</h3>
+        <ul>
+          <li>統計指定日期範圍內的代課者資料</li>
+          <li>顯示各類代課節數和代理天數</li>
+          <li>計算代課總節數、代課總金額</li>
+          <li>匯出到工作表（包含合計列）</li>
+          <li>支援列印功能</li>
+        </ul>
+      </section>
+
+      <!-- 常見問題排解 -->
+      <section id="troubleshooting" class="section">
+        <h2>❓ 常見問題排解</h2>
+        
+        <div class="qa-item">
+          <h4>Q1：執行時出現「沒有權限」錯誤</h4>
+          <div class="solution">
+            <strong>解決方案：</strong>
+            <ol>
+              <li>重新執行函式</li>
+              <li>在授權頁面點擊「進階」→「前往（專案名稱）」</li>
+              <li>點擊「允許」授予所有權限</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="qa-item">
+          <h4>Q2：工作表沒有自動建立</h4>
+          <div class="solution">
+            <strong>解決方案：</strong>
+            <ol>
+              <li>確認執行的是 <code>initializeSheets</code> 函式</li>
+              <li>檢查是否有錯誤訊息</li>
+              <li>嘗試重新執行</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="qa-item">
+          <h4>Q3：登入失敗</h4>
+          <div class="solution">
+            <strong>解決方案：</strong>
+            <ol>
+              <li>確認「帳密」工作表中有正確的帳號密碼</li>
+              <li>確認帳號密碼沒有多餘的空格</li>
+              <li>密碼區分大小寫</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="qa-item">
+          <h4>Q4：統計數據不正確</h4>
+          <div class="solution">
+            <strong>解決方案：</strong>
+            <ol>
+              <li>確認日期範圍設定正確</li>
+              <li>檢查各工作表的資料是否完整</li>
+              <li>確認教師名字沒有多餘空格</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="qa-item">
+          <h4>Q5：網頁應用程式更新後沒有生效</h4>
+          <div class="solution">
+            <strong>解決方案：</strong>
+            <ol>
+              <li>在 Apps Script 中點擊「部署」→「管理部署作業」</li>
+              <li>點擊編輯圖示（鉛筆）</li>
+              <li>在「版本」下拉選單選擇「新版本」</li>
+              <li>點擊「部署」</li>
+              <li>清除瀏覽器快取後重新載入頁面</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="qa-item">
+          <h4>Q6：列印時格式不正確</h4>
+          <div class="solution">
+            <strong>解決方案：</strong>
+            <ol>
+              <li>使用 Chrome 瀏覽器</li>
+              <li>列印時選擇「更多設定」</li>
+              <li>取消勾選「頁首和頁尾」</li>
+              <li>調整邊界為「最小」</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- 版本更新方法 -->
+      <section id="update" class="section">
+        <h2>🔄 版本更新方法</h2>
+        <p>當需要更新程式碼時：</p>
+        <ol>
+          <li>在 Apps Script 編輯器中修改程式碼</li>
+          <li>儲存檔案（<code>Ctrl+S</code>）</li>
+          <li>點擊「部署」→「管理部署作業」</li>
+          <li>點擊編輯圖示</li>
+          <li>版本選擇「新版本」</li>
+          <li>點擊「部署」</li>
+        </ol>
+      </section>
+
+      <!-- 備份建議 -->
+      <section id="backup" class="section">
+        <h2>💾 備份建議</h2>
+        <p>建議定期備份：</p>
+        <ol>
+          <li><strong>試算表備份：</strong>「檔案」→「下載」→「Microsoft Excel (.xlsx)」</li>
+          <li><strong>程式碼備份：</strong>在 Apps Script 中「檔案」→「專案複本」</li>
+        </ol>
+
+        <div class="alert alert-info">
+          <span class="alert-icon">💡</span>
+          <div>
+            <strong>技術支援提示：</strong>如有問題，請檢查：
+            <ul style="margin: 0.5rem 0 0 1rem;">
+              <li>Google Apps Script 執行紀錄（「執行」→「執行記錄」）</li>
+              <li>瀏覽器開發者工具的 Console（按 F12）</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <p>© 代課代理管理系統第二版 設計者：Vincent Wang @2025</p>
+  </footer>
+
+  <button class="back-to-top" id="backToTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
+
+  <script>
+    // Back to top button visibility
+    const backToTop = document.getElementById('backToTop');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) {
+        backToTop.classList.add('visible');
+      } else {
+        backToTop.classList.remove('visible');
+      }
+    });
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
