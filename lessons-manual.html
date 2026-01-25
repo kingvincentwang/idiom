@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>代課代理管理系統 - 操作手冊</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --primary-dark: #4f46e5;
+      --secondary: #ec4899;
+      --accent: #f59e0b;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-dark: #1e1b4b;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      --border: #e2e8f0;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+      --gradient-card: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(236, 72, 153, 0.03) 100%);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.8;
+      font-size: 16px;
+    }
+
+    /* Header */
+    .header {
+      background: var(--gradient-primary);
+      color: white;
+      padding: 3rem 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+      animation: pulse 15s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(-10%, -10%) scale(1.1); }
+    }
+
+    .header-content {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .header-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 900;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .header .subtitle {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      font-weight: 300;
+    }
+
+    /* Quick Nav */
+    .quick-nav {
+      background: white;
+      padding: 1rem 2rem;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .quick-nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding: 0.5rem 0;
+    }
+
+    .quick-nav a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+      background: var(--gradient-card);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      color: var(--text-main);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .quick-nav a:hover {
+      background: var(--gradient-primary);
+      color: white;
+      border-color: transparent;
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Section */
+    .section {
+      background: var(--bg-card);
+      border-radius: 20px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--gradient-primary);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px dashed var(--border);
+    }
+
+    .section-icon {
+      width: 56px;
+      height: 56px;
+      background: var(--gradient-primary);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      box-shadow: var(--shadow);
+    }
+
+    .section-title h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.25rem;
+    }
+
+    .section-title p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* Operation Cards */
+    .op-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .op-card {
+      background: var(--gradient-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .op-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--primary-light);
+    }
+
+    .op-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .op-card-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--gradient-primary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .op-card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .op-card-content {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* Steps */
+    .steps-list {
+      list-style: none;
+      margin: 1rem 0;
+    }
+
+    .steps-list li {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .steps-list li:last-child {
+      border-bottom: none;
+    }
+
+    .step-num {
+      width: 32px;
+      height: 32px;
+      background: var(--gradient-primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.875rem;
+      flex-shrink: 0;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-content strong {
+      color: var(--primary-dark);
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .step-content span {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* Field Table */
+    .field-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+
+    .field-table th {
+      background: var(--bg-dark);
+      color: white;
+      padding: 0.875rem 1rem;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .field-table th:first-child {
+      border-radius: 12px 0 0 0;
+    }
+
+    .field-table th:last-child {
+      border-radius: 0 12px 0 0;
+    }
+
+    .field-table td {
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .field-table tr:last-child td:first-child {
+      border-radius: 0 0 0 12px;
+    }
+
+    .field-table tr:last-child td:last-child {
+      border-radius: 0 0 12px 0;
+    }
+
+    .field-table tr:nth-child(even) {
+      background: rgba(99, 102, 241, 0.03);
+    }
+
+    .field-table code {
+      background: var(--bg-dark);
+      color: #e2e8f0;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .required {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    .optional {
+      color: var(--success);
+    }
+
+    /* Tips */
+    .tip-box {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      margin: 1rem 0;
+    }
+
+    .tip-box.info {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .tip-box.success {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .tip-box.warning {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .tip-box.danger {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .tip-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .tip-content {
+      font-size: 0.9rem;
+    }
+
+    .tip-content strong {
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    /* Button Demo */
+    .btn-demo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--gradient-primary);
+      color: white;
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-warning {
+      background: var(--warning);
+      color: white;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-outline {
+      background: white;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+
+    /* Workflow Diagram */
+    .workflow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 1.5rem;
+      background: var(--gradient-card);
+      border-radius: 16px;
+      margin: 1rem 0;
+    }
+
+    .workflow-step {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      background: white;
+      border-radius: 50px;
+      border: 2px solid var(--border);
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .workflow-step.active {
+      background: var(--gradient-primary);
+      color: white;
+      border-color: transparent;
+    }
+
+    .workflow-arrow {
+      color: var(--text-light);
+      font-size: 1.25rem;
+    }
+
+    /* Keyboard Shortcuts */
+    .kbd {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      box-shadow: 0 2px 0 #cbd5e1;
+    }
+
+    /* Accordion */
+    .accordion {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 1rem 0;
+    }
+
+    .accordion-item {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .accordion-item:last-child {
+      border-bottom: none;
+    }
+
+    .accordion-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      background: var(--gradient-card);
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .accordion-header:hover {
+      background: rgba(99, 102, 241, 0.08);
+    }
+
+    .accordion-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 600;
+    }
+
+    .accordion-icon {
+      transition: transform 0.3s ease;
+    }
+
+    .accordion-item.open .accordion-icon {
+      transform: rotate(180deg);
+    }
+
+    .accordion-content {
+      display: none;
+      padding: 1rem 1.25rem;
+      background: white;
+    }
+
+    .accordion-item.open .accordion-content {
+      display: block;
+    }
+
+    /* Stats Preview */
+    .stats-preview {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 1.25rem;
+      background: var(--gradient-card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* Screenshot Placeholder */
+    .screenshot {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      color: rgba(255,255,255,0.6);
+      margin: 1rem 0;
+      border: 2px dashed rgba(255,255,255,0.2);
+    }
+
+    .screenshot-icon {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      background: var(--bg-dark);
+      color: white;
+    }
+
+    .footer-logo {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .footer p {
+      opacity: 0.7;
+      font-size: 0.9rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 1.75rem;
+      }
+
+      .section {
+        padding: 1.5rem;
+        border-radius: 16px;
+      }
+
+      .container {
+        padding: 1rem;
+      }
+
+      .op-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .workflow {
+        flex-direction: column;
+      }
+
+      .workflow-arrow {
+        transform: rotate(90deg);
+      }
+    }
+
+    /* Print */
+    @media print {
+      .quick-nav {
+        display: none;
+      }
+
+      .section {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+      }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-main);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--text-light);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <span class="header-icon">📘</span>
+      <h1>操作手冊</h1>
+      <p class="subtitle">代課代理管理系統 ─ 完整功能操作指南</p>
+    </div>
+  </header>
+
+  <nav class="quick-nav">
+    <div class="quick-nav-inner">
+      <a href="#login">🔐 登入系統</a>
+      <a href="#public-sub">📋 公假代課</a>
+      <a href="#public-agent">👤 公假代理</a>
+      <a href="#private-sub">🏥 事病假代課</a>
+      <a href="#private-agent">📝 事病假代理</a>
+      <a href="#overtime">⏰ 超鐘點教師</a>
+      <a href="#hourly">👨‍🏫 鐘點教師</a>
+      <a href="#leave-stats">📊 請假者統計</a>
+      <a href="#sub-stats">💰 代課者統計</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- 登入系統 -->
+    <section id="login" class="section">
+      <div class="section-header">
+        <div class="section-icon">🔐</div>
+        <div class="section-title">
+          <h2>登入系統</h2>
+          <p>開始使用前，請先完成身份驗證</p>
+        </div>
+      </div>
+
+      <div class="workflow">
+        <div class="workflow-step active">📱 開啟網址</div>
+        <span class="workflow-arrow">→</span>
+        <div class="workflow-step">✏️ 輸入帳密</div>
+        <span class="workflow-arrow">→</span>
+        <div class="workflow-step">🔓 點擊登入</div>
+        <span class="workflow-arrow">→</span>
+        <div class="workflow-step">✅ 進入系統</div>
+      </div>
+
+      <ul class="steps-list">
+        <li>
+          <span class="step-num">1</span>
+          <div class="step-content">
+            <strong>開啟系統網址</strong>
+            <span>在瀏覽器中輸入系統網址，建議使用 Chrome 瀏覽器以獲得最佳體驗</span>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <div class="step-content">
+            <strong>輸入帳號密碼</strong>
+            <span>在登入畫面輸入管理員提供的帳號與密碼，注意密碼區分大小寫</span>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <div class="step-content">
+            <strong>點擊登入按鈕</strong>
+            <span>確認資料無誤後，點擊「登入」按鈕進入系統</span>
+          </div>
+        </li>
+      </ul>
+
+      <div class="tip-box info">
+        <span class="tip-icon">💡</span>
+        <div class="tip-content">
+          <strong>小提示</strong>
+          登入成功後，右上角會顯示您的使用者名稱，點擊「登出」按鈕可安全離開系統。
+        </div>
+      </div>
+    </section>
+
+    <!-- 公假代課 -->
+    <section id="public-sub" class="section">
+      <div class="section-header">
+        <div class="section-icon">📋</div>
+        <div class="section-title">
+          <h2>公假代課</h2>
+          <p>登記公假期間的代課安排，支援多位代課者</p>
+        </div>
+      </div>
+
+      <div class="op-grid">
+        <div class="op-card">
+          <div class="op-card-header">
+            <div class="op-card-icon">➕</div>
+            <div class="op-card-title">新增代課紀錄</div>
+          </div>
+          <div class="op-card-content">
+            點擊「新增」按鈕，填寫請假者、日期及代課者資訊。可登記最多 5 位代課者。
+          </div>
+        </div>
+        <div class="op-card">
+          <div class="op-card-header">
+            <div class="op-card-icon">📝</div>
+            <div class="op-card-title">編輯紀錄</div>
+          </div>
+          <div class="op-card-content">
+            在列表中找到要修改的紀錄，點擊「編輯」按鈕進行修改，完成後點擊「儲存」。
+          </div>
+        </div>
+        <div class="op-card">
+          <div class="op-card-header">
+            <div class="op-card-icon">🗑️</div>
+            <div class="op-card-title">刪除紀錄</div>
+          </div>
+          <div class="op-card-content">
+            點擊「刪除」按鈕，系統會要求確認，確認後將永久刪除該筆紀錄。
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin: 1.5rem 0 1rem; color: var(--primary-dark);">📌 欄位說明</h3>
+      <table class="field-table">
+        <thead>
+          <tr>
+            <th>欄位名稱</th>
+            <th>說明</th>
+            <th>必填</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>日期</code></td>
+            <td>公假日期</td>
+            <td><span class="required">必填</span></td>
+          </tr>
+          <tr>
+            <td><code>請假者</code></td>
+            <td>請公假的教師姓名</td>
+            <td><span class="required">必填</span></td>
+          </tr>
+          <tr>
+            <td><code>代課者 1~5</code></td>
+            <td>代課教師姓名，最多可填 5 位</td>
+            <td><span class="required">至少填 1 位</span></td>
+          </tr>
+          <tr>
+            <td><code>一般節數</code></td>
+            <td>該代課者代課的一般節數</td>
+            <td><span class="optional">選填</span></td>
+          </tr>
+          <tr>
+            <td><code>超鐘點節數</code></td>
+            <td>該代課者代課的超鐘點節數</td>
+            <td><span class="optional">選填</span></td>
+          </tr>
+          <tr>
+            <td><code>備註</code></td>
+            <td>其他補充說明</td>
+            <td><span class="optional">選填</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="tip-box warning">
+        <span class="tip-icon">⚠️</span>
+        <div class="tip-content">
+          <strong>注意事項</strong>
+          教師姓名請統一格式，避免多餘空格，否則統計時可能造成資料分散。
+        </div>
+      </div>
+    </section>
+
+    <!-- 公假代理 -->
+    <section id="public-agent" class="section">
+      <div class="section-header">
+        <div class="section-icon">👤</div>
+        <div class="section-title">
+          <h2>公假代理</h2>
+          <p>登記公假期間的職務代理安排</p>
+        </div>
+      </div>
+
+      <ul class="steps-list">
+        <li>
+          <span class="step-num">1</span>
+          <div class="step-content">
+            <strong>點擊「公假代理」功能</strong>
+            <span>從左側選單或首頁進入公假代理功能</span>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <div class="step-content">
+            <strong>填寫代理資訊</strong>
+            <span>輸入日期、請假者、代理者、代理職務等資訊</span>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <div class="step-content">
+            <strong>記錄超鐘點節數</strong>
+            <span>如代理者當日有超鐘點，請填入「當日超鐘點節數」欄位</span>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <div class="step-content">
+            <strong>儲存紀錄</strong>
+            <span>確認資料無誤後，點擊「儲存」完成登記</span>
+          </div>
+        </li>
+      </ul>
+
+      <table class="field-table">
+        <thead>
+          <tr>
+            <th>欄位名稱</th>
+            <th>說明</th>
+            <th>必填</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>日期</code></td>
+            <td>代理日期</td>
+            <td><span class="required">必填</span></td>
+          </tr>
+          <tr>
+            <td><code>請假者</code></td>
+            <td>請公假的教師姓名</td>
+            <td><span class="required">必填</span></td>
+          </tr>
+          <tr>
+            <td><code>代理者</code></td>
+            <td>代理職務的教師姓名</td>
+            <td><span class="required">必填</span></td>
+          </tr>
+          <tr>
+            <td><code>代理職務</code></td>
+            <td>被代理的職務名稱（如：導護、午餐秘書）</td>
+            <td><span class="required">必填</span></td>
+          </tr>
+          <tr>
+            <td><code>當日超鐘點節數</code></td>
+            <td>代理者當日的超鐘點節數</td>
+            <td><span class="optional">選填</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 事病假代課 -->
+    <section id="private-sub" class="section">
+      <div class="section-header">
+        <div class="section-icon">🏥</div>
+        <div class="section-title">
+          <h2>事病假代課</h2>
+          <p>登記事假、病假期間的代課安排</p>
+        </div>
+      </div>
+
+      <div class="tip-box info">
+        <span class="tip-icon">📌</span>
+        <div class="tip-content">
+          <strong>與公假代課的差異</strong>
+          事病假代課需額外選擇「請假類別」（事假/病假/其他），此分類會影響後續的扣款統計。
+        </div>
+      </div>
+
+      <h3 style="margin: 1.5rem 0 1rem; color: var(--primary-dark);">🏷️ 請假類別</h3>
+      <div class="stats-preview">
+        <div class="stat-item">
+          <div class="stat-value">事假</div>
+          <div class="stat-label">Personal Leave</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">病假</div>
+          <div class="stat-label">Sick Leave</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">其他</div>
+          <div class="stat-label">Other Leave</div>
+        </div>
+      </div>
+
+      <table class="field-table">
+        <thead>
+          <tr>
+            <th>欄位名稱</th>
+            <th>說明</th>
+            <th>必填</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>日期</code></td>
+            <td>請假日期</td>
+            <td><span class="required">必填</span></td>
+          </tr>
+          <tr>
+            <td><code>請假者</code></td>
+            <td>請假教師姓名</td>
+            <td><span class="required">必填</span></td>
+          </tr>
+          <tr>
+            <td><code>請假類別</code></td>
+            <td>事假 / 病假 / 其他</td>
+            <td><span class="required">必填</span></td>
+          </tr>
+          <tr>
+            <td><code>代課者 1~5</code></td>
+            <td>代課教師姓名</td>
+            <td><span class="required">至少填 1 位</span></td>
+          </tr>
+          <tr>
+            <td><code>一般節數</code></td>
+            <td>代課的一般節數</td>
+            <td><span class="optional">選填</span></td>
+          </tr>
+          <tr>
+            <td><code>超鐘點節數</code></td>
+            <td>代課的超鐘點節數</td>
+            <td><span class="optional">選填</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 事病假代理 -->
+    <section id="private-agent" class="section">
+      <div class="section-header">
+        <div class="section-icon">📝</div>
+        <div class="section-title">
+          <h2>事病假代理</h2>
+          <p>登記事假、病假期間的職務代理</p>
+        </div>
+      </div>
+
+      <p>操作方式與「公假代理」相同，差異在於需要選擇請假類別（事假/病假/其他）。</p>
+
+      <table class="field-table">
+        <thead>
+          <tr>
+            <th>欄位名稱</th>
+            <th>說明</th>
+            <th>必填</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>日期</code></td>
+            <td>代理日期</td>
+            <td><span class="required">必填</span></td>
+          </tr>
+          <tr>
+            <td><code>請假者</code></td>
+            <td>請假教師姓名</td>
+            <td><span class="required">必填</span></td>
+          </tr>
+          <tr>
+            <td><code>請假類別</code></td>
+            <td>事假 / 病假 / 其他</td>
+            <td><span class="required">必填</span></td>
+          </tr>
+          <tr>
+            <td><code>代理者</code></td>
+            <td>代理職務的教師姓名</td>
+            <td><span class="required">必填</span></td>
+          </tr>
+          <tr>
+            <td><code>代理職務</code></td>
+            <td>被代理的職務名稱</td>
+            <td><span class="required">必填</span></td>
+          </tr>
+          <tr>
+            <td><code>當日超鐘點節數</code></td>
+            <td>代理者當日的超鐘點節數</td>
+            <td><span class="optional">選填</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 超鐘點教師 -->
+    <section id="overtime" class="section">
+      <div class="section-header">
+        <div class="section-icon">⏰</div>
+        <div class="section-title">
+          <h2>超鐘點教師</h2>
+          <p>管理超鐘點教師資料與統計給付</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-item open">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <div class="accordion-title">
+              <span>➕</span> 新增教師
+            </div>
+            <span class="accordion-icon">▼</span>
+          </div>
+          <div class="accordion-content">
+            <p>點擊「新增教師」按鈕，填寫以下資料：</p>
+            <ul>
+              <li><strong>教師姓名：</strong>超鐘點教師的姓名</li>
+              <li><strong>每週超鐘點節數：</strong>該教師每週固定的超鐘點節數</li>
+              <li><strong>每節金額：</strong>每節超鐘點的給付金額</li>
+              <li><strong>備註：</strong>其他補充說明（選填）</li>
+            </ul>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <div class="accordion-title">
+              <span>📋</span> 教師列表
+            </div>
+            <span class="accordion-icon">▼</span>
+          </div>
+          <div class="accordion-content">
+            <p>在此查看所有超鐘點教師的資料，可進行以下操作：</p>
+            <ul>
+              <li><strong>編輯：</strong>修改教師的基本資料</li>
+              <li><strong>刪除：</strong>移除教師（會要求確認）</li>
+            </ul>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <div class="accordion-title">
+              <span>📊</span> 匯出統計
+            </div>
+            <span class="accordion-icon">▼</span>
+          </div>
+          <div class="accordion-content">
+            <p>選擇統計期間（週數），系統會自動計算：</p>
+            <div class="stats-preview">
+              <div class="stat-item">
+                <div class="stat-value">給付節數</div>
+                <div class="stat-label">週數 × 每週節數</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">扣除節數</div>
+                <div class="stat-label">各類扣除加總</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">實付金額</div>
+                <div class="stat-label">實際給付節數 × 單價</div>
+              </div>
+            </div>
+            <p>點擊「匯出」可將統計結果寫入工作表。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 鐘點教師 -->
+    <section id="hourly" class="section">
+      <div class="section-header">
+        <div class="section-icon">👨‍🏫</div>
+        <div class="section-title">
+          <h2>鐘點教師</h2>
+          <p>管理鐘點教師資料、請假與統計</p>
+        </div>
+      </div>
+
+      <div class="op-grid">
+        <div class="op-card">
+          <div class="op-card-header">
+            <div class="op-card-icon">➕</div>
+            <div class="op-card-title">新增教師</div>
+          </div>
+          <div class="op-card-content">
+            登記鐘點教師基本資料：姓名、每週鐘點節數、每節金額。
+          </div>
+        </div>
+        <div class="op-card">
+          <div class="op-card-header">
+            <div class="op-card-icon">📋</div>
+            <div class="op-card-title">教師列表</div>
+          </div>
+          <div class="op-card-content">
+            查看、編輯或刪除鐘點教師的基本資料。
+          </div>
+        </div>
+        <div class="op-card">
+          <div class="op-card-header">
+            <div class="op-card-icon">🗓️</div>
+            <div class="op-card-title">請假登記</div>
+          </div>
+          <div class="op-card-content">
+            登記鐘點教師請假：日期、姓名、請假類別、請假節數。
+          </div>
+        </div>
+        <div class="op-card">
+          <div class="op-card-header">
+            <div class="op-card-icon">📑</div>
+            <div class="op-card-title">請假紀錄</div>
+          </div>
+          <div class="op-card-content">
+            查看所有鐘點教師的請假紀錄，可編輯或刪除。
+          </div>
+        </div>
+        <div class="op-card">
+          <div class="op-card-header">
+            <div class="op-card-icon">📊</div>
+            <div class="op-card-title">匯出統計</div>
+          </div>
+          <div class="op-card-content">
+            計算鐘點節數合計、因故未上課節數、實際授課節數與實領金額。
+          </div>
+        </div>
+      </div>
+
+      <div class="tip-box success">
+        <span class="tip-icon">✅</span>
+        <div class="tip-content">
+          <strong>統計公式</strong>
+          實際授課節數 = 鐘點節數合計 - 因故未上課節數<br>
+          實領金額 = 實際授課節數 × 每節金額
+        </div>
+      </div>
+    </section>
+
+    <!-- 請假者統計 -->
+    <section id="leave-stats" class="section">
+      <div class="section-header">
+        <div class="section-icon">📊</div>
+        <div class="section-title">
+          <h2>請假者統計</h2>
+          <p>統計請假者的各類假別與扣款</p>
+        </div>
+      </div>
+
+      <div class="workflow">
+        <div class="workflow-step active">📅 選擇日期</div>
+        <span class="workflow-arrow">→</span>
+        <div class="workflow-step">🔍 執行統計</div>
+        <span class="workflow-arrow">→</span>
+        <div class="workflow-step">👁️ 查看結果</div>
+        <span class="workflow-arrow">→</span>
+        <div class="workflow-step">📤 匯出/列印</div>
+      </div>
+
+      <h3 style="margin: 1.5rem 0 1rem; color: var(--primary-dark);">📈 統計項目</h3>
+      <table class="field-table">
+        <thead>
+          <tr>
+            <th>統計項目</th>
+            <th>說明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>公假代課節數</td>
+            <td>期間內因公假被代課的總節數</td>
+          </tr>
+          <tr>
+            <td>公假代理天數</td>
+            <td>期間內因公假被代理職務的總天數</td>
+          </tr>
+          <tr>
+            <td>事假代課節數</td>
+            <td>期間內因事假被代課的總節數</td>
+          </tr>
+          <tr>
+            <td>事假代理天數</td>
+            <td>期間內因事假被代理職務的總天數</td>
+          </tr>
+          <tr>
+            <td>病假代課節數</td>
+            <td>期間內因病假被代課的總節數</td>
+          </tr>
+          <tr>
+            <td>病假代理天數</td>
+            <td>期間內因病假被代理職務的總天數</td>
+          </tr>
+          <tr>
+            <td>應扣薪天數</td>
+            <td>根據假別計算的應扣薪天數</td>
+          </tr>
+          <tr>
+            <td>應扣節數</td>
+            <td>被代課的總節數</td>
+          </tr>
+          <tr>
+            <td>應扣總金額</td>
+            <td>根據節數與單價計算的扣款金額</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="tip-box info">
+        <span class="tip-icon">🔍</span>
+        <div class="tip-content">
+          <strong>展開明細</strong>
+          點擊每列前方的展開按鈕，可查看該請假者的詳細扣款項目與計算方式。
+        </div>
+      </div>
+
+      <h3 style="margin: 1.5rem 0 1rem; color: var(--primary-dark);">🖨️ 匯出與列印</h3>
+      <p>統計結果可進行以下操作：</p>
+      <ul>
+        <li><strong>匯出到工作表：</strong>將統計資料寫入「請假者統計」工作表，包含合計列</li>
+        <li><strong>列印：</strong>以表格格式列印統計報表</li>
+      </ul>
+    </section>
+
+    <!-- 代課者統計 -->
+    <section id="sub-stats" class="section">
+      <div class="section-header">
+        <div class="section-icon">💰</div>
+        <div class="section-title">
+          <h2>代課者統計</h2>
+          <p>統計代課者的鐘點費</p>
+        </div>
+      </div>
+
+      <h3 style="margin: 1rem 0; color: var(--primary-dark);">📈 統計項目</h3>
+      <table class="field-table">
+        <thead>
+          <tr>
+            <th>統計項目</th>
+            <th>說明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>公假代課一般節數</td>
+            <td>因他人公假而代課的一般節數</td>
+          </tr>
+          <tr>
+            <td>公假代課超鐘點節數</td>
+            <td>因他人公假而代課的超鐘點節數</td>
+          </tr>
+          <tr>
+            <td>事病假代課一般節數</td>
+            <td>因他人事病假而代課的一般節數</td>
+          </tr>
+          <tr>
+            <td>事病假代課超鐘點節數</td>
+            <td>因他人事病假而代課的超鐘點節數</td>
+          </tr>
+          <tr>
+            <td>代理天數</td>
+            <td>代理他人職務的總天數</td>
+          </tr>
+          <tr>
+            <td>代課總節數</td>
+            <td>所有代課節數加總</td>
+          </tr>
+          <tr>
+            <td>代課總金額</td>
+            <td>根據節數與單價計算的鐘點費</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="tip-box success">
+        <span class="tip-icon">💡</span>
+        <div class="tip-content">
+          <strong>金額計算說明</strong>
+          代課總金額 = (一般節數 × 一般單價) + (超鐘點節數 × 超鐘點單價)
+        </div>
+      </div>
+    </section>
+
+    <!-- 常用快捷鍵 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon">⌨️</div>
+        <div class="section-title">
+          <h2>實用技巧</h2>
+          <p>提升操作效率的小撇步</p>
+        </div>
+      </div>
+
+      <div class="op-grid">
+        <div class="op-card">
+          <div class="op-card-header">
+            <div class="op-card-icon">🔄</div>
+            <div class="op-card-title">重新整理資料</div>
+          </div>
+          <div class="op-card-content">
+            按 <span class="kbd">F5</span> 或點擊瀏覽器重新整理按鈕，可取得最新資料。
+          </div>
+        </div>
+        <div class="op-card">
+          <div class="op-card-header">
+            <div class="op-card-icon">🔍</div>
+            <div class="op-card-title">快速搜尋</div>
+          </div>
+          <div class="op-card-content">
+            按 <span class="kbd">Ctrl</span> + <span class="kbd">F</span> 可在頁面中搜尋特定文字。
+          </div>
+        </div>
+        <div class="op-card">
+          <div class="op-card-header">
+            <div class="op-card-icon">🖨️</div>
+            <div class="op-card-title">列印報表</div>
+          </div>
+          <div class="op-card-content">
+            按 <span class="kbd">Ctrl</span> + <span class="kbd">P</span> 開啟列印對話框。
+          </div>
+        </div>
+        <div class="op-card">
+          <div class="op-card-header">
+            <div class="op-card-icon">📱</div>
+            <div class="op-card-title">行動裝置</div>
+          </div>
+          <div class="op-card-content">
+            系統支援手機與平板操作，介面會自動調整為適合觸控的版面。
+          </div>
+        </div>
+      </div>
+
+      <div class="tip-box danger">
+        <span class="tip-icon">🚨</span>
+        <div class="tip-content">
+          <strong>重要提醒</strong>
+          <ul style="margin: 0.5rem 0 0 1rem;">
+            <li>刪除操作無法復原，請謹慎操作</li>
+            <li>定期備份試算表資料</li>
+            <li>教師姓名請保持一致，避免統計錯誤</li>
+            <li>如遇問題，請聯繫系統管理員</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-logo">📘</div>
+    <p>代課代理管理系統 操作手冊</p>
+    <p style="margin-top: 0.5rem;">© 設計者：Vincent Wang @2025</p>
+  </footer>
+
+  <script>
+    function toggleAccordion(header) {
+      const item = header.parentElement;
+      const isOpen = item.classList.contains('open');
+      
+      // Close all items
+      document.querySelectorAll('.accordion-item').forEach(i => {
+        i.classList.remove('open');
+      });
+      
+      // Open clicked item if it wasn't open
+      if (!isOpen) {
+        item.classList.add('open');
+      }
+    }
+
+    // Smooth scroll for nav links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          const offset = 80; // Account for sticky nav
+          const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - offset;
+          window.scrollTo({
+            top: targetPosition,
+            behavior: 'smooth'
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
