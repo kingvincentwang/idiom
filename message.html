@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>公開留言板</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; background-color: #f4f4f4; }
+    .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    h1 { text-align: center; color: #333; }
+    input, textarea { width: 100%; box-sizing: border-box; display: block; margin-bottom: 15px; padding: 12px; border: 1px solid #ddd; border-radius: 4px; }
+    button { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+    button:hover { background-color: #218838; }
+    #status { margin-top: 15px; text-align: center; color: #555; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>公開留言板</h1>
+    <form id="publicForm">
+      <input type="text" id="publicName" placeholder="您的暱稱" required>
+      <textarea id="publicMessage" placeholder="說點什麼..." rows="5" required></textarea>
+      <button type="submit">公開提交</button>
+    </form>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    // *** 關鍵點：在 GAS 部署後生成的 Web App 網址 ***
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwVSkp7JliSuOAn-Dzpe9_P9dI9xaCnjtksrxaBlFJW4_ysWcMFCCHnQA_GDek0mEOyYw/exec'; // <-- !!! 請修改這裡 !!!
+
+    document.getElementById('publicForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const name = document.getElementById('publicName').value;
+      const message = document.getElementById('publicMessage').value;
+      const statusDiv = document.getElementById('status');
+      
+      statusDiv.textContent = '傳輸中...';
+      
+      // *** 關鍵點：透過 fetch() 呼叫 GAS 後端 ***
+      fetch(GAS_WEB_APP_URL, {
+        method: 'POST', // 或 GET，取決於您的後端寫法
+        mode: 'no-cors', // 處理 CORS 問題的關鍵 (但這意味著無法讀取回應，需配合後端)
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: name,
+          message: message
+        })
+      })
+      .then(response => {
+        // 由於使用 'no-cors'，我們無法讀取回應，但可以假設成功
+        statusDiv.textContent = '提交成功！(因安全原因，請稍後刷新查看)';
+        document.getElementById('publicName').value = '';
+        document.getElementById('publicMessage').value = '';
+      })
+      .catch(error => {
+        statusDiv.textContent = '提交失敗: ' + error;
+        statusDiv.style.color = 'red';
+      });
+    });
+  </script>
+</body>
+</html>
