@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>竹東 PM2.5 監測站 - GitHub 版</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f7f6; font-family: sans-serif; }
+        .aqi-card { border: 1px solid #ddd; padding: 25px; width: 300px; border-radius: 12px; text-align: center; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h3 { margin-top: 0; color: #333; }
+        #pm25-value { font-size: 3.5em; font-weight: bold; color: #7f8c8d; margin: 15px 0; }
+        .unit { font-size: 0.4em; margin-left: 5px; color: #999; }
+        #aqi-status { padding: 6px 18px; border-radius: 20px; background: #eee; font-weight: bold; }
+        .footer { margin-top: 20px; font-size: 0.75em; color: #aaa; }
+    </style>
+</head>
+<body>
+
+    <div class="aqi-card">
+        <h3>新竹縣 (竹東站)</h3>
+        <div id="pm25-value">--</div>
+        <div id="aqi-status">連線中...</div>
+        <div class="footer">
+            數據來源：環境部開放資料<br>
+            更新時間：<span id="update-time">--</span>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = '7526bb19-c42b-4cc2-8444-d213384011f4';
+        
+        // 方案：使用另一個穩定代理，並移除所有中文 filter 參數以防出錯
+        const targetUrl = 'https://data.moenv.gov.tw/api/v2/aqx_p_43?api_key=' + API_KEY;
+        const PROXY_URL = 'https://api.allorigins.win/get?url=' + encodeURIComponent(targetUrl);
+
+        async function fetchAQI() {
+            const valueEl = document.getElementById('pm25-value');
+            const statusEl = document.getElementById('aqi-status');
+            const timeEl = document.getElementById('update-time');
+
+            try {
+                const response = await fetch(PROXY_URL);
+                if (!response.ok) throw new Error('Proxy 沒反應');
+                
+                const data = await response.json();
+                const result = JSON.parse(data.contents);
+                const records = result.records || result;
+
+                // 在前端自己過濾
+                const station = records.find(r => r.sitename === '竹東');
+
+                if (station) {
+                    const pmValue = station['pm2.5'] || '0';
+                    valueEl.innerHTML = `${pmValue}<span class="unit">µg/m³</span>`;
+                    statusEl.innerText = `空氣品質：${station['status']}`;
+                    timeEl.innerText = station['publishtime'];
+
+                    // 變色邏輯
+                    const v = parseFloat(pmValue);
+                    if (v >= 35.5) valueEl.style.color = '#e67e22';
+                    else if (v >= 15.5) valueEl.style.color = '#f1c40f';
+                    else valueEl.style.color = '#27ae60';
+                }
+            } catch (err) {
+                console.error("讀取失敗:", err);
+                statusEl.innerText = "資料讀取失敗 (請稍後重新整理)";
+                statusEl.style.color = "red";
+            }
+        }
+
+        fetchAQI();
+    </script>
+</body>
+</html>
