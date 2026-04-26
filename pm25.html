@@ -2,39 +2,50 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>PM2.5 監測</title>
+    <title>PM2.5 監測站</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f8f9fa; font-family: -apple-system, sans-serif; }
+        .card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 250px; }
+        #val { font-size: 4rem; font-weight: 800; margin: 0.5rem 0; color: #666; }
+        #status { font-weight: bold; padding: 0.3rem 1rem; border-radius: 1rem; background: #eee; }
+        .station-name { color: #888; font-size: 1.2rem; }
+    </style>
 </head>
 <body>
-    <div style="text-align:center; font-family:sans-serif; padding:20px; border:1px solid #ccc; border-radius:10px; width:200px;">
-        <h3>竹東站 PM2.5</h3>
-        <h1 id="display-val">--</h1>
-        <p id="display-status">讀取中...</p>
+    <div class="card">
+        <div class="station-name" id="name">讀取中...</div>
+        <div id="val">--</div>
+        <span id="status">連線中</span>
     </div>
 
     <script>
+        // 請確保這裡換成你最新的 GAS 網址
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbz3AmkU5p41BylPgtwzitxgS2dAZOpFt_URs_Xw-atsXfVyYw_Eyxz7ENB6g_-xQeQbUw/exec';
 
-        async function fetchAQI() {
+        async function updateAQI() {
             try {
-                const response = await fetch(GAS_URL);
-                const data = await response.json();
-                
+                const res = await fetch(GAS_URL);
+                const data = await res.json();
+                console.log("GAS 回傳資料:", data);
+
                 if (data.records && data.records.length > 0) {
-                    const station = data.records[0];
-                    document.getElementById('display-val').innerText = station['pm2.5'];
-                    document.getElementById('display-status').innerText = station['status'];
-                    // 根據數值變色
-                    const val = parseFloat(station['pm2.5']);
-                    document.getElementById('display-val').style.color = (val > 35) ? 'orange' : 'green';
+                    const s = data.records[0]; // 取第一筆資料
+                    document.getElementById('name').innerText = s.sitename + "站";
+                    document.getElementById('val').innerText = s['pm2.5'] || s['pm25'] || '0';
+                    document.getElementById('status').innerText = s.status || '正常';
+                    
+                    // 顏色變換
+                    const v = parseFloat(s['pm2.5']);
+                    document.getElementById('val').style.color = v > 35 ? '#e67e22' : '#27ae60';
                 } else {
-                    document.getElementById('display-status').innerText = '找不到資料';
+                    document.getElementById('status').innerText = '站點維護中';
                 }
-            } catch (err) {
-                console.error(err);
-                document.getElementById('display-status').innerText = '連線失敗';
+            } catch (e) {
+                document.getElementById('status').innerText = '連線失敗';
+                console.error(e);
             }
         }
-        fetchAQI();
+        updateAQI();
     </script>
 </body>
 </html>
