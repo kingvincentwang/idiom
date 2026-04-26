@@ -1,51 +1,34 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>PM2.5 監測站</title>
-    <style>
-        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f8f9fa; font-family: -apple-system, sans-serif; }
-        .card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 250px; }
-        #val { font-size: 4rem; font-weight: 800; margin: 0.5rem 0; color: #666; }
-        #status { font-weight: bold; padding: 0.3rem 1rem; border-radius: 1rem; background: #eee; }
-        .station-name { color: #888; font-size: 1.2rem; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <div class="station-name" id="name">讀取中...</div>
-        <div id="val">--</div>
-        <span id="status">連線中</span>
-    </div>
+<script>
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbz3AmkU5p41BylPgtwzitxgS2dAZOpFt_URs_Xw-atsXfVyYw_Eyxz7ENB6g_-xQeQbUw/exec';
 
-    <script>
-        // 請確保這裡換成你最新的 GAS 網址
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbz3AmkU5p41BylPgtwzitxgS2dAZOpFt_URs_Xw-atsXfVyYw_Eyxz7ENB6g_-xQeQbUw/exec';
+    async function fetchAQI() {
+        const valueEl = document.getElementById('pm25-value');
+        const statusEl = document.getElementById('aqi-status');
 
-        async function updateAQI() {
-            try {
-                const res = await fetch(GAS_URL);
-                const data = await res.json();
-                console.log("GAS 回傳資料:", data);
+        try {
+            const response = await fetch(GAS_URL);
+            const data = await response.json();
+            console.log("GAS 回傳診斷資料:", data);
 
-                if (data.records && data.records.length > 0) {
-                    const s = data.records[0]; // 取第一筆資料
-                    document.getElementById('name').innerText = s.sitename + "站";
-                    document.getElementById('val').innerText = s['pm2.5'] || s['pm25'] || '0';
-                    document.getElementById('status').innerText = s.status || '正常';
-                    
-                    // 顏色變換
-                    const v = parseFloat(s['pm2.5']);
-                    document.getElementById('val').style.color = v > 35 ? '#e67e22' : '#27ae60';
-                } else {
-                    document.getElementById('status').innerText = '站點維護中';
+            if (data.records && data.records.length > 0) {
+                // 1. 先試著找竹東
+                let station = data.records.find(s => s.sitename.includes('竹東'));
+                
+                // 2. 如果沒竹東，就拿第一個找到的（可能是新竹、湖口、竹北等）
+                if (!station) {
+                    station = data.records[0];
+                    console.warn("找不到竹東，自動切換至備案測站:", station.sitename);
                 }
-            } catch (e) {
-                document.getElementById('status').innerText = '連線失敗';
-                console.error(e);
+
+                document.getElementById('name').innerText = station.sitename + "站";
+                document.getElementById('pm25-value').innerText = station['pm2.5'] || '0';
+                document.getElementById('aqi-status').innerText = station.status;
+            } else {
+                document.getElementById('aqi-status').innerText = "目前清單中無新竹地區測站";
             }
+        } catch (err) {
+            document.getElementById('aqi-status').innerText = "讀取失敗";
         }
-        updateAQI();
-    </script>
-</body>
-</html>
+    }
+    fetchAQI();
+</script>
