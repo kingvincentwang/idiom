@@ -1,34 +1,40 @@
-<script>
-    // 這裡替換成你剛剛在 Google 部署後得到的 URL
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbz3AmkU5p41BylPgtwzitxgS2dAZOpFt_URs_Xw-atsXfVyYw_Eyxz7ENB6g_-xQeQbUw/exec'; 
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>PM2.5 監測</title>
+</head>
+<body>
+    <div style="text-align:center; font-family:sans-serif; padding:20px; border:1px solid #ccc; border-radius:10px; width:200px;">
+        <h3>竹東站 PM2.5</h3>
+        <h1 id="display-val">--</h1>
+        <p id="display-status">讀取中...</p>
+    </div>
 
-    async function fetchAQI() {
-        const valueEl = document.getElementById('pm25-value');
-        const statusEl = document.getElementById('aqi-status');
-        const timeEl = document.getElementById('update-time');
+    <script>
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbz3AmkU5p41BylPgtwzitxgS2dAZOpFt_URs_Xw-atsXfVyYw_Eyxz7ENB6g_-xQeQbUw/exec';
 
-        try {
-            const response = await fetch(GAS_URL);
-            const result = await response.json();
-            
-            // Google 已經幫我們過濾好「竹東」了
-            const station = result.records[0];
-
-            if (station) {
-                const pmValue = station['pm2.5'] || '0';
-                valueEl.innerHTML = `${pmValue}<span class="unit">µg/m³</span>`;
-                statusEl.innerText = `空氣品質：${station['status']}`;
-                timeEl.innerText = station['publishtime'];
-
-                const v = parseFloat(pmValue);
-                if (v >= 35.5) valueEl.style.color = '#e67e22';
-                else if (v >= 15.5) valueEl.style.color = '#f1c40f';
-                else valueEl.style.color = '#27ae60';
+        async function fetchAQI() {
+            try {
+                const response = await fetch(GAS_URL);
+                const data = await response.json();
+                
+                if (data.records && data.records.length > 0) {
+                    const station = data.records[0];
+                    document.getElementById('display-val').innerText = station['pm2.5'];
+                    document.getElementById('display-status').innerText = station['status'];
+                    // 根據數值變色
+                    const val = parseFloat(station['pm2.5']);
+                    document.getElementById('display-val').style.color = (val > 35) ? 'orange' : 'green';
+                } else {
+                    document.getElementById('display-status').innerText = '找不到資料';
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('display-status').innerText = '連線失敗';
             }
-        } catch (err) {
-            console.error("GAS 讀取失敗:", err);
-            statusEl.innerText = "資料連線失敗";
         }
-    }
-    fetchAQI();
-</script>
+        fetchAQI();
+    </script>
+</body>
+</html>
