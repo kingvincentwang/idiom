@@ -1,34 +1,82 @@
-<script>
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbz3AmkU5p41BylPgtwzitxgS2dAZOpFt_URs_Xw-atsXfVyYw_Eyxz7ENB6g_-xQeQbUw/exec';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>竹東 PM2.5 即時監測</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f2f5; font-family: sans-serif; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.08); text-align: center; width: 260px; }
+        h2 { margin: 0; color: #555; font-size: 1.2rem; }
+        #val { font-size: 4rem; font-weight: bold; margin: 15px 0; color: #2ecc71; }
+        .unit { font-size: 1rem; color: #999; margin-left: 5px; }
+        #status { display: inline-block; padding: 5px 15px; border-radius: 20px; background: #e8f5e9; color: #2e7d32; font-weight: bold; font-size: 0.9rem; }
+        .time { margin-top: 20px; font-size: 0.7rem; color: #bbb; }
+    </style>
+</head>
+<body>
 
-    async function fetchAQI() {
-        const valueEl = document.getElementById('pm25-value');
-        const statusEl = document.getElementById('aqi-status');
+    <div class="card">
+        <h2 id="station-name">竹東站</h2>
+        <div id="val">--<span class="unit">µg/m³</span></div>
+        <div id="status">連線中...</div>
+        <div class="time">最後更新：<span id="update-time">--</span></div>
+    </div>
 
-        try {
-            const response = await fetch(GAS_URL);
-            const data = await response.json();
-            console.log("GAS 回傳診斷資料:", data);
+    <script>
+        // 這是你提供的 GAS 網址
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbz3AmkU5p41BylPgtwzitxgS2dAZOpFt_URs_Xw-atsXfVyYw_Eyxz7ENB6g_-xQeQbUw/exec';
 
-            if (data.records && data.records.length > 0) {
-                // 1. 先試著找竹東
-                let station = data.records.find(s => s.sitename.includes('竹東'));
-                
-                // 2. 如果沒竹東，就拿第一個找到的（可能是新竹、湖口、竹北等）
-                if (!station) {
-                    station = data.records[0];
-                    console.warn("找不到竹東，自動切換至備案測站:", station.sitename);
+        async function fetchAQI() {
+            try {
+                const response = await fetch(GAS_URL);
+                const data = await response.json();
+                console.log("GAS 原始回傳:", data);
+
+                if (data.status === "success" && data.records && data.records.length > 0) {
+                    const station = data.records[0];
+                    
+                    // 1. 抓取 HTML 元素
+                    const valEl = document.getElementById('val');
+                    const statusEl = document.getElementById('status');
+                    const timeEl = document.getElementById('update-time');
+                    const nameEl = document.getElementById('station-name');
+
+                    // 2. 填入數據 (注意環境部的欄位名稱是 pm2.5)
+                    const pmValue = station['pm2.5'] || '0';
+                    valEl.innerHTML = `${pmValue}<span class="unit">µg/m³</span>`;
+                    statusEl.innerText = `空氣品質：${station['status']}`;
+                    timeEl.innerText = station['publishtime'] || '--';
+                    nameEl.innerText = `${station['sitename']}站`;
+
+                    // 3. 根據數值自動變色
+                    const v = parseFloat(pmValue);
+                    if (v >= 35.5) {
+                        valEl.style.color = '#e67e22'; // 橘色 (普通)
+                        statusEl.style.background = '#fff3e0';
+                        statusEl.style.color = '#e65100';
+                    } else if (v >= 15.5) {
+                        valEl.style.color = '#f1c40f'; // 黃色
+                        statusEl.style.background = '#fffde7';
+                        statusEl.style.color = '#fbc02d';
+                    } else {
+                        valEl.style.color = '#27ae60'; // 綠色 (良好)
+                        statusEl.style.background = '#e8f5e9';
+                        statusEl.style.color = '#2e7d32';
+                    }
+                } else {
+                    document.getElementById('status').innerText = "暫無資料";
                 }
-
-                document.getElementById('name').innerText = station.sitename + "站";
-                document.getElementById('pm25-value').innerText = station['pm2.5'] || '0';
-                document.getElementById('aqi-status').innerText = station.status;
-            } else {
-                document.getElementById('aqi-status').innerText = "目前清單中無新竹地區測站";
+            } catch (err) {
+                console.error("連線錯誤:", err);
+                document.getElementById('status').innerText = "連線失敗";
             }
-        } catch (err) {
-            document.getElementById('aqi-status').innerText = "讀取失敗";
         }
-    }
-    fetchAQI();
-</script>
+
+        // 啟動抓取
+        fetchAQI();
+        // 每 10 分鐘自動更新一次
+        setInterval(fetchAQI, 600000);
+    </script>
+</body>
+</html>
