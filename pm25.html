@@ -2,54 +2,53 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>竹東 PM2.5 監測</title>
+    <title>竹東站即時監測</title>
     <style>
-        .card { border: 1px solid #ddd; padding: 20px; width: 250px; text-align: center; border-radius: 15px; font-family: sans-serif; margin: 50px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        #val { font-size: 3em; font-weight: bold; color: #27ae60; }
-        #status { font-size: 1.1em; color: #666; margin-top: 10px; }
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f7f6; }
+        .card { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 280px; }
+        #val { font-size: 4rem; font-weight: bold; margin: 10px 0; color: #2ecc71; }
+        #status { font-weight: bold; color: #7f8c8d; }
+        .time { font-size: 0.8rem; color: #bbb; margin-top: 15px; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h3>竹東站 PM2.5</h3>
-        <div id="val">--</div>
-        <div id="status">讀取中...</div>
-    </div>
+<div class="card">
+    <h2 id="name">竹東監測站</h2>
+    <div id="val">--</div>
+    <div id="status">讀取中...</div>
+    <div class="time">更新時間：<span id="time">--</span></div>
+</div>
 
-    <script>
-        // 你的 GAS 網址
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbz3AmkU5p41BylPgtwzitxgS2dAZOpFt_URs_Xw-atsXfVyYw_Eyxz7ENB6g_-xQeQbUw/exec';
+<script>
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbz3AmkU5p41BylPgtwzitxgS2dAZOpFt_URs_Xw-atsXfVyYw_Eyxz7ENB6g_-xQeQbUw/exec';
 
-        async function fetchAQI() {
-            try {
-                const response = await fetch(GAS_URL);
-                const data = await response.json();
+    async function updateData() {
+        try {
+            const response = await fetch(GAS_URL);
+            const data = await response.json();
+            
+            if (data.status === "success") {
+                // 對應 GAS 回傳的新格式
+                document.getElementById('val').innerText = data.pm25;
+                document.getElementById('time').innerText = data.time;
+                document.getElementById('status').innerText = "監測項目：PM2.5";
                 
-                // 1. 取得標籤元素
+                // 數值變色判斷
+                const v = parseFloat(data.pm25);
                 const valEl = document.getElementById('val');
-                const statusEl = document.getElementById('status');
-
-                // 2. 檢查元素是否存在，避免 null 錯誤
-                if (valEl && statusEl) {
-                    if (data.records && data.records.length > 0) {
-                        const s = data.records[0];
-                        // 注意環境部欄位名稱是 pm2.5
-                        valEl.innerText = s['pm2.5'] || s['pm25'] || '0';
-                        statusEl.innerText = s['status'] || '良好';
-                    } else {
-                        statusEl.innerText = "暫無資料";
-                    }
-                }
-            } catch (err) {
-                console.error("抓取失敗:", err);
-                const statusEl = document.getElementById('status');
-                if (statusEl) statusEl.innerText = "連線失敗";
+                if (v >= 35) valEl.style.color = '#e67e22';
+                else if (v >= 15) valEl.style.color = '#f1c40f';
+                else valEl.style.color = '#27ae60';
+            } else {
+                document.getElementById('status').innerText = "伺服器忙碌中";
             }
+        } catch (e) {
+            document.getElementById('status').innerText = "連線失敗";
         }
+    }
 
-        // 確保網頁所有內容都跑完了才執行 JS
-        window.onload = fetchAQI;
-    </script>
+    updateData();
+</script>
 </body>
 </html>
