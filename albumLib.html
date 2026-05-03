@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="學校相簿 - 關西國小">
+<title>關西國小 · 相簿</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+/* ══════════════════════════════════════
+   CSS Variables & Reset
+══════════════════════════════════════ */
+:root {
+  --bg       : #f7f4ef;
+  --surface  : #ffffff;
+  --text     : #1a1410;
+  --sub      : #7a7068;
+  --border   : #e2ddd6;
+  --accent   : #c0392b;
+  --accent2  : #2c3e50;
+  --shadow   : 0 2px 24px rgba(0,0,0,0.08);
+  --radius   : 6px;
+  --gap      : 12px;
+  --cols     : 3;
+  --trans    : .3s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="dark"] {
+  --bg      : #0e0c0a;
+  --surface : #1a1714;
+  --text    : #f0ece6;
+  --sub     : #7a7068;
+  --border  : #2a2520;
+  --shadow  : 0 2px 24px rgba(0,0,0,0.5);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family   : 'DM Sans', 'Noto Serif TC', sans-serif;
+  background    : var(--bg);
+  color         : var(--text);
+  min-height    : 100vh;
+  transition    : background var(--trans), color var(--trans);
+  overflow-x    : hidden;
+}
+
+/* ══════════════════════════════════════
+   頂部導覽
+══════════════════════════════════════ */
+.site-nav {
+  position      : sticky;
+  top           : 0;
+  z-index       : 100;
+  background    : var(--bg);
+  border-bottom : 1px solid var(--border);
+  display       : flex;
+  align-items   : center;
+  gap           : 16px;
+  padding       : 0 24px;
+  height        : 56px;
+  backdrop-filter: blur(16px);
+  transition    : background var(--trans), border-color var(--trans);
+}
+.nav-brand {
+  font-family   : 'DM Serif Display', serif;
+  font-size     : 18px;
+  letter-spacing: .01em;
+  flex          : 1;
+  white-space   : nowrap;
+  overflow      : hidden;
+  text-overflow : ellipsis;
+}
+.nav-brand span { color: var(--accent); font-style: italic; }
+
+.nav-btns { display: flex; align-items: center; gap: 6px; }
+
+.nav-btn {
+  background    : transparent;
+  border        : 1px solid var(--border);
+  color         : var(--sub);
+  padding       : 5px 11px;
+  border-radius : 20px;
+  font-size     : 12px;
+  font-family   : 'DM Sans', sans-serif;
+  cursor        : pointer;
+  transition    : all .2s;
+  white-space   : nowrap;
+}
+.nav-btn:hover, .nav-btn.active {
+  background    : var(--text);
+  color         : var(--bg);
+  border-color  : var(--text);
+}
+.nav-icon-btn {
+  background    : transparent;
+  border        : 1px solid var(--border);
+  color         : var(--sub);
+  width         : 34px;
+  height        : 34px;
+  border-radius : 50%;
+  font-size     : 15px;
+  cursor        : pointer;
+  display       : flex;
+  align-items   : center;
+  justify-content: center;
+  transition    : all .2s;
+  flex-shrink   : 0;
+}
+.nav-icon-btn:hover { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+/* ══════════════════════════════════════
+   Hero 刊頭
+══════════════════════════════════════ */
+.site-hero {
+  max-width : 900px;
+  margin    : 0 auto;
+  padding   : 52px 24px 40px;
+  text-align: center;
+  position  : relative;
+}
+.hero-eyebrow {
+  font-size     : 10px;
+  letter-spacing: .35em;
+  text-transform: uppercase;
+  color         : var(--accent);
+  margin-bottom : 14px;
+  font-weight   : 500;
+}
+.hero-title {
+  font-family   : 'DM Serif Display', 'Noto Serif TC', serif;
+  font-size     : clamp(32px, 7vw, 68px);
+  line-height   : 1.05;
+  letter-spacing: -.02em;
+  margin-bottom : 14px;
+}
+.hero-title em { font-style: italic; color: var(--accent); }
+.hero-desc {
+  font-size  : 14px;
+  color      : var(--sub);
+  max-width  : 420px;
+  margin     : 0 auto 24px;
+  line-height: 1.7;
+}
+.hero-rule {
+  display       : flex;
+  align-items   : center;
+  gap           : 14px;
+  max-width     : 500px;
+  margin        : 0 auto;
+  color         : var(--border);
+  font-size     : 10px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color         : var(--sub);
+}
+.hero-rule::before, .hero-rule::after {
+  content   : '';
+  flex      : 1;
+  height    : 1px;
+  background: var(--border);
+}
+
+/* ══════════════════════════════════════
+   相簿選擇器（多資料夾）
+══════════════════════════════════════ */
+.album-tabs {
+  max-width  : 960px;
+  margin     : 0 auto 24px;
+  padding    : 0 20px;
+  display    : flex;
+  gap        : 8px;
+  flex-wrap  : wrap;
+  justify-content: center;
+}
+.album-tab {
+  background    : var(--surface);
+  border        : 1px solid var(--border);
+  color         : var(--sub);
+  padding       : 7px 18px;
+  border-radius : 24px;
+  font-size     : 13px;
+  cursor        : pointer;
+  transition    : all .2s;
+  font-family   : 'DM Sans', sans-serif;
+}
+.album-tab:hover { border-color: var(--accent); color: var(--accent); }
+.album-tab.active {
+  background  : var(--accent);
+  border-color: var(--accent);
+  color       : #fff;
+  font-weight : 600;
+}
+
+/* ══════════════════════════════════════
+   工具列
+══════════════════════════════════════ */
+.toolbar {
+  max-width  : 960px;
+  margin     : 0 auto 16px;
+  padding    : 0 20px;
+  display    : flex;
+  align-items: center;
+  gap        : 10px;
+  flex-wrap  : wrap;
+}
+.search-box {
+  flex      : 1;
+  min-width : 160px;
+  position  : relative;
+}
+.search-box input {
+  width         : 100%;
+  padding       : 9px 36px 9px 14px;
+  border        : 1px solid var(--border);
+  border-radius : 24px;
+  background    : var(--surface);
+  color         : var(--text);
+  font-size     : 13px;
+  font-family   : 'DM Sans', sans-serif;
+  outline       : none;
+  transition    : border-color .2s, box-shadow .2s;
+}
+.search-box input:focus {
+  border-color: var(--accent);
+  box-shadow  : 0 0 0 3px rgba(192,57,43,.12);
+}
+.search-box input::placeholder { color: var(--sub); }
+.search-icon {
+  position : absolute;
+  right    : 12px;
+  top      : 50%;
+  transform: translateY(-50%);
+  color    : var(--sub);
+  font-size: 14px;
+  pointer-events: none;
+}
+.tool-count {
+  font-size     : 12px;
+  color         : var(--sub);
+  letter-spacing: .05em;
+  white-space   : nowrap;
+}
+
+/* ══════════════════════════════════════
+   相片網格
+══════════════════════════════════════ */
+.gallery-wrap {
+  max-width: 960px;
+  margin   : 0 auto;
+  padding  : 0 14px 60px;
+}
+
+/* ── 瀑布流（預設） ── */
+.gallery-masonry {
+  columns    : var(--cols);
+  column-gap : var(--gap);
+}
+.gallery-masonry .photo-card { break-inside: avoid; margin-bottom: var(--gap); }
+
+/* ── 方格 ── */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  gap    : var(--gap);
+}
+.gallery-grid .photo-card { aspect-ratio: 1; }
+.gallery-grid .photo-card img { height: 100%; object-fit: cover; }
+
+/* ── 雜誌（Editorial 首圖大） ── */
+.gallery-editorial { display: block; }
+.gallery-editorial .photo-card:first-child {
+  width        : 100%;
+  aspect-ratio : 16 / 6;
+  margin-bottom: var(--gap);
+}
+.gallery-editorial .photo-card:first-child img { height: 100%; object-fit: cover; }
+.gallery-editorial .rest-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  gap    : var(--gap);
+}
+
+/* ══════════════════════════════════════
+   相片卡片
+══════════════════════════════════════ */
+.photo-card {
+  position     : relative;
+  overflow     : hidden;
+  border-radius: var(--radius);
+  cursor       : pointer;
+  background   : var(--border);
+  box-shadow   : var(--shadow);
+  /* 進場 */
+  opacity      : 0;
+  transform    : translateY(18px);
+  animation    : cardIn .45s ease forwards;
+}
+@keyframes cardIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+.photo-card img {
+  width     : 100%;
+  height    : auto;
+  display   : block;
+  transition: transform .5s ease, filter .3s;
+  filter    : brightness(.96);
+}
+.photo-card img.lazy   { opacity: 0; transition: opacity .4s; }
+.photo-card img.loaded { opacity: 1; }
+.photo-card:hover img  { transform: scale(1.05); filter: brightness(1); }
+
+.card-overlay {
+  position  : absolute;
+  inset     : 0;
+  background: linear-gradient(transparent 50%, rgba(0,0,0,0.68) 100%);
+  opacity   : 0;
+  transition: opacity .25s;
+  display   : flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding   : 16px 14px 12px;
+  pointer-events: none;
+}
+.photo-card:hover .card-overlay { opacity: 1; }
+.card-name {
+  color      : #fff;
+  font-size  : 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow   : hidden;
+  text-overflow: ellipsis;
+}
+.card-date {
+  color    : rgba(255,255,255,.55);
+  font-size: 10px;
+  margin-top: 2px;
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: .04em;
+}
+
+/* ══════════════════════════════════════
+   Loading / 空白
+══════════════════════════════════════ */
+.state-box {
+  text-align : center;
+  padding    : 80px 20px;
+  color      : var(--sub);
+  font-family: 'DM Sans', sans-serif;
+}
+.state-icon  { font-size: 48px; display: block; margin-bottom: 14px; }
+.state-text  { font-size: 14px; }
+.spinner {
+  width        : 36px;
+  height       : 36px;
+  border       : 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation    : spin .8s linear infinite;
+  margin       : 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══════════════════════════════════════
+   Lightbox
+══════════════════════════════════════ */
+.lb {
+  display   : none;
+  position  : fixed;
+  inset     : 0;
+  z-index   : 9999;
+  background: rgba(10,8,6,.93);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding   : 16px;
+  backdrop-filter: blur(4px);
+}
+.lb.open { display: flex; }
+
+.lb-counter-bar {
+  position : absolute;
+  top      : 18px;
+  left     : 50%;
+  transform: translateX(-50%);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color    : rgba(255,255,255,.45);
+  letter-spacing: .08em;
+  white-space: nowrap;
+}
+
+.lb-stage {
+  position  : relative;
+  max-width : 92vw;
+  max-height: 80vh;
+  display   : flex;
+  align-items: center;
+  justify-content: center;
+}
+.lb-img {
+  max-width : 92vw;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 20px 80px rgba(0,0,0,.7);
+  transition: opacity .25s;
+}
+.lb-spin {
+  position    : absolute;
+  width       : 32px;
+  height      : 32px;
+  border      : 2.5px solid rgba(255,255,255,.15);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation   : spin .7s linear infinite;
+  display     : none;
+}
+.lb-spin.show { display: block; }
+
+.lb-info {
+  display   : flex;
+  align-items: center;
+  gap       : 14px;
+  margin-top: 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size : 12px;
+  color     : rgba(255,255,255,.5);
+  flex-wrap : wrap;
+  justify-content: center;
+}
+.lb-name { color: rgba(255,255,255,.8); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-link { color: var(--accent); text-decoration: none; }
+.lb-link:hover { text-decoration: underline; }
+
+.lb-btn {
+  position      : fixed;
+  background    : rgba(255,255,255,.1);
+  border        : none;
+  color         : #fff;
+  border-radius : 50%;
+  cursor        : pointer;
+  display       : flex;
+  align-items   : center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  transition    : background .18s, transform .18s;
+}
+.lb-btn:hover { background: rgba(255,255,255,.22); transform: scale(1.08); }
+.lb-close { top: 16px; right: 16px; width: 40px; height: 40px; font-size: 18px; }
+.lb-prev  { left: 14px; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; font-size: 26px; }
+.lb-next  { right: 14px; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; font-size: 26px; }
+.lb-prev:hover { transform: translateY(-50%) scale(1.08); }
+.lb-next:hover { transform: translateY(-50%) scale(1.08); }
+
+/* ══════════════════════════════════════
+   頁尾
+══════════════════════════════════════ */
+.site-footer {
+  border-top : 1px solid var(--border);
+  text-align : center;
+  padding    : 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size  : 11px;
+  color      : var(--sub);
+  letter-spacing: .06em;
+}
+
+/* ══════════════════════════════════════
+   RWD
+══════════════════════════════════════ */
+@media (max-width: 860px) { :root { --cols: 3; } }
+@media (max-width: 580px) {
+  :root { --cols: 2; }
+  .site-nav { padding: 0 14px; }
+  .nav-brand { font-size: 15px; }
+  .hero-title { font-size: 32px; }
+}
+@media (max-width: 360px) { :root { --cols: 1; } }
+</style>
+</head>
+<body data-theme="light">
+
+<!-- ── 頂部導覽 ── -->
+<nav class="site-nav">
+  <div class="nav-brand">關西國小 <span>&</span> 相簿</div>
+  <div class="nav-btns">
+    <button class="nav-btn active" id="viewMasonry" onclick="setView('masonry')">瀑布</button>
+    <button class="nav-btn"        id="viewGrid"    onclick="setView('grid')">方格</button>
+    <button class="nav-btn"        id="viewEdit"    onclick="setView('editorial')">雜誌</button>
+    <button class="nav-icon-btn"   id="btnTheme"    onclick="toggleTheme()" title="切換深淺色">☀</button>
+  </div>
+</nav>
+
+<!-- ── 刊頭 ── -->
+<header class="site-hero">
+  <div class="hero-eyebrow">Guanxi Elementary School</div>
+  <h1 class="hero-title">校園 <em>生活</em><br>影像紀錄</h1>
+  <p class="hero-desc">記錄每一個珍貴的校園時光，留下共同的回憶。</p>
+  <div class="hero-rule">Photo Gallery</div>
+</header>
+
+<!-- ── 相簿分類 Tab ── -->
+<div class="album-tabs" id="albumTabs">
+  <!-- 由 JS 動態生成 -->
+</div>
+
+<!-- ── 工具列 ── -->
+<div class="toolbar">
+  <div class="search-box">
+    <input type="search" id="searchInput" placeholder="搜尋相片名稱…" oninput="filterPhotos(this.value)">
+    <span class="search-icon">⌕</span>
+  </div>
+  <span class="tool-count" id="toolCount">—</span>
+</div>
+
+<!-- ── 相片區 ── -->
+<main class="gallery-wrap">
+  <div class="state-box" id="stateBox">
+    <div class="spinner"></div>
+    <div class="state-text">相簿載入中…</div>
+  </div>
+  <div id="galleryContainer"></div>
+</main>
+
+<!-- ── 頁尾 ── -->
+<footer class="site-footer">
+  Vincent Wang © Powered By Claude &nbsp;·&nbsp; 關西國小
+</footer>
+
+<!-- ── Lightbox ── -->
+<div class="lb" id="lb">
+  <button class="lb-btn lb-close" onclick="closeLb()">✕</button>
+  <button class="lb-btn lb-prev"  onclick="moveLb(-1)">‹</button>
+  <div class="lb-counter-bar" id="lbCounter"></div>
+  <div class="lb-stage">
+    <div class="lb-spin" id="lbSpin"></div>
+    <img class="lb-img" id="lbImg" src="" alt="">
+  </div>
+  <div class="lb-info">
+    <span class="lb-name" id="lbName"></span>
+    <a class="lb-link" id="lbLink" href="#" target="_blank">↗ Drive 原檔</a>
+  </div>
+  <button class="lb-btn lb-next" onclick="moveLb(1)">›</button>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// ★★★ 設定區（修改這裡）★★★
+// ══════════════════════════════════════════════
+const CONFIG = {
+  // 每個物件是一個相簿分類
+  // name     : 顯示名稱
+  // folderId : Google Drive 資料夾 ID
+  // gasUrl   : 對應的 GAS Web App URL
+  albums: [
+    {
+      name    : '操場',
+      folderId: '1TbttQCpKiSWp2OT_TOhfh-Fb-Zi0K_t3',
+      gasUrl  : 'https://script.google.com/macros/s/AKfycbx1D8WYnJmR1pvRgIjooVujQz2-w-l-noGTehwbcs6fM50d5f9LjdIbEUDDTpG6dC0W/exec'
+    },
+    {
+      name    : '教室',
+      folderId: 'YOUR_FOLDER_ID_2',
+      gasUrl  : 'https://script.google.com/macros/s/YOUR_DEPLOY_ID_2/exec'
+    },
+    {
+      name    : '活動',
+      folderId: 'YOUR_FOLDER_ID_3',
+      gasUrl  : 'https://script.google.com/macros/s/YOUR_DEPLOY_ID_3/exec'
+    }
+    // 可以繼續新增...
+  ],
+  limit : 300,  // 每個相簿最多載入幾張
+  cols  : 3     // 預設欄數
+};
+// ══════════════════════════════════════════════
+
+// ── 狀態 ──
+let allPhotos   = [];
+let displayed   = [];
+let curView     = 'masonry';
+let curAlbum    = 0;
+let lbIdx       = 0;
+const cache     = {};   // folderId → photos 快取
+
+// ── 初始化 ────────────────────────────────────
+(function init() {
+  buildTabs();
+  document.documentElement.style.setProperty('--cols', CONFIG.cols);
+  loadAlbum(0);
+})();
+
+// ── 建立 Tab ──────────────────────────────────
+function buildTabs() {
+  const wrap = document.getElementById('albumTabs');
+  if (CONFIG.albums.length <= 1) { wrap.style.display = 'none'; return; }
+  wrap.innerHTML = CONFIG.albums.map((a, i) =>
+    `<button class="album-tab${i === 0 ? ' active' : ''}" onclick="switchAlbum(${i})">${esc(a.name)}</button>`
+  ).join('');
+}
+
+// ── 切換相簿 ──────────────────────────────────
+function switchAlbum(idx) {
+  curAlbum = idx;
+  document.querySelectorAll('.album-tab').forEach((el, i) =>
+    el.classList.toggle('active', i === idx));
+  document.getElementById('searchInput').value = '';
+  loadAlbum(idx);
+}
+
+// ── 載入相片 ──────────────────────────────────
+function loadAlbum(idx) {
+  const album = CONFIG.albums[idx];
+  if (!album) return;
+
+  // 快取命中
+  if (cache[album.folderId]) {
+    allPhotos = cache[album.folderId];
+    displayed = [...allPhotos];
+    render();
+    return;
+  }
+
+  showState('loading');
+
+  const url = `${album.gasUrl}?action=json&folderId=${encodeURIComponent(album.folderId)}&limit=${CONFIG.limit}`;
+
+  fetch(url)
+    .then(res => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .then(photos => {
+      if (!Array.isArray(photos)) throw new Error('Invalid response');
+      cache[album.folderId] = photos;
+      allPhotos = photos;
+      displayed = [...allPhotos];
+      render();
+    })
+    .catch(err => {
+      showState('error', '載入失敗：' + err.message);
+    });
+}
+
+// ── 渲染 ──────────────────────────────────────
+function render() {
+  hideState();
+  document.getElementById('toolCount').textContent = displayed.length + ' 張';
+
+  const container = document.getElementById('galleryContainer');
+
+  if (!displayed.length) {
+    container.innerHTML = '';
+    showState('empty');
+    return;
+  }
+
+  if (curView === 'masonry') {
+    container.innerHTML =
+      `<div class="gallery-masonry">` + displayed.map(cardHTML).join('') + `</div>`;
+  } else if (curView === 'grid') {
+    container.innerHTML =
+      `<div class="gallery-grid">` + displayed.map(cardHTML).join('') + `</div>`;
+  } else {
+    // Editorial：第一張大，其餘網格
+    const [hero, ...rest] = displayed;
+    container.innerHTML =
+      `<div class="gallery-editorial">` +
+        cardHTML(hero, 0) +
+        (rest.length
+          ? `<div class="rest-grid">` + rest.map((p, i) => cardHTML(p, i + 1)).join('') + `</div>`
+          : '') +
+      `</div>`;
+  }
+
+  // 動畫延遲
+  container.querySelectorAll('.photo-card').forEach((el, i) => {
+    el.style.animationDelay = Math.min(i * 40, 600) + 'ms';
+  });
+
+  lazyLoad();
+}
+
+// ── 卡片 HTML ─────────────────────────────────
+function cardHTML(p, i) {
+  const idx = allPhotos.indexOf(p);
+  return `<div class="photo-card" onclick="openLb(${idx})">
+    <img class="lazy" data-src="${p.thumbnailUrl}" alt="${esc(p.name)}">
+    <div class="card-overlay">
+      <div class="card-name">${esc(p.name)}</div>
+      <div class="card-date">${fmtDate(p.createdDate)}</div>
+    </div>
+  </div>`;
+}
+
+// ── Lazy Load ─────────────────────────────────
+function lazyLoad() {
+  const imgs = document.querySelectorAll('img.lazy');
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        const img = e.target;
+        if (img.dataset.src) {
+          img.src = img.dataset.src;
+          img.onload = () => img.classList.add('loaded');
+          delete img.dataset.src;
+        }
+        io.unobserve(img);
+      });
+    }, { rootMargin: '180px' });
+    imgs.forEach(img => io.observe(img));
+  } else {
+    imgs.forEach(img => { img.src = img.dataset.src; img.classList.add('loaded'); });
+  }
+}
+
+// ── 搜尋 ──────────────────────────────────────
+function filterPhotos(q) {
+  q = q.trim().toLowerCase();
+  displayed = q ? allPhotos.filter(p => p.name.toLowerCase().includes(q)) : [...allPhotos];
+  render();
+}
+
+// ── 切換版型 ──────────────────────────────────
+function setView(v) {
+  curView = v;
+  ['Masonry','Grid','Edit'].forEach(name => {
+    const btn = document.getElementById('view' + name);
+    if (btn) btn.classList.toggle('active', v === name.toLowerCase() || (name === 'Edit' && v === 'editorial'));
+  });
+  render();
+}
+
+// ── 深淺色切換 ────────────────────────────────
+function toggleTheme() {
+  const isDark = document.body.dataset.theme === 'dark';
+  document.body.dataset.theme = isDark ? 'light' : 'dark';
+  document.getElementById('btnTheme').textContent = isDark ? '☀' : '☾';
+}
+
+// ── 狀態顯示 ──────────────────────────────────
+function showState(type, msg) {
+  const box = document.getElementById('stateBox');
+  document.getElementById('galleryContainer').innerHTML = '';
+  document.getElementById('toolCount').textContent = '—';
+
+  if (type === 'loading') {
+    box.innerHTML = '<div class="spinner"></div><div class="state-text">相簿載入中…</div>';
+  } else if (type === 'empty') {
+    box.innerHTML = '<span class="state-icon">🖼️</span><div class="state-text">此相簿目前沒有相片</div>';
+  } else {
+    box.innerHTML = '<span class="state-icon">⚠️</span><div class="state-text">' + esc(msg || '發生錯誤') + '</div>';
+  }
+  box.style.display = 'block';
+}
+
+function hideState() {
+  document.getElementById('stateBox').style.display = 'none';
+}
+
+// ── Lightbox ──────────────────────────────────
+function openLb(idx) {
+  lbIdx = idx;
+  updateLb();
+  document.getElementById('lb').classList.add('open');
+  document.addEventListener('keydown', onKey);
+}
+
+function updateLb() {
+  const p   = allPhotos[lbIdx];
+  const img = document.getElementById('lbImg');
+  const sp  = document.getElementById('lbSpin');
+  img.style.opacity = '0';
+  sp.classList.add('show');
+  img.onload = img.onerror = () => { sp.classList.remove('show'); img.style.opacity = '1'; };
+  img.src = p.thumbnailUrl;
+  img.alt = p.name;
+  document.getElementById('lbCounter').textContent = (lbIdx + 1) + ' / ' + allPhotos.length;
+  document.getElementById('lbName').textContent    = p.name;
+  document.getElementById('lbLink').href           = p.fullUrl;
+}
+
+function closeLb() {
+  document.getElementById('lb').classList.remove('open');
+  document.removeEventListener('keydown', onKey);
+}
+
+function moveLb(d) {
+  lbIdx = (lbIdx + d + allPhotos.length) % allPhotos.length;
+  updateLb();
+}
+
+function onKey(e) {
+  if (e.key === 'ArrowLeft')  moveLb(-1);
+  if (e.key === 'ArrowRight') moveLb(1);
+  if (e.key === 'Escape')     closeLb();
+}
+
+document.getElementById('lb').addEventListener('click', function(e) {
+  if (e.target === this) closeLb();
+});
+
+let tx = 0;
+document.getElementById('lb').addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+document.getElementById('lb').addEventListener('touchend', e => {
+  if (Math.abs(tx - e.changedTouches[0].clientX) > 50)
+    moveLb(tx > e.changedTouches[0].clientX ? 1 : -1);
+});
+
+// ── 工具 ──────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
+}
+</script>
+</body>
+</html>
