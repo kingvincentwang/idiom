@@ -618,7 +618,6 @@ function loadAlbum(idx) {
   const album = CONFIG.albums[idx];
   if (!album) return;
 
-  // 快取命中
   if (cache[album.folderId]) {
     allPhotos = cache[album.folderId];
     displayed = [...allPhotos];
@@ -628,23 +627,43 @@ function loadAlbum(idx) {
 
   showState('loading');
 
-  const url = `${album.gasUrl}?action=json&folderId=${encodeURIComponent(album.folderId)}&limit=${CONFIG.limit}`;
-
-  fetch(url)
-    .then(res => {
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      return res.json();
-    })
-    .then(photos => {
-      if (!Array.isArray(photos)) throw new Error('Invalid response');
+  // ★ 改用 JSONP，繞過 CORS
+  fetchJSONP(
+    `${album.gasUrl}?action=json&folderId=${encodeURIComponent(album.folderId)}&limit=${CONFIG.limit}`,
+    function(photos) {
+      if (!Array.isArray(photos)) {
+        showState('error', '資料格式錯誤');
+        return;
+      }
       cache[album.folderId] = photos;
       allPhotos = photos;
       displayed = [...allPhotos];
       render();
-    })
-    .catch(err => {
-      showState('error', '載入失敗：' + err.message);
-    });
+    },
+    function(err) {
+      showState('error', '載入失敗，請確認 GAS 網址是否正確');
+    }
+  );
+}
+
+// ★ 加這個 JSONP 函式
+function fetchJSONP(url, onSuccess, onError) {
+  const cbName = 'jsonp_cb_' + Date.now();
+
+  window[cbName] = function(data) {
+    delete window[cbName];
+    document.head.removeChild(script);
+    onSuccess(data);
+  };
+
+  const script    = document.createElement('script');
+  script.src      = url + '&callback=' + cbName;
+  script.onerror  = function() {
+    delete window[cbName];
+    document.head.removeChild(script);
+    if (onError) onError();
+  };
+  document.head.appendChild(script);
 }
 
 // ── 渲染 ──────────────────────────────────────
