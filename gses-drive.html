@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Apps Script 自動化雲端硬碟簡報</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            background: linear-gradient(135deg, #0b132b, #1c2541, #3a506b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-attachment: fixed;
+            color: #ffffff;
+        }
+
+        /* 背景微光球，營造玻璃折射深度感 */
+        .glow-sphere {
+            position: absolute;
+            background: linear-gradient(135deg, #00f2fe, #4facfe);
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.25;
+        }
+        .sphere-1 { width: 500px; height: 500px; top: -100px; left: -100px; }
+        .sphere-2 { width: 600px; height: 600px; bottom: -150px; right: -150px; }
+
+        /* 簡報主容器 */
+        .presentation-container {
+            width: 95vw;
+            max-width: 1280px;
+            height: 85vh;
+            max-height: 800px;
+            display: flex;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+
+        /* 左側：講師專家固定欄 */
+        .presenter-panel {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.03);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px 25px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .presenter-title h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #00f2fe, #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .presenter-title p {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            letter-spacing: 1px;
+        }
+
+        .presenter-avatar {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .presenter-avatar img {
+            max-height: 220px;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .presenter-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            position: relative;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #f59e0b;
+            box-shadow: 0 0 8px #f59e0b;
+            transition: background-color 0.5s ease, box-shadow 0.5s ease;
+        }
+
+        .status-dot.connected {
+            background-color: #10b981;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        .status-dot.error {
+            background-color: #ef4444;
+            box-shadow: 0 0 8px #ef4444;
+        }
+
+        /* 精緻的音效切換按鈕 */
+        .sound-toggle-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #00f2fe;
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-left: auto;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .sound-toggle-btn:hover {
+            background: rgba(0, 242, 254, 0.15);
+            border-color: #00f2fe;
+            transform: scale(1.05);
+        }
+
+        .presenter-badge {
+            background: rgba(0, 242, 254, 0.15);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #00f2fe;
+        }
+
+        /* 右側：內容與切換控制 */
+        .content-panel {
+            flex: 1;
+            padding: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        /* 投影片舞台 - 啟用3D空間透視 */
+        .slide-stage {
+            flex: 1;
+            position: relative;
+            perspective: 1200px; /* 3D 空間視野距離 */
+            overflow: hidden;    /* 隱藏超出邊界的3D旋轉卡片 */
+        }
+
+        /* 3D 轉場特效投影片樣式 */
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transform-style: preserve-3d;
+            
+            /* 超流暢3D貝茲曲線、模糊與縮放轉場 */
+            transition: 
+                transform 0.85s cubic-bezier(0.25, 1, 0.5, 1), 
+                opacity 0.85s cubic-bezier(0.25, 1, 0.5, 1), 
+                filter 0.85s ease,
+                visibility 0.85s;
+        }
+
+        /* 狀況一：位於左側（已被滑過或即將從左側退場的投影片） */
+        .slide.slide-left {
+            transform: translate3d(-100%, 0, -150px) rotateY(-35deg);
+            opacity: 0;
+            visibility: hidden;
+            filter: blur(12px);
+        }
+
+        /* 狀況二：位於中央（當前啟動中的投影片） */
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translate3d(0, 0, 0) rotateY(0deg);
+            filter: blur(0px);
+        }
+
+        /* 狀況三：位於右側（尚未展示或即將從右側滑入的投影片） */
+        .slide.slide-right {
+            transform: translate3d(100%, 0, -150px) rotateY(35deg);
+            opacity: 0;
+            visibility: hidden;
+            filter: blur(12px);
+        }
+
+        .slide-num {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: rgba(0, 242, 254, 0.15);
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+
+        .slide h2 {
+            font-size: 2rem;
+            color: #00f2fe;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        .slide-content {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: #e2e8f0;
+        }
+
+        .slide-content ul {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .slide-content ul li {
+            margin-bottom: 12px;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .slide-content ul li::before {
+            content: "✦";
+            position: absolute;
+            left: 0;
+            color: #00f2fe;
+        }
+
+        /* 程式碼展示塊 */
+        .code-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 4px solid #00f2fe;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            color: #a7f3d0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            margin-top: 15px;
+        }
+
+        /* --- 互動測驗/投票專用樣式 --- */
+        .quiz-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .quiz-option {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 14px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .quiz-option:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(0, 242, 254, 0.5);
+        }
+
+        .quiz-option.selected {
+            background: rgba(0, 242, 254, 0.15);
+            border-color: #00f2fe;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+        }
+
+        .option-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .quiz-option.selected .option-dot {
+            border-color: #00f2fe;
+            background-color: #00f2fe;
+        }
+
+        .option-dot::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #0b132b;
+            display: none;
+        }
+
+        .quiz-option.selected .option-dot::after {
+            display: block;
+        }
+
+        .vote-submit-btn {
+            align-self: flex-start;
+            background: linear-gradient(90deg, #00f2fe, #4facfe);
+            color: #0b132b;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+            margin-top: 10px;
+        }
+
+        .vote-submit-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 242, 254, 0.5);
+        }
+
+        .vote-submit-btn:disabled {
+            background: #475569;
+            color: #94a3b8;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* 即時統計看板樣式 */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-top: 10px;
+        }
+
+        .dashboard-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .dashboard-box.full-width {
+            grid-column: span 2;
+        }
+
+        .dashboard-box h3 {
+            font-size: 1.1rem;
+            color: #00f2fe;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .chart-row {
+            margin-bottom: 12px;
+        }
+
+        .chart-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            margin-bottom: 4px;
+        }
+
+        .chart-bar-bg {
+            background: rgba(255, 255, 255, 0.08);
+            height: 10px;
+            border-radius: 50px;
+            overflow: hidden;
+        }
+
+        .chart-bar-fill {
+            background: linear-gradient(90deg, #00f2fe, #0072ff);
+            height: 100%;
+            width: 0%;
+            border-radius: 50px;
+            transition: width 1s cubic-bezier(0.1, 0.8, 0.25, 1);
+        }
+
+        .stats-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 242, 254, 0.1);
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin-top: 10px;
+            font-size: 0.95rem;
+        }
+
+        .stats-highlight {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #00f2fe;
+        }
+
+        /* 控制列 */
+        .controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 25px;
+            margin-top: 15px;
+        }
+
+        .progress-indicator {
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: #00f2fe;
+            color: #0b132b;
+            border-color: #00f2fe;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+        }
+
+        .keyboard-hint {
+            position: absolute;
+            bottom: 15px;
+            right: 40px;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.3);
+            pointer-events: none;
+        }
+
+        .toast {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(16, 185, 129, 0.9);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            color: white;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+        .toast.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glow-sphere sphere-1"></div>
+    <div class="glow-sphere sphere-2"></div>
+
+    <div class="presentation-container">
+        
+        <div class="presenter-panel">
+            <div class="presenter-title">
+                <h1>Google Drive</h1>
+                <p>GAS AUTOMATION GUIDE</p>
+            </div>
+            
+            <div class="presenter-avatar">
+                <img src="ip7.png" alt="Google 雲端講師">
+            </div>
+            
+            <div class="presenter-status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">正在連接資料庫...</span>
+                <!-- 音效啟動/靜音開關 -->
+                <button class="sound-toggle-btn" id="soundToggleBtn">🔊 音效開</button>
+            </div>
+            
+            <div class="presenter-badge">GAS 自動化專家</div>
+        </div>
+
+        <div class="content-panel">
+            <div class="slide-stage">
+                
+                <!-- Slide 0: 封面 -->
+                <div class="slide active">
+                    <div class="slide-num">INTRO</div>
+                    <h2>自動化 Google Drive 操作</h2>
+                    <div class="slide-content">
+                        <p style="font-size: 1.2rem; margin-bottom: 20px;">歡迎來到 Google Apps Script (GAS) 雲端自動化實戰簡報！</p>
+                        <p>本課程將帶領您一步步解鎖雲端硬碟自動化技能。從基礎的檔案管理，到資料夾結構建立，甚至自動化排程同步，我們都將一一為您剖析。</p>
+                        <p style="margin-top: 15px; color: #00f2fe;">✦ 提示：可使用鍵盤左右方向鍵 [ ← ] [ → ] 或空白鍵進行切換。</p>
+                    </div>
+                </div>
+
+                <!-- Slide 1: GAS 認識度調查問卷 -->
+                <div class="slide">
+                    <div class="slide-num">SURVEY</div>
+                    <h2>課前互動：你對 GAS 的認識程度？</h2>
+                    <div class="slide-content">
+                        <p>在開始深入技術前，先讓我們了解一下現場的同學：</p>
+                        <div class="quiz-container">
+                            <div class="quiz-option" data-question="q0" data-val="A">
+                                <div class="option-dot"></div>
+                                <div class="option-text">1. 從未聽過 GAS</div>
+                            </div>
+                            <div class="quiz-option" data-question="q0" data-val="B">
+                                <div class="option-dot"></div>
+                                <div class="option-text">2. 有聽過，但沒使用過</div>
+                            </div>
+                            <div class="quiz-option" data-question="q0" data-val="C">
+                                <div class="option-dot"></div>
+                                <div class="option-text">3. 有用過了，基礎操作尚可</div>
+                            </div>
+                            <div class="quiz-option" data-question="q0" data-val="D">
+                                <div class="option-dot"></div>
+                                <div class="option-text">4. 很熟悉 GAS 的操作</div>
+                            </div>
+                            <button class="vote-submit-btn" id="submitQ0" disabled>送出調查</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 2: GAS 認識度統計看板 -->
+                <div class="slide">
+                    <div class="slide-num">STATS</div>
+                    <h2>GAS 認識度調查統計</h2>
+                    <div class="slide-content">
+                        <div class="dashboard-container">
+                            <div class="dashboard-box full-width">
+                                <h3>現場聽眾背景分布 (Real-time)</h3>
+                                <div class="chart-row">
+                                    <div class="chart-info"><span>1. 從未聽過 GAS</span><span id="v-q0a">0 票 (0%)</span></div>
+                                    <div class="chart-bar-bg"><div class="chart-bar-fill" id="bar-q0a"></div></div>
+                                </div>
+                                <div class="chart-row">
+                                    <div class="chart-info"><span>2. 有聽過，但沒使用過</span><span id="v-q0b">0 票 (0%)</span></div>
+                                    <div class="chart-bar-bg"><div class="chart-bar-fill" id="bar-q0b"></div></div>
+                                </div>
+                                <div class="chart-row">
+                                    <div class="chart-info"><span>3. 有用過了，基礎操作尚可</span><span id="v-q0c">0 票 (0%)</span></div>
+                                    <div class="chart-bar-bg"><div class="chart-bar-fill" id="bar-q0c"></div></div>
+                                </div>
+                                <div class="chart-row">
+                                    <div class="chart-info"><span>4. 很熟悉 GAS 的操作</span><span id="v-q0d">0 票 (0%)</span></div>
+                                    <div class="chart-bar-bg"><div class="chart-bar-fill" id="bar-q0d"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stats-summary" style="margin-top: 30px;">
+                            <div>✦ 數位專家正在計算現場大家的經驗值...</div>
+                            <div>累計填寫人數：<span class="stats-highlight" id="totalVotesQ0">0</span> 票</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 3: Drive API 基本概念 -->
+                <div class="slide">
+                    <div class="slide-num">01</div>
+                    <h2>Drive API 基本概念</h2>
+                    <div class="slide-content">
+                        <ul>
+                            <li><strong>簡單直覺：</strong>GAS 預設整合 <code>DriveApp</code> 服務，無需管理 API 金鑰。</li>
+                            <li><strong>授權流程：</strong>首次執行時系統將自動引導進行雲端硬碟讀寫授權。</li>
+                            <li><strong>迭代器模式：</strong>物件搜尋回傳 Iterator，需透過 <code>hasNext()</code> 與 <code>next()</code> 進行遍歷。</li>
+                        </ul>
+                        <div class="code-box">var folders = DriveApp.getFolders();
+while (folders.hasNext()) {
+  var folder = folders.next();
+}</div>
+                    </div>
+                </div>
+
+                <!-- Slide 4: 檔案管理 -->
+                <div class="slide">
+                    <div class="slide-num">02</div>
+                    <h2>檔案上傳、下載和管理</h2>
+                    <div class="slide-content">
+                        <ul>
+                            <li><strong>靈活建檔：</strong>支援純文字內容、Blob 二進位流等多元建立方式。</li>
+                            <li><strong>快速備份：</strong>使用 <code>makeCopy()</code> 迅速建立指定檔案的副本。</li>
+                            <li><strong>安全處置：</strong>利用 <code>setTrashed(true)</code> 將檔案先丟入雲端垃圾桶以防誤刪。</li>
+                        </ul>
+                        <div class="code-box">var file = DriveApp.createFile('標題.txt', '內容');
+file.makeCopy('備份_標題.txt');</div>
+                    </div>
+                </div>
+
+                <!-- Slide 5: 資料夾結構 -->
+                <div class="slide">
+                    <div class="slide-num">03</div>
+                    <h2>資料夾結構建立與維護</h2>
+                    <div class="slide-content">
+                        <ul>
+                            <li><strong>階層管理：</strong>能在指定節點下使用 <code>createFolder()</code> 建立子目錄。</li>
+                            <li><strong>重複防範：</strong>建立前先以搜尋語法比對名稱，避免產生無效重複路徑。</li>
+                            <li><strong>多層架構：</strong>一鍵自動產出如「企劃、設計、財報、會議」等標準專案目錄。</li>
+                        </ul>
+                        <div class="code-box">if (!folder.getFoldersByName("新專案").hasNext()) {
+  folder.createFolder("新專案");
+}</div>
+                    </div>
+                </div>
+
+                <!-- Slide 6: 權限管理 -->
+                <div class="slide">
+                    <div class="slide-num">04</div>
+                    <h2>雲端檔案權限管理</h2>
+                    <div class="slide-content">
+                        <ul>
+                            <li><strong>權限細分：</strong>區分為編輯者 <code>addEditor()</code> 與檢視者 <code>addViewer()</code>。</li>
+                            <li><strong>外部共享：</strong>可動態修改存取級別（如：任何知道連結的人皆可檢視）。</li>
+                            <li><strong>安全回收：</strong>利用 <code>removeEditor()</code> 收回不必要的權限。</li>
+                        </ul>
+                        <div class="code-box">file.setSharing(
+  DriveApp.Access.ANYONE_WITH_LINK, 
+  DriveApp.Permission.VIEW
+);</div>
+                    </div>
+                </div>
+
+                <!-- Slide 7: 搜尋與篩選 -->
+                <div class="slide">
+                    <div class="slide-num">05</div>
+                    <h2>進階檔案搜尋和篩選</h2>
+                    <div class="slide-content">
+                        <ul>
+                            <li><strong>Query 語法：</strong>支援類似 Gmail 搜尋箱的條件式字串篩選。</li>
+                            <li><strong>精確篩選：</strong>支援檔名、MimeType 以及是否已移至垃圾桶等條件。</li>
+                        </ul>
+                        <div class="code-box">var query = "title contains '發票' and mimeType = 'application/pdf'";
+var files = DriveApp.searchFiles(query);</div>
+                    </div>
+                </div>
+
+                <!-- Slide 8: 備份與同步 -->
+                <div class="slide">
+                    <div class="slide-num">06</div>
+                    <h2>自動化備份與同步</h2>
+                    <div class="slide-content">
+                        <ul>
+                            <li><strong>排程複製：</strong>將指定資料夾內容定時備份至安全的備份區。</li>
+                            <li><strong>防重機制：</strong>複製前比對目標區，不重複備份相同檔案。</li>
+                            <li><strong>無痛搬移：</strong>使用 <code>moveTo()</code> 搬移檔案至特定資料夾。</li>
+                        </ul>
+                        <div class="code-box">file.moveTo(targetFolder);</div>
+                    </div>
+                </div>
+
+                <!-- Slide 9: 實戰歸檔 -->
+                <div class="slide">
+                    <div class="slide-num">07</div>
+                    <h2>實際應用：收件箱自動歸檔</h2>
+                    <div class="slide-content">
+                        <ul>
+                            <li><strong>情境模擬：</strong>自動化排程每日深夜掃描不分類收集箱。</li>
+                            <li><strong>年月歸檔：</strong>依據「建立時間」動態歸檔至如「2026-05」的子資料夾。</li>
+                            <li><strong>完全自動：</strong>設定「時間驅動觸發條件」，完成無人值守自動化。</li>
+                        </ul>
+                        <div class="code-box">var year = file.getDateCreated().getFullYear();
+var month = file.getDateCreated().getMonth() + 1;</div>
+                    </div>
+                </div>
+
+                <!-- Slide 10: 互動問卷 1 -->
+                <div class="slide">
+                    <div class="slide-num">QA-1</div>
+                    <h2>即時問卷：你最常遇到的雲端硬碟痛點？</h2>
+                    <div class="slide-content">
+                        <p>請選擇您的真實痛點，您與現場聽眾的選擇將即時同步於大螢幕：</p>
+                        <div class="quiz-container">
+                            <div class="quiz-option" data-question="q1" data-val="A">
+                                <div class="option-dot"></div>
+                                <div class="option-text">A. 手動搬移、整理檔案花費太多時間</div>
+                            </div>
+                            <div class="quiz-option" data-question="q1" data-val="B">
+                                <div class="option-dot"></div>
+                                <div class="option-text">B. 權限設定太複雜，常外洩或開錯權限</div>
+                            </div>
+                            <div class="quiz-option" data-question="q1" data-val="C">
+                                <div class="option-dot"></div>
+                                <div class="option-text">C. 結構混亂，團隊成員找不到檔案</div>
+                            </div>
+                            <div class="quiz-option" data-question="q1" data-val="D">
+                                <div class="option-dot"></div>
+                                <div class="option-text">D. 缺乏排程備份，擔心檔案損毀遺失</div>
+                            </div>
+                            <button class="vote-submit-btn" id="submitQ1" disabled>送出投票</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 11: 互動問卷 2 -->
+                <div class="slide">
+                    <div class="slide-num">QA-2</div>
+                    <h2>即時問卷：聽完後最想實作哪一項自動化？</h2>
+                    <div class="slide-content">
+                        <p>選出你迫不及待想要寫成程式碼的功能：</p>
+                        <div class="quiz-container">
+                            <div class="quiz-option" data-question="q2" data-val="A">
+                                <div class="option-dot"></div>
+                                <div class="option-text">A. 收件箱時間自動分類（年、月自動歸檔）</div>
+                            </div>
+                            <div class="quiz-option" data-question="q2" data-val="B">
+                                <div class="option-dot"></div>
+                                <div class="option-text">B. 建立標準專案多層資料夾目錄</div>
+                            </div>
+                            <div class="quiz-option" data-question="q2" data-val="C">
+                                <div class="option-dot"></div>
+                                <div class="option-text">C. 自動權限管理（一鍵分享或收回權限）</div>
+                            </div>
+                            <div class="quiz-option" data-question="q2" data-val="D">
+                                <div class="option-dot"></div>
+                                <div class="option-text">D. 定期排程資料備份</div>
+                            </div>
+                            <button class="vote-submit-btn" id="submitQ2" disabled>送出投票</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 12: 結業即時反饋看板 -->
+                <div class="slide">
+                    <div class="slide-num">LIVE</div>
+                    <h2>課後反饋即時統計看板</h2>
+                    <div class="slide-content">
+                        <div class="dashboard-container">
+                            
+                            <!-- Q1 看板 -->
+                            <div class="dashboard-box">
+                                <h3>最常遇到的雲端硬碟痛點</h3>
+                                <div class="chart-row">
+                                    <div class="chart-info"><span>A. 手動整理檔案太慢</span><span id="v-q1a">0 票 (0%)</span></div>
+                                    <div class="chart-bar-bg"><div class="chart-bar-fill" id="bar-q1a"></div></div>
+                                </div>
+                                <div class="chart-row">
+                                    <div class="chart-info"><span>B. 權限設定不安全</span><span id="v-q1b">0 票 (0%)</span></div>
+                                    <div class="chart-bar-bg"><div class="chart-bar-fill" id="bar-q1b"></div></div>
+                                </div>
+                                <div class="chart-row">
+                                    <div class="chart-info"><span>C. 結構混亂找不到</span><span id="v-q1c">0 票 (0%)</span></div>
+                                    <div class="chart-bar-bg"><div class="chart-bar-fill" id="bar-q1c"></div></div>
+                                </div>
+                                <div class="chart-row">
+                                    <div class="chart-info"><span>D. 缺乏自動化備份</span><span id="v-q1d">0 票 (0%)</span></div>
+                                    <div class="chart-bar-bg"><div class="chart-bar-fill" id="bar-q1d"></div></div>
+                                </div>
+                            </div>
+
+                            <!-- Q2 看板 -->
+                            <div class="dashboard-box">
+                                <h3>最想先嘗試實作的自動化</h3>
+                                <div class="chart-row">
+                                    <div class="chart-info"><span>A. 收件箱年月歸檔</span><span id="v-q2a">0 票 (0%)</span></div>
+                                    <div class="chart-bar-bg"><div class="chart-bar-fill" id="bar-q2a"></div></div>
+                                </div>
+                                <div class="chart-row">
+                                    <div class="chart-info"><span>B. 專案標準化結構</span><span id="v-q2b">0 票 (0%)</span></div>
+                                    <div class="chart-bar-bg"><div class="chart-bar-fill" id="bar-q2b"></div></div>
+                                </div>
+                                <div class="chart-row">
+                                    <div class="chart-info"><span>C. 自動權限分配</span><span id="v-q2c">0 票 (0%)</span></div>
+                                    <div class="chart-bar-bg"><div class="chart-bar-fill" id="bar-q2c"></div></div>
+                                </div>
+                                <div class="chart-row">
+                                    <div class="chart-info"><span>D. 定期備份與同步</span><span id="v-q2d">0 票 (0%)</span></div>
+                                    <div class="chart-bar-bg"><div class="chart-bar-fill" id="bar-q2d"></div></div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- 統計摘要 -->
+                        <div class="stats-summary">
+                            <div>✦ 謝謝大家的參與！即時問卷調查數據顯示如上</div>
+                            <div>結業累計填寫數：<span class="stats-highlight" id="totalVotes">0</span> 票</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 底部的控制列 -->
+            <div class="controls-bar">
+                <div class="progress-indicator" id="progressText">Slide 1 of 13</div>
+                <div class="nav-buttons">
+                    <button class="nav-btn" id="prevBtn">◀ 上一頁</button>
+                    <button class="nav-btn" id="nextBtn">下一頁 ▶</button>
+                </div>
+            </div>
+            <div class="keyboard-hint">⌨️ 左右鍵 / 空白鍵 切換</div>
+        </div>
+    </div>
+
+    <!-- 浮動通知訊息 -->
+    <div class="toast" id="toastMessage">同步成功！</div>
+
+    <!-- Firebase 模組載入與整合 -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, collection, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        const appId = 'gas-presentation-final';
+        
+        // TODO: 在此處貼上您的 Firebase 專案 Config。
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwooMJ0vsEkQTFJ7HDRg8i4ex0nEPa2Tk",
+            authDomain: "web-login-dd626.firebaseapp.com",
+            projectId: "web-login-dd626",
+            storageBucket: "web-login-dd626.appspot.com",
+            messagingSenderId: "128529685419",
+            appId: "1:128529685419:web:7dc95d7fd209bd877a90ee"
+        };
+
+        // --- 1. 安全降級初始化：防止未設定金鑰時阻斷控制代碼執行 ---
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        let selectedQ0 = null, selectedQ1 = null, selectedQ2 = null;
+        let myVote = { q0: null, q1: null, q2: null };
+
+        function showToast(message) {
+            const t = document.getElementById('toastMessage');
+            if (t) {
+                t.textContent = message; t.classList.add('show');
+                setTimeout(() => t.classList.remove('show'), 2500);
+            }
+        }
+
+        try {
+            const isConfigDefault = firebaseConfig.apiKey.includes("您的_API_KEY") || firebaseConfig.projectId.includes("您的_PROJECT_ID");
+            
+            if (!isConfigDefault) {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                
+                onAuthStateChanged(auth, user => {
+                    if (user) {
+                        currentUser = user;
+                        statusDot.className = 'status-dot connected';
+                        statusText.textContent = '雲端即時連線';
+                        startLiveListening();
+                    }
+                });
+
+                signInAnonymously(auth).catch((err) => {
+                    console.error("Auth Error:", err);
+                    statusDot.className = 'status-dot error';
+                    statusText.textContent = '認證失敗';
+                });
+            } else {
+                statusDot.className = 'status-dot error';
+                statusText.textContent = '未設定金鑰 (展示模式)';
+                console.warn("Firebase 未設定。簡報目前以無資料庫本機展示模式安全運行。");
+            }
+        } catch (e) {
+            console.error("Firebase Init Error:", e);
+            statusDot.className = 'status-dot error';
+            statusText.textContent = '連線出錯';
+        }
+
+        // --- 2. 實時統計監聽 (僅在 Firebase 成功連線時啟用) ---
+        function startLiveListening() {
+            if (!db || !currentUser) return;
+            const col = collection(db, 'artifacts', appId, 'public', 'data', 'votes');
+            onSnapshot(col, snap => {
+                let stats = {
+                    q0: { A:0, B:0, C:0, D:0, t:0 },
+                    q1: { A:0, B:0, C:0, D:0, t:0 },
+                    q2: { A:0, B:0, C:0, D:0, t:0 },
+                    count: 0
+                };
+                snap.forEach(d => {
+                    const data = d.data(); stats.count++;
+                    if(d.id === currentUser.uid) { myVote = data; restoreUI(); }
+                    ['q0','q1','q2'].forEach(q => {
+                        if(data[q] && stats[q][data[q]] !== undefined) { stats[q][data[q]]++; stats[q].t++; }
+                    });
+                });
+                updateUI(stats);
+            }, err => {
+                console.error("Snapshot error:", err);
+            });
+        }
+
+        function restoreUI() {
+            ['q0','q1','q2'].forEach(q => {
+                if(myVote[q]) {
+                    const opt = document.querySelector(`.quiz-option[data-question="${q}"][data-val="${myVote[q]}"]`);
+                    if(opt) {
+                        document.querySelectorAll(`.quiz-option[data-question="${q}"]`).forEach(o => o.classList.remove('selected'));
+                        opt.classList.add('selected');
+                        const btn = document.getElementById(`submit${q.toUpperCase()}`);
+                        if(btn) { btn.disabled = false; btn.textContent = '已更新'; }
+                    }
+                }
+            });
+        }
+
+        function updateUI(s) {
+            const elTotal = document.getElementById('totalVotes');
+            const elTotalQ0 = document.getElementById('totalVotesQ0');
+            if (elTotal) elTotal.textContent = s.count;
+            if (elTotalQ0) elTotalQ0.textContent = s.count;
+            
+            ['q0','q1','q2'].forEach(q => {
+                ['a','b','c','d'].forEach(v => {
+                    const val = s[q][v.toUpperCase()];
+                    const pct = s[q].t > 0 ? Math.round((val/s[q].t)*100) : 0;
+                    const vEl = document.getElementById(`v-${q}${v}`);
+                    const bEl = document.getElementById(`bar-${q}${v}`);
+                    if(vEl) vEl.textContent = `${val} 票 (${pct}%)`;
+                    if(bEl) bEl.style.width = pct + '%';
+                });
+            });
+        }
+
+        async function doVote(q, v) {
+            if(!db || !currentUser) {
+                showToast("展示模式下無法提交投票數據。");
+                return;
+            }
+            myVote[q] = v;
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'votes', currentUser.uid), myVote, {merge:true});
+                showToast("數據已更新至雲端看板");
+                playFeedbackSound(); // 投票成功的額外小反饋音效！
+            } catch(e) { 
+                showToast("請檢查 Firestore 規則設定"); 
+            }
+        }
+
+        // --- 3. 互動元件點擊與投票控制 ---
+        document.querySelectorAll('.quiz-option').forEach(opt => {
+            opt.addEventListener('click', function() {
+                const q = this.dataset.question;
+                document.querySelectorAll(`.quiz-option[data-question="${q}"]`).forEach(o => o.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                const btn = document.getElementById(`submit${q.toUpperCase()}`);
+                if (btn) btn.disabled = false;
+                
+                if(q === 'q0') selectedQ0 = this.dataset.val;
+                if(q === 'q1') selectedQ1 = this.dataset.val;
+                if(q === 'q2') selectedQ2 = this.dataset.val;
+                
+                playClickSound(); // 點選選項時的輕脆微點擊聲
+            });
+        });
+
+        // 安全地綁定點擊事件，避免 Null-pointer 異常
+        const submitQ0 = document.getElementById('submitQ0');
+        if (submitQ0) submitQ0.addEventListener('click', () => doVote('q0', selectedQ0));
+
+        const submitQ1 = document.getElementById('submitQ1');
+        if (submitQ1) submitQ1.addEventListener('click', () => doVote('q1', selectedQ1));
+
+        const submitQ2 = document.getElementById('submitQ2');
+        if (submitQ2) submitQ2.addEventListener('click', () => doVote('q2', selectedQ2));
+
+
+        // ==========================================
+        //  🔊 WEB AUDIO API 專業音效引擎 (動態即時合成)
+        // ==========================================
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        // 初始化 AudioContext (瀏覽器需要使用者互動才能解鎖)
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // 靜音控制
+        const soundToggleBtn = document.getElementById('soundToggleBtn');
+        if (soundToggleBtn) {
+            soundToggleBtn.addEventListener('click', () => {
+                soundEnabled = !soundEnabled;
+                initAudio();
+                if (soundEnabled) {
+                    soundToggleBtn.textContent = '🔊 音效開';
+                    soundToggleBtn.style.color = '#00f2fe';
+                    playFeedbackSound();
+                } else {
+                    soundToggleBtn.textContent = '🔇 靜音中';
+                    soundToggleBtn.style.color = '#94a3b8';
+                }
+            });
+        }
+
+        // 音效一：科技感風切聲 (用於投影片3D轉場)
+        function playTransitionSound() {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (!audioCtx) return;
+
+                const now = audioCtx.currentTime;
+                
+                // 1. 建立白噪音產生器 (用於風切基底)
+                const bufferSize = audioCtx.sampleRate * 0.4; // 0.4秒長度
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+
+                // 2. 建立動態低通濾波器 (讓風切聲有由粗變細的掃描感)
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.Q.setValueAtTime(5, now);
+                filter.frequency.setValueAtTime(100, now);
+                filter.frequency.exponentialRampToValueAtTime(1800, now + 0.15);
+                filter.frequency.exponentialRampToValueAtTime(100, now + 0.35);
+
+                // 3. 建立音量控制 (淡入淡出)
+                const gainNode = audioCtx.createGain();
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(0.08, now + 0.1); // 控制在適中舒適的音量
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+                // 連接節點
+                noise.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                // 播放與停止
+                noise.start(now);
+                noise.stop(now + 0.4);
+            } catch (e) {
+                console.warn("Play transition audio failed:", e);
+            }
+        }
+
+        // 音效二：清脆的按鈕點選聲
+        function playClickSound() {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (!audioCtx) return;
+
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(1500, now + 0.05);
+
+                gain.gain.setValueAtTime(0.04, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.06);
+            } catch (e) {}
+        }
+
+        // 音效三：投票成功、連線成功數據上傳音效 (雙和弦科技短音)
+        function playFeedbackSound() {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (!audioCtx) return;
+
+                const now = audioCtx.currentTime;
+                
+                // 第一個音
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.type = 'triangle';
+                osc1.frequency.setValueAtTime(523.25, now); // C5
+                gain1.gain.setValueAtTime(0.05, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.15);
+
+                // 第二個音 (稍微延遲 0.08 秒，更高音高)
+                setTimeout(() => {
+                    if (!soundEnabled || !audioCtx) return;
+                    const osc2 = audioCtx.createOscillator();
+                    const gain2 = audioCtx.createGain();
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5
+                    gain2.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                    osc2.connect(gain2);
+                    gain2.connect(audioCtx.destination);
+                    osc2.start();
+                    osc2.stop(audioCtx.currentTime + 0.2);
+                }, 80);
+
+            } catch (e) {}
+        }
+
+
+        // --- 4. 完美安全的簡報投影片控制 (含 3D 空間視差轉場、音效觸發、越界保護、預防空白鍵捲動) ---
+        const slides = document.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        let cur = 0;
+
+        function showSlide(n, playAudio = true) {
+            if (n < 0 || n >= slides.length) return; // 邊界阻擋越界
+            
+            // 觸發科技風切音效 (第一頁載入時不播放)
+            if (playAudio && n !== cur) {
+                playTransitionSound();
+            }
+
+            slides.forEach((s, i) => {
+                // 清空原有的 3D 定位 Class
+                s.classList.remove('active', 'slide-left', 'slide-right');
+                
+                if (i === n) {
+                    s.classList.add('active'); // 當前啟用頁，置中展示
+                } else if (i < n) {
+                    s.classList.add('slide-left'); // 前面的頁數，向左旋轉並推入景深
+                } else {
+                    s.classList.add('slide-right'); // 後面的頁數，向右旋轉並置於前景待命
+                }
+            });
+
+            if (prevBtn) prevBtn.disabled = n === 0; 
+            if (nextBtn) nextBtn.disabled = n === slides.length - 1;
+            
+            const progress = document.getElementById('progressText');
+            if (progress) progress.textContent = `Slide ${n + 1} of ${slides.length}`;
+            cur = n;
+        }
+
+        if (prevBtn) prevBtn.onclick = () => showSlide(cur - 1);
+        if (nextBtn) nextBtn.onclick = () => showSlide(cur + 1);
+
+        document.onkeydown = e => { 
+            if(e.key === 'ArrowRight' || e.key === ' ') { 
+                if (e.key === ' ') e.preventDefault(); // 防止空白鍵使整個網頁往下跳
+                showSlide(cur + 1); 
+            } 
+            if(e.key === 'ArrowLeft') { 
+                showSlide(cur - 1); 
+            } 
+        };
+
+        // 初始化顯示第一張 Slide，並建立 3D 初始位置 (首次不放聲音)
+        showSlide(0, false);
+    </script>
+</body>
+</html>
