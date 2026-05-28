@@ -194,7 +194,9 @@
             visibility: hidden;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;  /* ← 改為靠上對齊 */
+            padding-top: 20px;            /* ← 補上頂部間距 */
+            overflow-y: auto;             /* ← 允許垂直捲動 */
             transform-style: preserve-3d;
             
             /* 超流暢3D貝茲曲線、模糊與縮放轉場 */
@@ -286,14 +288,14 @@
         .quiz-container {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 8px;
             margin-top: 10px;
         }
 
         .quiz-option {
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 14px 20px;
+            padding: 10px 20px;
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
