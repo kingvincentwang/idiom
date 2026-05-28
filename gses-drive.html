@@ -584,7 +584,7 @@
                                 <div class="option-dot"></div>
                                 <div class="option-text">4. 很熟悉 GAS 的操作</div>
                             </div>
-                            <button class="vote-submit-btn" id="submitQ0" disabled>送出調查</button>
+                           
                         </div>
                     </div>
                 </div>
@@ -753,7 +753,7 @@ var month = file.getDateCreated().getMonth() + 1;</div>
                                 <div class="option-dot"></div>
                                 <div class="option-text">D. 缺乏排程備份，擔心檔案損毀遺失</div>
                             </div>
-                            <button class="vote-submit-btn" id="submitQ1" disabled>送出投票</button>
+                            
                         </div>
                     </div>
                 </div>
@@ -781,7 +781,7 @@ var month = file.getDateCreated().getMonth() + 1;</div>
                                 <div class="option-dot"></div>
                                 <div class="option-text">D. 定期排程資料備份</div>
                             </div>
-                            <button class="vote-submit-btn" id="submitQ2" disabled>送出投票</button>
+                            
                         </div>
                     </div>
                 </div>
@@ -1006,17 +1006,14 @@ var month = file.getDateCreated().getMonth() + 1;</div>
         document.querySelectorAll('.quiz-option').forEach(opt => {
             opt.addEventListener('click', function() {
                 const q = this.dataset.question;
+                const val = this.dataset.val;
+        
                 document.querySelectorAll(`.quiz-option[data-question="${q}"]`).forEach(o => o.classList.remove('selected'));
                 this.classList.add('selected');
-                
-                const btn = document.getElementById(`submit${q.toUpperCase()}`);
-                if (btn) btn.disabled = false;
-                
-                if(q === 'q0') selectedQ0 = this.dataset.val;
-                if(q === 'q1') selectedQ1 = this.dataset.val;
-                if(q === 'q2') selectedQ2 = this.dataset.val;
-                
-                playClickSound(); // 點選選項時的輕脆微點擊聲
+        
+                // 點選後立即寫入，不需要再按送出
+                doVote(q, val);
+                playClickSound();
             });
         });
 
