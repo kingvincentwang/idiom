@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firebase 點擊與調查統計器</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 客製化霓虹發光與背景動畫 */
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.6; filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.6)); }
+      50% { opacity: 1; filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.9)); }
+    }
+    .neon-pulse {
+      animation: pulse-glow 2s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-950 via-slate-950 to-black flex flex-col items-center py-12 px-4 font-sans text-blue-50">
+
+  <!-- 讀取遮罩 (Loading Screen) -->
+  <div id="loading-screen" class="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center transition-opacity duration-500">
+    <div class="text-xl text-cyan-400 font-semibold tracking-widest neon-pulse">
+      SYSTEM CONNECTING...
+    </div>
+  </div>
+
+  <!-- 主容器 -->
+  <div class="max-w-2xl w-full bg-slate-900/40 backdrop-blur-xl border border-blue-500/30 rounded-2xl shadow-[0_0_50px_-12px_rgba(59,130,246,0.5)] overflow-hidden p-6 sm:p-8">
+    
+    <!-- 標頭 -->
+    <header class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-2 drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]">
+        科技控制台：點擊與 GAS 調查
+      </h1>
+      <p class="text-blue-300/70 text-sm tracking-wide">
+        數據將即時同步至雲端資料庫 <span class="text-cyan-400 font-semibold">🧬 系統已啟用防灌水安全認證</span>
+      </p>
+      
+      <!-- 錯誤顯示區塊 (替代傳統 Alert) -->
+      <div id="error-container" class="hidden mt-3 p-3 bg-red-950/40 border border-red-500/40 rounded-lg text-red-400 text-sm">
+        <span id="error-message"></span>
+      </div>
+    </header>
+
+    <!-- GAS 調查區塊 -->
+    <section class="mb-10 bg-blue-950/30 border border-cyan-500/20 rounded-xl p-5 shadow-[inset_0_0_20px_rgba(59,130,246,0.1)] backdrop-blur-md">
+      <h2 class="text-xl font-semibold mb-4 text-cyan-300 border-b border-cyan-500/30 pb-2 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)] flex items-center justify-between">
+        <span class="flex items-center gap-2"><span>📊</span> 小調查：你對 GAS (Google Apps Script) 的了解？</span>
+        <span id="survey-status-badge" class="text-xs px-2 py-1 bg-cyan-500/20 text-cyan-300 rounded border border-cyan-400/30 font-mono">尚未投票</span>
+      </h2>
+      
+      <!-- 選項列表 -->
+      <div class="flex flex-col gap-3">
+        <!-- 選項 1 -->
+        <button id="gas-opt-1" class="survey-option relative w-full text-left p-4 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/60 shadow-sm transition-all overflow-hidden group focus:outline-none focus:ring-2 focus:ring-cyan-500/50 backdrop-blur-sm">
+          <div class="progress-bar absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-600/30 to-blue-600/30 transition-all duration-500 ease-out z-0 border-r border-cyan-400/30" style="width: 0%"></div>
+          <div class="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <span class="font-medium text-blue-100 tracking-wide flex items-center gap-2">
+              <span class="opt-marker text-xs px-1.5 py-0.5 rounded bg-white/10">1</span>
+              <span>從沒聽過，那是什麼碗糕</span>
+            </span>
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+              <span class="vote-count text-cyan-300 font-bold whitespace-nowrap drop-shadow-[0_0_5px_rgba(34,211,238,0.6)]">0 票</span>
+              <span class="vote-percent text-sm text-blue-300/80 w-12 text-right">0%</span>
+            </div>
+          </div>
+        </button>
+
+        <!-- 選項 2 -->
+        <button id="gas-opt-2" class="survey-option relative w-full text-left p-4 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/60 shadow-sm transition-all overflow-hidden group focus:outline-none focus:ring-2 focus:ring-cyan-500/50 backdrop-blur-sm">
+          <div class="progress-bar absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-600/30 to-blue-600/30 transition-all duration-500 ease-out z-0 border-r border-cyan-400/30" style="width: 0%"></div>
+          <div class="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <span class="font-medium text-blue-100 tracking-wide flex items-center gap-2">
+              <span class="opt-marker text-xs px-1.5 py-0.5 rounded bg-white/10">2</span>
+              <span>知道這個東西，但沒用過</span>
+            </span>
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+              <span class="vote-count text-cyan-300 font-bold whitespace-nowrap drop-shadow-[0_0_5px_rgba(34,211,238,0.6)]">0 票</span>
+              <span class="vote-percent text-sm text-blue-300/80 w-12 text-right">0%</span>
+            </div>
+          </div>
+        </button>
+
+        <!-- 選項 3 -->
+        <button id="gas-opt-3" class="survey-option relative w-full text-left p-4 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/60 shadow-sm transition-all overflow-hidden group focus:outline-none focus:ring-2 focus:ring-cyan-500/50 backdrop-blur-sm">
+          <div class="progress-bar absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-600/30 to-blue-600/30 transition-all duration-500 ease-out z-0 border-r border-cyan-400/30" style="width: 0%"></div>
+          <div class="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <span class="font-medium text-blue-100 tracking-wide flex items-center gap-2">
+              <span class="opt-marker text-xs px-1.5 py-0.5 rounded bg-white/10">3</span>
+              <span>有使用過，曾經布署過網頁</span>
+            </span>
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+              <span class="vote-count text-cyan-300 font-bold whitespace-nowrap drop-shadow-[0_0_5px_rgba(34,211,238,0.6)]">0 票</span>
+              <span class="vote-percent text-sm text-blue-300/80 w-12 text-right">0%</span>
+            </div>
+          </div>
+        </button>
+
+        <!-- 選項 4 -->
+        <button id="gas-opt-4" class="survey-option relative w-full text-left p-4 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/60 shadow-sm transition-all overflow-hidden group focus:outline-none focus:ring-2 focus:ring-cyan-500/50 backdrop-blur-sm">
+          <div class="progress-bar absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-600/30 to-blue-600/30 transition-all duration-500 ease-out z-0 border-r border-cyan-400/30" style="width: 0%"></div>
+          <div class="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <span class="font-medium text-blue-100 tracking-wide flex items-center gap-2">
+              <span class="opt-marker text-xs px-1.5 py-0.5 rounded bg-white/10">4</span>
+              <span>很常使用，且部署過很多專案</span>
+            </span>
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+              <span class="vote-count text-cyan-300 font-bold whitespace-nowrap drop-shadow-[0_0_5px_rgba(34,211,238,0.6)]">0 票</span>
+              <span class="vote-percent text-sm text-blue-300/80 w-12 text-right">0%</span>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      <div class="text-right mt-3 text-sm text-cyan-500/70 font-medium tracking-wide">
+        總投票數: <span id="total-gas-votes">0</span>
+      </div>
+    </section>
+
+    <!-- 統計資料顯示區塊 (按鈕次數) -->
+    <section class="mb-10">
+      <h2 class="text-xl font-semibold mb-4 text-cyan-300 border-b border-cyan-500/30 pb-2 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">
+        數字按鈕目前統計次數
+      </h2>
+      <div class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-3">
+        <!-- 1~9 的計數小卡 -->
+        <div id="card-1" class="stat-card flex flex-col items-center bg-white/5 border border-white/10 rounded-lg p-3 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-sm hover:bg-white/10 transition-colors">
+          <span class="text-xs text-blue-300/60 font-bold mb-1 tracking-widest">BTN_1</span>
+          <span id="stat-1" class="text-2xl font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">0</span>
+        </div>
+        <div id="card-2" class="stat-card flex flex-col items-center bg-white/5 border border-white/10 rounded-lg p-3 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-sm hover:bg-white/10 transition-colors">
+          <span class="text-xs text-blue-300/60 font-bold mb-1 tracking-widest">BTN_2</span>
+          <span id="stat-2" class="text-2xl font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">0</span>
+        </div>
+        <div id="card-3" class="stat-card flex flex-col items-center bg-white/5 border border-white/10 rounded-lg p-3 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-sm hover:bg-white/10 transition-colors">
+          <span class="text-xs text-blue-300/60 font-bold mb-1 tracking-widest">BTN_3</span>
+          <span id="stat-3" class="text-2xl font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">0</span>
+        </div>
+        <div id="card-4" class="stat-card flex flex-col items-center bg-white/5 border border-white/10 rounded-lg p-3 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-sm hover:bg-white/10 transition-colors">
+          <span class="text-xs text-blue-300/60 font-bold mb-1 tracking-widest">BTN_4</span>
+          <span id="stat-4" class="text-2xl font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">0</span>
+        </div>
+        <div id="card-5" class="stat-card flex flex-col items-center bg-white/5 border border-white/10 rounded-lg p-3 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-sm hover:bg-white/10 transition-colors">
+          <span class="text-xs text-blue-300/60 font-bold mb-1 tracking-widest">BTN_5</span>
+          <span id="stat-5" class="text-2xl font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">0</span>
+        </div>
+        <div id="card-6" class="stat-card flex flex-col items-center bg-white/5 border border-white/10 rounded-lg p-3 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-sm hover:bg-white/10 transition-colors">
+          <span class="text-xs text-blue-300/60 font-bold mb-1 tracking-widest">BTN_6</span>
+          <span id="stat-6" class="text-2xl font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">0</span>
+        </div>
+        <div id="card-7" class="stat-card flex flex-col items-center bg-white/5 border border-white/10 rounded-lg p-3 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-sm hover:bg-white/10 transition-colors">
+          <span class="text-xs text-blue-300/60 font-bold mb-1 tracking-widest">BTN_7</span>
+          <span id="stat-7" class="text-2xl font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">0</span>
+        </div>
+        <div id="card-8" class="stat-card flex flex-col items-center bg-white/5 border border-white/10 rounded-lg p-3 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-sm hover:bg-white/10 transition-colors">
+          <span class="text-xs text-blue-300/60 font-bold mb-1 tracking-widest">BTN_8</span>
+          <span id="stat-8" class="text-2xl font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">0</span>
+        </div>
+        <div id="card-9" class="stat-card flex flex-col items-center bg-white/5 border border-white/10 rounded-lg p-3 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-sm hover:bg-white/10 transition-colors">
+          <span class="text-xs text-blue-300/60 font-bold mb-1 tracking-widest">BTN_9</span>
+          <span id="stat-9" class="text-2xl font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 互動按鈕區塊 -->
+    <section>
+      <h2 class="text-xl font-semibold mb-4 text-cyan-300 border-b border-cyan-500/30 pb-2 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">
+        點擊測試區域 <span class="text-xs font-normal text-blue-300/60 font-mono ml-2">(每個按鈕限按乙次)</span>
+      </h2>
+      <div class="grid grid-cols-3 gap-4 sm:gap-6 w-full max-w-sm mx-auto">
+        <!-- 1~9 鍵盤按鈕 -->
+        <button id="btn-1" class="click-btn aspect-square flex items-center justify-center text-3xl font-bold text-cyan-100 bg-blue-600/20 hover:bg-cyan-500/30 active:bg-cyan-400/50 active:scale-95 border border-cyan-500/30 hover:border-cyan-400/80 rounded-xl shadow-[0_0_15px_rgba(34,211,238,0.1)] hover:shadow-[0_0_25px_rgba(34,211,238,0.3)] transition-all duration-200 ease-in-out select-none backdrop-blur-md">1</button>
+        <button id="btn-2" class="click-btn aspect-square flex items-center justify-center text-3xl font-bold text-cyan-100 bg-blue-600/20 hover:bg-cyan-500/30 active:bg-cyan-400/50 active:scale-95 border border-cyan-500/30 hover:border-cyan-400/80 rounded-xl shadow-[0_0_15px_rgba(34,211,238,0.1)] hover:shadow-[0_0_25px_rgba(34,211,238,0.3)] transition-all duration-200 ease-in-out select-none backdrop-blur-md">2</button>
+        <button id="btn-3" class="click-btn aspect-square flex items-center justify-center text-3xl font-bold text-cyan-100 bg-blue-600/20 hover:bg-cyan-500/30 active:bg-cyan-400/50 active:scale-95 border border-cyan-500/30 hover:border-cyan-400/80 rounded-xl shadow-[0_0_15px_rgba(34,211,238,0.1)] hover:shadow-[0_0_25px_rgba(34,211,238,0.3)] transition-all duration-200 ease-in-out select-none backdrop-blur-md">3</button>
+        <button id="btn-4" class="click-btn aspect-square flex items-center justify-center text-3xl font-bold text-cyan-100 bg-blue-600/20 hover:bg-cyan-500/30 active:bg-cyan-400/50 active:scale-95 border border-cyan-500/30 hover:border-cyan-400/80 rounded-xl shadow-[0_0_15px_rgba(34,211,238,0.1)] hover:shadow-[0_0_25px_rgba(34,211,238,0.3)] transition-all duration-200 ease-in-out select-none backdrop-blur-md">4</button>
+        <button id="btn-5" class="click-btn aspect-square flex items-center justify-center text-3xl font-bold text-cyan-100 bg-blue-600/20 hover:bg-cyan-500/30 active:bg-cyan-400/50 active:scale-95 border border-cyan-500/30 hover:border-cyan-400/80 rounded-xl shadow-[0_0_15px_rgba(34,211,238,0.1)] hover:shadow-[0_0_25px_rgba(34,211,238,0.3)] transition-all duration-200 ease-in-out select-none backdrop-blur-md">5</button>
+        <button id="btn-6" class="click-btn aspect-square flex items-center justify-center text-3xl font-bold text-cyan-100 bg-blue-600/20 hover:bg-cyan-500/30 active:bg-cyan-400/50 active:scale-95 border border-cyan-500/30 hover:border-cyan-400/80 rounded-xl shadow-[0_0_15px_rgba(34,211,238,0.1)] hover:shadow-[0_0_25px_rgba(34,211,238,0.3)] transition-all duration-200 ease-in-out select-none backdrop-blur-md">6</button>
+        <button id="btn-7" class="click-btn aspect-square flex items-center justify-center text-3xl font-bold text-cyan-100 bg-blue-600/20 hover:bg-cyan-500/30 active:bg-cyan-400/50 active:scale-95 border border-cyan-500/30 hover:border-cyan-400/80 rounded-xl shadow-[0_0_15px_rgba(34,211,238,0.1)] hover:shadow-[0_0_25px_rgba(34,211,238,0.3)] transition-all duration-200 ease-in-out select-none backdrop-blur-md">7</button>
+        <button id="btn-8" class="click-btn aspect-square flex items-center justify-center text-3xl font-bold text-cyan-100 bg-blue-600/20 hover:bg-cyan-500/30 active:bg-cyan-400/50 active:scale-95 border border-cyan-500/30 hover:border-cyan-400/80 rounded-xl shadow-[0_0_15px_rgba(34,211,238,0.1)] hover:shadow-[0_0_25px_rgba(34,211,238,0.3)] transition-all duration-200 ease-in-out select-none backdrop-blur-md">8</button>
+        <button id="btn-9" class="click-btn aspect-square flex items-center justify-center text-3xl font-bold text-cyan-100 bg-blue-600/20 hover:bg-cyan-500/30 active:bg-cyan-400/50 active:scale-95 border border-cyan-500/30 hover:border-cyan-400/80 rounded-xl shadow-[0_0_15px_rgba(34,211,238,0.1)] hover:shadow-[0_0_25px_rgba(34,211,238,0.3)] transition-all duration-200 ease-in-out select-none backdrop-blur-md">9</button>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Firebase 核心及 Firestore、Auth 模組 (ES module) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, onSnapshot, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // ==========================================
+    // 🛠️ 本地執行設定區 (Local Firebase Configuration)
+    // ==========================================
+    const localFirebaseConfig = {
+      apiKey: "AIzaSyBwooMJ0vsEkQTFJ7HDRg8i4ex0nEPa2Tk",
+	  authDomain: "web-login-dd626.firebaseapp.com",
+	  projectId: "web-login-dd626",
+	  storageBucket: "web-login-dd626.firebasestorage.app",
+	  messagingSenderId: "128529685419",
+	  appId: "1:128529685419:web:7dc95d7fd209bd877a90ee",
+    };
+
+    // 判斷邏輯：優先使用本平台的環境變數，否則使用您填寫的本地設定
+    const firebaseConfig = typeof __firebase_config !== 'undefined' 
+      ? JSON.parse(__firebase_config) 
+      : localFirebaseConfig;
+      
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+    // 初始化 Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // 全域統計狀態 (公用)
+    let counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+    let gasCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
+
+    // 個人點擊與投票歷史 (私有)
+    let currentUser = null;
+    let userHistory = {
+      votedGas: null,       // 紀錄投了哪一項 (null, 1, 2, 3, 4)
+      clickedButtons: []    // 紀錄已點擊過的按鈕陣列
+    };
+
+    // DOM 元素引用
+    const loadingScreen = document.getElementById('loading-screen');
+    const errorContainer = document.getElementById('error-container');
+    const errorMessage = document.getElementById('error-message');
+    const totalGasVotesText = document.getElementById('total-gas-votes');
+    const surveyStatusBadge = document.getElementById('survey-status-badge');
+
+    // 顯示錯誤訊息方法
+    function showError(msg) {
+      errorMessage.textContent = msg;
+      errorContainer.classList.remove('hidden');
+    }
+
+    // 1. Firebase 驗證程序 (必須為首要步驟)
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (err) {
+        console.error("驗證失敗:", err);
+        showError("安全驗證失敗。如果您是本地執行，請確保已在您的 Firebase 啟用「匿名登入 (Anonymous Auth)」並填入正確金鑰。");
+      }
+    };
+
+    initAuth();
+
+    // 監聽 Auth 狀態，並在登入後啟動 Firestore 連接
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        startDatabaseListeners();
+      } else {
+        currentUser = null;
+      }
+    });
+
+    // 2. 啟動 Firestore 即時監聽與初始化
+    function startDatabaseListeners() {
+      if (!currentUser) return;
+
+      // 按鈕次數文件路徑 (公用資料 - Rule 1)
+      const buttonDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'button_counts');
+      // GAS調查文件路徑 (公用資料 - Rule 1)
+      const gasDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'gas_survey');
+      // 用戶投票與點擊歷史紀錄文件路徑 (用戶私有資料 - Rule 1)
+      const userHistoryDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'history', 'choices');
+
+      let buttonsLoaded = false;
+      let surveyLoaded = false;
+      let historyLoaded = false;
+
+      // 檢查是否加載完成以關閉 Loading
+      const checkLoadingFinished = () => {
+        if (buttonsLoaded && surveyLoaded && historyLoaded) {
+          loadingScreen.classList.add('opacity-0');
+          setTimeout(() => {
+            loadingScreen.classList.add('hidden');
+          }, 500);
+        }
+      };
+
+      // 監聽公用按鈕點擊數
+      onSnapshot(buttonDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          counts = docSnap.data();
+        } else {
+          setDoc(buttonDocRef, counts);
+        }
+        updateButtonsUI();
+        buttonsLoaded = true;
+        checkLoadingFinished();
+      }, (err) => {
+        console.error("讀取按鈕數據失敗:", err);
+        showError("資料庫連線中斷。請確認您的 Firestore 規則已啟用。");
+        buttonsLoaded = true;
+        checkLoadingFinished();
+      });
+
+      // 監聽公用 GAS 調查結果
+      onSnapshot(gasDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          gasCounts = docSnap.data();
+        } else {
+          setDoc(gasDocRef, gasCounts);
+        }
+        updateSurveyUI();
+        surveyLoaded = true;
+        checkLoadingFinished();
+      }, (err) => {
+        console.error("讀取 GAS 調查失敗:", err);
+        surveyLoaded = true;
+        checkLoadingFinished();
+      });
+
+      // 監聽「個人歷史紀錄」，用以鎖定已操作過的按鈕與問卷 (防灌水核心)
+      onSnapshot(userHistoryDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          userHistory = docSnap.data();
+        } else {
+          // 初始化私有歷史檔案
+          setDoc(userHistoryDocRef, userHistory);
+        }
+        // 更新個人的按鈕及問卷可用狀態
+        applyAntiSpamLocks();
+        historyLoaded = true;
+        checkLoadingFinished();
+      }, (err) => {
+        console.error("讀取用戶私有歷史紀錄失敗:", err);
+        historyLoaded = true;
+        checkLoadingFinished();
+      });
+    }
+
+    // 3. UI 更新與防灌水鎖定機制
+    function updateButtonsUI() {
+      for (let i = 1; i <= 9; i++) {
+        const statEl = document.getElementById(`stat-${i}`);
+        if (statEl) {
+          statEl.textContent = counts[i] || 0;
+        }
+      }
+    }
+
+    function updateSurveyUI() {
+      const totalVotes = Object.values(gasCounts).reduce((a, b) => a + b, 0);
+      totalGasVotesText.textContent = totalVotes;
+
+      for (let i = 1; i <= 4; i++) {
+        const votes = gasCounts[i] || 0;
+        const percentage = totalVotes === 0 ? 0 : Math.round((votes / totalVotes) * 100);
+
+        const optBtn = document.getElementById(`gas-opt-${i}`);
+        if (optBtn) {
+          // 更新進度條
+          const progressBar = optBtn.querySelector('.progress-bar');
+          if (progressBar) {
+            progressBar.style.width = `${percentage}%`;
+          }
+          // 更新票數文字
+          const voteCountEl = optBtn.querySelector('.vote-count');
+          if (voteCountEl) {
+            voteCountEl.textContent = `${votes} 票`;
+          }
+          // 更新百分比
+          const votePercentEl = optBtn.querySelector('.vote-percent');
+          if (votePercentEl) {
+            votePercentEl.textContent = `${percentage}%`;
+          }
+        }
+      }
+    }
+
+    // 將歷史記錄套用到按鈕上進行防護
+    function applyAntiSpamLocks() {
+      // (A) 處理 1~9 數字按鈕
+      const clickedSet = new Set(userHistory.clickedButtons || []);
+      for (let i = 1; i <= 9; i++) {
+        const btn = document.getElementById(`btn-${i}`);
+        const card = document.getElementById(`card-${i}`);
+        if (btn) {
+          if (clickedSet.has(i)) {
+            // 已點過，套用「鎖定停用」特效
+            btn.disabled = true;
+            btn.classList.remove('bg-blue-600/20', 'hover:bg-cyan-500/30', 'active:bg-cyan-400/50', 'active:scale-95', 'hover:border-cyan-400/80');
+            btn.classList.add('bg-slate-900/50', 'text-slate-600', 'border-slate-800/80', 'cursor-not-allowed', 'opacity-40');
+            btn.innerHTML = `<span class="text-sm font-semibold text-slate-500">LOCKED</span>`;
+            
+            // 點擊計數小卡高亮提示
+            if (card) {
+              card.classList.add('border-cyan-500/40', 'bg-cyan-950/10');
+            }
+          } else {
+            // 未點過，保持功能正常
+            btn.disabled = false;
+            btn.classList.remove('bg-slate-900/50', 'text-slate-600', 'border-slate-800/80', 'cursor-not-allowed', 'opacity-40');
+            btn.classList.add('bg-blue-600/20', 'hover:bg-cyan-500/30', 'active:bg-cyan-400/50', 'active:scale-95', 'hover:border-cyan-400/80');
+            btn.innerHTML = `${i}`;
+          }
+        }
+      }
+
+      // (B) 處理 GAS 調查
+      const votedOption = userHistory.votedGas;
+      for (let i = 1; i <= 4; i++) {
+        const optBtn = document.getElementById(`gas-opt-${i}`);
+        const marker = optBtn ? optBtn.querySelector('.opt-marker') : null;
+        if (optBtn) {
+          if (votedOption !== undefined && votedOption !== null) {
+            // 使用者已投過票
+            optBtn.disabled = true;
+            optBtn.classList.remove('hover:border-cyan-400/60');
+            
+            if (i === votedOption) {
+              // 高亮使用者投的那一項
+              optBtn.classList.add('border-cyan-400/80', 'bg-cyan-950/20', 'shadow-[0_0_15px_rgba(34,211,238,0.15)]');
+              if (marker) {
+                marker.textContent = '✓';
+                marker.classList.add('bg-cyan-500', 'text-slate-950', 'font-bold');
+                marker.classList.remove('bg-white/10');
+              }
+            } else {
+              // 灰化其他選項
+              optBtn.classList.add('opacity-40', 'border-white/5');
+            }
+          } else {
+            // 未投票，功能重設為可投狀態
+            optBtn.disabled = false;
+            optBtn.classList.add('hover:border-cyan-400/60');
+            optBtn.classList.remove('border-cyan-400/80', 'bg-cyan-950/20', 'shadow-[0_0_15px_rgba(34,211,238,0.15)]', 'opacity-40', 'border-white/5');
+            if (marker) {
+              marker.textContent = `${i}`;
+              marker.classList.add('bg-white/10');
+              marker.classList.remove('bg-cyan-500', 'text-slate-950', 'font-bold');
+            }
+          }
+        }
+      }
+
+      // 更新頂部問卷狀態標籤
+      if (votedOption) {
+        surveyStatusBadge.textContent = "已完成投票";
+        surveyStatusBadge.classList.replace('bg-cyan-500/20', 'bg-green-500/20');
+        surveyStatusBadge.classList.replace('text-cyan-300', 'text-green-400');
+        surveyStatusBadge.classList.replace('border-cyan-400/30', 'border-green-400/30');
+      }
+    }
+
+    // 4. 使用者操作處理事件 (防灌水安全校驗 + 樂觀更新)
+    
+    // 按鈕點擊
+    window.handleButtonClick = async (buttonId) => {
+      if (!currentUser) return;
+
+      // 防灌水阻擋
+      const clickedSet = new Set(userHistory.clickedButtons || []);
+      if (clickedSet.has(buttonId)) return;
+
+      // 1. 樂觀更新 (立即讓使用者看到自己點的數字加1，並在本地端預先鎖定)
+      counts[buttonId] = (counts[buttonId] || 0) + 1;
+      userHistory.clickedButtons.push(buttonId);
+      updateButtonsUI();
+      applyAntiSpamLocks();
+
+      // 2. 背景寫入 Firebase
+      const buttonDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'button_counts');
+      const userHistoryDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'history', 'choices');
+
+      try {
+        // 先增加公用次數
+        await updateDoc(buttonDocRef, {
+          [buttonId]: increment(1)
+        });
+        // 更新個人私有歷史紀錄 (標記已點擊)
+        await setDoc(userHistoryDocRef, userHistory);
+      } catch (err) {
+        console.error("寫入按鈕點擊失敗:", err);
+      }
+    };
+
+    // GAS 調查投票
+    window.handleGasVote = async (optionId) => {
+      if (!currentUser) return;
+
+      // 防灌水阻擋 (若投過就不允許再投)
+      if (userHistory.votedGas !== null && userHistory.votedGas !== undefined) return;
+
+      // 1. 樂觀更新 (立即反映在進度條上並鎖定所有選項)
+      gasCounts[optionId] = (gasCounts[optionId] || 0) + 1;
+      userHistory.votedGas = optionId;
+      updateSurveyUI();
+      applyAntiSpamLocks();
+
+      // 2. 背景寫入 Firebase
+      const gasDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'gas_survey');
+      const userHistoryDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'history', 'choices');
+
+      try {
+        // 先增加公用調查得票數
+        await updateDoc(gasDocRef, {
+          [optionId]: increment(1)
+        });
+        // 更新個人私有歷史紀錄 (標記已投此票)
+        await setDoc(userHistoryDocRef, userHistory);
+      } catch (err) {
+        console.error("寫入調查投票失敗:", err);
+      }
+    };
+
+    // 綁定 DOM 監聽器
+    for (let i = 1; i <= 9; i++) {
+      document.getElementById(`btn-${i}`).addEventListener('click', () => {
+        window.handleButtonClick(i);
+      });
+    }
+
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById(`gas-opt-${i}`).addEventListener('click', () => {
+        window.handleGasVote(i);
+      });
+    }
+
+  </script>
+</body>
+</html>
