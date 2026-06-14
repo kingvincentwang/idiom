@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google Apps Script 入門簡報</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+  :root {
+    --gas-yellow: #F9AB00;
+    --gas-blue: #4285F4;
+    --gas-green: #34A853;
+    --gas-red: #EA4335;
+    --dark: #0d1117;
+    --mid: #161b22;
+    --card: #21262d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --border: #30363d;
+  }
+
+  .reveal, .reveal .slides { font-family: 'Noto Sans TC', sans-serif; }
+
+  .reveal .slides section {
+    background: var(--dark);
+    color: var(--text);
+    height: 100%;
+    padding: 0;
+  }
+
+  /* ── 封面 ── */
+  .cover {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; gap: 0;
+    background: radial-gradient(ellipse at 60% 30%, #1a2a4a 0%, var(--dark) 70%);
+    position: relative; overflow: hidden;
+  }
+  .cover::before {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 39px, var(--border) 40px),
+                repeating-linear-gradient(90deg, transparent, transparent 39px, var(--border) 40px);
+    opacity: 0.25;
+  }
+  .cover-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75em; color: var(--gas-yellow);
+    letter-spacing: 0.2em; text-transform: uppercase;
+    border: 1px solid var(--gas-yellow); border-radius: 4px;
+    padding: 4px 14px; margin-bottom: 12px; position: relative; z-index: 1;
+  }
+  .cover-title {
+    font-size: 2.4em; font-weight: 900; line-height: 1.1;
+    margin: 0; position: relative; z-index: 1;
+  }
+  .cover-title .g { color: var(--gas-blue); }
+  .cover-title .a { color: var(--gas-red); }
+  .cover-title .s1 { color: var(--gas-yellow); }
+  .cover-title .rest { color: var(--text); }
+  .cover-subtitle {
+    font-size: 0.9em; color: var(--muted); margin-top: 8px;
+    font-weight: 400; position: relative; z-index: 1;
+  }
+  .cover-dots { position: absolute; bottom: 40px; display: flex; gap: 8px; z-index: 1; }
+  .cover-dots span {
+    width: 10px; height: 10px; border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .cover-dots span:nth-child(1) { background: var(--gas-blue); }
+  .cover-dots span:nth-child(2) { background: var(--gas-red); animation-delay: .3s; }
+  .cover-dots span:nth-child(3) { background: var(--gas-yellow); animation-delay: .6s; }
+  .cover-dots span:nth-child(4) { background: var(--gas-green); animation-delay: .9s; }
+  @keyframes pulse { 0%,100%{transform:scale(1);opacity:.6} 50%{transform:scale(1.4);opacity:1} }
+
+  /* ── 通用 ── */
+  .slide-inner {
+    padding: 28px 44px; height: 100%; box-sizing: border-box;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6em; color: var(--gas-yellow);
+    letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 12px;
+  }
+  h2.section-title {
+    font-size: 1.8em; font-weight: 900; color: var(--text);
+    margin: 0 0 32px; line-height: 1.15;
+  }
+  h2.section-title span { color: var(--gas-yellow); }
+
+  /* ── 什麼是 Script ── */
+  .script-box {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 24px;
+    display: flex; gap: 24px; align-items: flex-start;
+  }
+  .script-icon { font-size: 2.4em; flex-shrink: 0; }
+  .script-body h3 { margin: 0 0 8px; font-size: 1.1em; color: var(--gas-yellow); }
+  .script-body p { margin: 0; font-size: 0.88em; color: var(--muted); line-height: 1.6; }
+
+  /* ── 角色卡 ── */
+  .role-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .role-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 10px; text-align: center;
+  }
+  .role-card .icon { font-size: 1.6em; margin-bottom: 4px; }
+  .role-card .name { font-size: 0.82em; font-weight: 700; color: var(--text); }
+  .role-card .desc { font-size: 0.7em; color: var(--muted); margin-top: 4px; }
+
+  /* ── 三大功能 ── */
+  .feature-list { display: flex; flex-direction: column; gap: 12px; }
+  .feature-item {
+    background: var(--card); border: 1px solid var(--border);
+    border-left: 4px solid var(--gas-yellow);
+    border-radius: 0 10px 10px 0; padding: 14px 18px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .feature-item.blue { border-left-color: var(--gas-blue); }
+  .feature-item.green { border-left-color: var(--gas-green); }
+  .feature-item .fi-icon { font-size: 1.6em; flex-shrink: 0; }
+  .feature-item h3 { margin: 0 0 4px; font-size: 0.95em; color: var(--text); }
+  .feature-item p { margin: 0; font-size: 0.75em; color: var(--muted); line-height: 1.5; }
+
+  /* ── 優點 ── */
+  .merit-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .merit-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 16px;
+  }
+  .merit-card .m-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.8em; font-weight: 700; color: var(--gas-blue); line-height: 1;
+    margin-bottom: 8px;
+  }
+  .merit-card h3 { margin: 0 0 6px; font-size: 0.9em; color: var(--text); }
+  .merit-card p { margin: 0; font-size: 0.74em; color: var(--muted); line-height: 1.5; }
+
+  /* ── 架構圖 ── */
+  .arch-diagram {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; flex-wrap: nowrap; margin-top: 8px;
+  }
+  .arch-block {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 16px; text-align: center;
+    min-width: 110px;
+  }
+  .arch-block .ab-icon { font-size: 1.8em; }
+  .arch-block .ab-label { font-size: 0.72em; color: var(--text); margin-top: 6px; font-weight: 700; }
+  .arch-block .ab-sub { font-size: 0.62em; color: var(--muted); margin-top: 3px; }
+  .arch-block.highlight { border-color: var(--gas-yellow); background: #21250d; }
+  .arch-block.highlight .ab-label { color: var(--gas-yellow); }
+  .arch-arrow {
+    font-size: 1.4em; color: var(--muted); padding: 0 8px; flex-shrink: 0;
+  }
+  .arch-note {
+    background: #0d1a1a; border: 1px solid var(--gas-green);
+    border-radius: 8px; padding: 8px 16px; margin-top: 8px;
+    font-size: 0.78em; color: var(--gas-green); line-height: 1.6;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── 重點整理 ── */
+  .key-list { display: flex; flex-direction: column; gap: 10px; }
+  .key-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 16px;
+  }
+  .key-num {
+    background: var(--gas-yellow); color: #000; font-weight: 900;
+    font-size: 0.8em; width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .key-text { font-size: 0.8em; color: var(--text); line-height: 1.6; }
+  .key-text strong { color: var(--gas-yellow); }
+  .key-text code {
+    background: var(--border); padding: 1px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.95em; color: var(--gas-blue);
+  }
+
+  /* ── 結尾 ── */
+  .end-card {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; text-align: center; gap: 14px;
+    background: radial-gradient(ellipse at 40% 60%, #0d2a1a 0%, var(--dark) 70%);
+  }
+  .end-card .big { font-size: 2.2em; font-weight: 900; }
+  .end-card .big .accent { color: var(--gas-green); }
+  .end-card .sub { font-size: 0.9em; color: var(--muted); max-width: 480px; line-height: 1.7; }
+  .end-tags { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .end-tags span {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7em;
+    border: 1px solid var(--border); border-radius: 20px; padding: 5px 14px; color: var(--muted);
+  }
+  .powered {
+    font-size: 0.6em; color: var(--border);
+    font-family: 'JetBrains Mono', monospace; position: absolute; bottom: 24px;
+  }
+
+  /* Reveal overrides */
+  .reveal .slides > section { padding: 0; overflow: hidden; }
+  .reveal h1, .reveal h2, .reveal h3, .reveal p { text-transform: none; margin: 0; }
+  .reveal .progress { color: var(--gas-yellow); }
+  .reveal .controls { color: var(--gas-yellow); }
+
+  /* 強制所有 slide-inner 不超高 */
+  .slide-inner {
+    padding: 20px 40px !important;
+    height: 700px !important;
+    max-height: 700px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+  }
+  h2.section-title {
+    font-size: 1.5em !important;
+    margin-bottom: 8px !important;
+  }
+  .label { margin-bottom: 4px !important; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+  <!-- 封面 -->
+  <section>
+    <div class="cover">
+      <div class="cover-badge">入門教學 · 關西國小資訊組</div>
+      <h1 class="cover-title">
+        <span class="g">G</span><span class="a">A</span><span class="s1">S</span>
+        <span class="rest"> 是什麼？</span>
+      </h1>
+      <p class="cover-subtitle">Google Apps Script — 讓 Google 服務動起來的「劇本語言」</p>
+      <div class="cover-dots">
+        <span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- 使用調查問卷 -->
+  <section>
+    <div style="padding:16px 44px 10px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+      <div class="label" style="margin-bottom:2px;">課前調查</div>
+      <h2 class="section-title" style="font-size:1.4em; margin-bottom:10px;">你對 GAS 的<span>了解程度</span>如何？</h2>
+
+      <div id="survey-area" style="flex:1; display:flex; flex-direction:column; gap:7px; min-height:0;">
+        <!-- 選項 -->
+        <div class="s-opt" data-val="0" onclick="vote(0)" style="cursor:pointer; background:var(--card); border:2px solid var(--border); border-radius:10px; padding:10px 16px; display:flex; align-items:center; gap:12px; transition:all .2s; flex:1;">
+          <div style="font-size:1.6em; flex-shrink:0;">😶</div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:0.8em; font-weight:700; color:var(--text);">從沒聽過，那是什麼碗糕</div>
+            <div class="s-bar-wrap" style="margin-top:4px; background:var(--border); border-radius:4px; height:5px; display:none;">
+              <div class="s-bar" data-val="0" style="height:100%; width:0%; background:var(--gas-red); border-radius:4px; transition:width .6s;"></div>
+            </div>
+            <div class="s-count" data-val="0" style="font-size:0.62em; color:var(--muted); margin-top:2px; display:none;">0 票</div>
+          </div>
+        </div>
+
+        <div class="s-opt" data-val="1" onclick="vote(1)" style="cursor:pointer; background:var(--card); border:2px solid var(--border); border-radius:10px; padding:10px 16px; display:flex; align-items:center; gap:12px; transition:all .2s; flex:1;">
+          <div style="font-size:1.6em; flex-shrink:0;">👀</div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:0.8em; font-weight:700; color:var(--text);">知道這個東西，但沒用過</div>
+            <div class="s-bar-wrap" style="margin-top:4px; background:var(--border); border-radius:4px; height:5px; display:none;">
+              <div class="s-bar" data-val="1" style="height:100%; width:0%; background:var(--gas-yellow); border-radius:4px; transition:width .6s;"></div>
+            </div>
+            <div class="s-count" data-val="1" style="font-size:0.62em; color:var(--muted); margin-top:2px; display:none;">0 票</div>
+          </div>
+        </div>
+
+        <div class="s-opt" data-val="2" onclick="vote(2)" style="cursor:pointer; background:var(--card); border:2px solid var(--border); border-radius:10px; padding:10px 16px; display:flex; align-items:center; gap:12px; transition:all .2s; flex:1;">
+          <div style="font-size:1.6em; flex-shrink:0;">🛠️</div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:0.8em; font-weight:700; color:var(--text);">有使用過，曾經部署過網頁</div>
+            <div class="s-bar-wrap" style="margin-top:4px; background:var(--border); border-radius:4px; height:5px; display:none;">
+              <div class="s-bar" data-val="2" style="height:100%; width:0%; background:var(--gas-blue); border-radius:4px; transition:width .6s;"></div>
+            </div>
+            <div class="s-count" data-val="2" style="font-size:0.62em; color:var(--muted); margin-top:2px; display:none;">0 票</div>
+          </div>
+        </div>
+
+        <div class="s-opt" data-val="3" onclick="vote(3)" style="cursor:pointer; background:var(--card); border:2px solid var(--border); border-radius:10px; padding:10px 16px; display:flex; align-items:center; gap:12px; transition:all .2s; flex:1;">
+          <div style="font-size:1.6em; flex-shrink:0;">🚀</div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:0.8em; font-weight:700; color:var(--text);">很常使用，且部署過很多專案</div>
+            <div class="s-bar-wrap" style="margin-top:4px; background:var(--border); border-radius:4px; height:5px; display:none;">
+              <div class="s-bar" data-val="3" style="height:100%; width:0%; background:var(--gas-green); border-radius:4px; transition:width .6s;"></div>
+            </div>
+            <div class="s-count" data-val="3" style="font-size:0.62em; color:var(--muted); margin-top:2px; display:none;">0 票</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 狀態列 -->
+      <div style="margin-top:6px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+        <div id="survey-status" style="font-size:0.62em; color:var(--muted); font-family:'JetBrains Mono',monospace;">📡 連接中…</div>
+        <div id="survey-total" style="font-size:0.62em; color:var(--muted);">總計 0 票</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 什麼是 Script -->
+  <section>
+    <div class="slide-inner">
+      <div class="label">概念導入</div>
+      <h2 class="section-title">什麼是<span>腳本</span>？</h2>
+      <div class="script-box">
+        <div class="script-icon">📋</div>
+        <div class="script-body">
+          <h3>腳本 = 寫給電腦看的「指令清單」</h3>
+          <p>在電腦的世界裡，「Script（腳本）」就是一套按順序寫好的指令，讓電腦依照步驟<strong style="color:var(--gas-yellow)">自動完成特定任務</strong>，不需要你每次手動操作。</p>
+        </div>
+      </div>
+      <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 10px;">
+        <div class="script-box" style="border-color: var(--gas-blue)">
+          <div class="script-icon">🎬</div>
+          <div class="script-body">
+            <h3 style="color: var(--gas-blue)">GAS 的比喻</h3>
+            <p>把 Google 服務想像成<strong style="color:var(--text)">演員</strong>（Sheets、Gmail、Drive、表單），GAS 就是替他們寫好的<strong style="color:var(--gas-yellow)">劇本</strong>，告訴每個角色什麼時候、做什麼事。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Google 服務角色 -->
+  <section>
+    <div class="slide-inner">
+      <div class="label">登場角色</div>
+      <h2 class="section-title">GAS 的<span>演員陣容</span></h2>
+      <div class="role-grid">
+        <div class="role-card">
+          <div class="icon">📊</div>
+          <div class="name">Google 試算表</div>
+          <div class="desc">資料庫 · 數據計算</div>
+        </div>
+        <div class="role-card">
+          <div class="icon">📧</div>
+          <div class="name">Gmail</div>
+          <div class="desc">自動寄信 · 回覆通知</div>
+        </div>
+        <div class="role-card">
+          <div class="icon">📁</div>
+          <div class="name">Google 雲端硬碟</div>
+          <div class="desc">檔案建立 · 資料夾管理</div>
+        </div>
+        <div class="role-card">
+          <div class="icon">📝</div>
+          <div class="name">Google 表單</div>
+          <div class="desc">收集資料 · 觸發動作</div>
+        </div>
+        <div class="role-card">
+          <div class="icon">📅</div>
+          <div class="name">Google 日曆</div>
+          <div class="desc">行程建立 · 提醒排程</div>
+        </div>
+        <div class="role-card">
+          <div class="icon">💬</div>
+          <div class="name">Google Chat / LINE</div>
+          <div class="desc">即時通知 · Bot 整合</div>
+        </div>
+      </div>
+      <div class="arch-note" style="margin-top: 12px;">
+        ✨ GAS 最強大的地方：讓這些服務「互相講話」
+      </div>
+    </div>
+  </section>
+
+  <!-- Google Chat / LINE 垂直分頁 -->
+  <section>
+    <!-- 子頁 1：總覽 -->
+    <section>
+      <div style="padding:18px 44px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:4px;">通知整合</div>
+        <h2 class="section-title" style="font-size:1.4em; margin-bottom:12px;"><span>Google Chat</span> 與 <span>LINE Bot</span></h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; flex:1; min-height:0;">
+          <!-- Google Chat -->
+          <div style="background:var(--card); border:1px solid var(--gas-blue); border-radius:12px; padding:18px 20px; display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="font-size:2em;">💬</div>
+              <div>
+                <div style="font-size:0.9em; font-weight:900; color:var(--gas-blue);">Google Chat</div>
+                <div style="font-size:0.62em; color:var(--muted);">Google Workspace 內建通訊</div>
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <div style="font-size:0.7em; color:var(--text); background:var(--mid); border-radius:6px; padding:7px 10px;">✅ 透過 Webhook 網址傳送訊息</div>
+              <div style="font-size:0.7em; color:var(--text); background:var(--mid); border-radius:6px; padding:7px 10px;">✅ 支援 Card 格式（按鈕、圖片、表格）</div>
+              <div style="font-size:0.7em; color:var(--text); background:var(--mid); border-radius:6px; padding:7px 10px;">✅ 免費，學校 Google Workspace 直接用</div>
+              <div style="font-size:0.7em; color:var(--text); background:var(--mid); border-radius:6px; padding:7px 10px;">✅ 可發送到指定 Space 或個人</div>
+            </div>
+            <div style="font-size:0.62em; color:var(--gas-blue); font-family:'JetBrains Mono',monospace; margin-top:auto;">→ 按 ↓ 看更多</div>
+          </div>
+          <!-- LINE Bot -->
+          <div style="background:var(--card); border:1px solid var(--gas-green); border-radius:12px; padding:18px 20px; display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="font-size:2em;">🟢</div>
+              <div>
+                <div style="font-size:0.9em; font-weight:900; color:var(--gas-green);">LINE Bot</div>
+                <div style="font-size:0.62em; color:var(--muted);">台灣最普及的通訊 App</div>
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <div style="font-size:0.7em; color:var(--text); background:var(--mid); border-radius:6px; padding:7px 10px;">✅ 透過 Messaging API 傳送訊息</div>
+              <div style="font-size:0.7em; color:var(--text); background:var(--mid); border-radius:6px; padding:7px 10px;">✅ 支援 Flex Message（高度客製化）</div>
+              <div style="font-size:0.7em; color:var(--text); background:var(--mid); border-radius:6px; padding:7px 10px;">✅ 可推播給個人或群組</div>
+              <div style="font-size:0.7em; color:var(--text); background:var(--mid); border-radius:6px; padding:7px 10px;">✅ 家長、老師幾乎人人都有</div>
+            </div>
+            <div style="font-size:0.62em; color:var(--gas-green); font-family:'JetBrains Mono',monospace; margin-top:auto;">→ 按 ↓ 看更多</div>
+          </div>
+        </div>
+        <div style="margin-top:8px; text-align:center; font-size:0.62em; color:var(--muted);">⬇ 向下繼續</div>
+      </div>
+    </section>
+
+    <!-- 子頁 2：Google Chat 詳細 -->
+    <section>
+      <div style="padding:14px 44px 8px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:2px;">通知整合 · Google Chat</div>
+        <h2 class="section-title" style="font-size:1.3em; margin-bottom:8px;">💬 <span>Google Chat</span> 如何使用？</h2>
+        <div style="display:flex; flex-direction:column; gap:6px; flex:1; min-height:0; overflow:hidden;">
+
+          <div style="background:var(--card); border-left:4px solid var(--gas-blue); border-radius:0 8px 8px 0; padding:8px 14px;">
+            <div style="font-size:0.65em; font-weight:700; color:var(--gas-blue); margin-bottom:2px;">Step 1 — 建立 Webhook</div>
+            <div style="font-size:0.62em; color:var(--muted);">在 Google Chat Space → 管理 Webhook → 新增 → 複製網址</div>
+          </div>
+
+          <div style="background:var(--card); border-left:4px solid var(--gas-blue); border-radius:0 8px 8px 0; padding:8px 14px;">
+            <div style="font-size:0.65em; font-weight:700; color:var(--gas-blue); margin-bottom:4px;">Step 2 — GAS 傳送訊息</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.54em; color:var(--gas-green); line-height:1.5; background:var(--mid); padding:7px 10px; border-radius:6px;">const WEBHOOK = "https://chat.googleapis.com/v1/...";<br>UrlFetchApp.fetch(WEBHOOK, {<br>&nbsp;&nbsp;method: 'post', contentType: 'application/json',<br>&nbsp;&nbsp;payload: JSON.stringify({ text: "✅ 自動通知訊息！" })<br>});</div>
+          </div>
+
+          <div style="background:var(--card); border-left:4px solid var(--gas-blue); border-radius:0 8px 8px 0; padding:8px 14px;">
+            <div style="font-size:0.65em; font-weight:700; color:var(--gas-blue); margin-bottom:2px;">Step 3 — Card 格式（進階）</div>
+            <div style="font-size:0.62em; color:var(--muted);">用 JSON 建立卡片：標題、說明文字、圖片、按鈕，視覺效果更豐富</div>
+          </div>
+
+          <div style="background:#001a2a; border:1px solid var(--gas-blue); border-radius:8px; padding:8px 14px; flex-shrink:0;">
+            <div style="font-size:0.62em; color:var(--gas-blue);">💡 應用情境：每天早上自動推播天氣、午餐菜單、課表提醒到學校群組</div>
+          </div>
+
+        </div>
+        <div style="margin-top:6px; text-align:center; font-size:0.6em; color:var(--muted); flex-shrink:0;">⬇ 繼續看 LINE Bot</div>
+      </div>
+    </section>
+
+    <!-- 子頁 3：LINE Bot 詳細 -->
+    <section>
+      <div style="padding:14px 44px 8px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:2px;">通知整合 · LINE Bot</div>
+        <h2 class="section-title" style="font-size:1.3em; margin-bottom:8px;">🟢 <span>LINE Bot</span> 如何使用？</h2>
+        <div style="display:flex; flex-direction:column; gap:6px; flex:1; min-height:0; overflow:hidden;">
+
+          <div style="background:var(--card); border-left:4px solid var(--gas-green); border-radius:0 8px 8px 0; padding:8px 14px;">
+            <div style="font-size:0.65em; font-weight:700; color:var(--gas-green); margin-bottom:2px;">Step 1 — 申請 LINE Messaging API</div>
+            <div style="font-size:0.62em; color:var(--muted);">LINE Developers → 建立 Provider → 建立 Messaging API Channel → 取得 Channel Access Token</div>
+          </div>
+
+          <div style="background:var(--card); border-left:4px solid var(--gas-green); border-radius:0 8px 8px 0; padding:8px 14px;">
+            <div style="font-size:0.65em; font-weight:700; color:var(--gas-green); margin-bottom:4px;">Step 2 — GAS 傳送訊息</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.52em; color:var(--gas-green); line-height:1.5; background:var(--mid); padding:7px 10px; border-radius:6px;">const TOKEN = "你的 Channel Access Token";<br>UrlFetchApp.fetch("https://api.line.me/v2/bot/message/broadcast", {<br>&nbsp;&nbsp;method: 'post',<br>&nbsp;&nbsp;headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },<br>&nbsp;&nbsp;payload: JSON.stringify({ messages: [{ type: 'text', text: '📢 全員通知！' }] })<br>});</div>
+          </div>
+
+          <div style="background:var(--card); border-left:4px solid var(--gas-green); border-radius:0 8px 8px 0; padding:8px 14px;">
+            <div style="font-size:0.65em; font-weight:700; color:var(--gas-green); margin-bottom:2px;">Step 3 — Flex Message（進階）</div>
+            <div style="font-size:0.62em; color:var(--muted);">用 JSON 客製化訊息外觀：圖片、按鈕、表格樣式，比純文字更吸睛</div>
+          </div>
+
+          <div style="background:#001a0a; border:1px solid var(--gas-green); border-radius:8px; padding:8px 14px; flex-shrink:0;">
+            <div style="font-size:0.62em; color:var(--gas-green);">💡 應用情境：家長聯絡簿回條提醒、學生作業繳交通知、緊急停課公告</div>
+          </div>
+
+        </div>
+        <div style="margin-top:6px; text-align:center; font-size:0.6em; color:var(--muted); flex-shrink:0;">⬆ 向上返回 / ➡ 下一主題</div>
+      </div>
+    </section>
+  </section>
+
+  <!-- 三大核心功能 -->
+  <section>
+    <div class="slide-inner">
+      <div class="label">核心功能</div>
+      <h2 class="section-title">GAS 能做<span>三件大事</span></h2>
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="fi-icon">🤖</div>
+          <div>
+            <h3>A. 自動化重複的工作 (Automation)</h3>
+            <p>每天早上 8 點自動讀取試算表業績數據，整理後寄 Email 給主管。你不用動手，Google 的伺服器幫你執行。</p>
+          </div>
+        </div>
+        <div class="feature-item blue">
+          <div class="fi-icon">🔗</div>
+          <div>
+            <h3>B. 連接不同的 Google 服務 (Integration)</h3>
+            <p>有人填寫表單報名後，自動在日曆建立行程、在雲端硬碟建立專屬資料夾，一氣呵成。</p>
+          </div>
+        </div>
+        <div class="feature-item green">
+          <div class="fi-icon">🧩</div>
+          <div>
+            <h3>C. 擴充原有功能 (Extension)</h3>
+            <p>試算表沒有換匯公式？自己寫一個 <code style="font-family:monospace;color:var(--gas-green)">=TWD2JPY(100)</code> 當自定義函數直接用。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 為什麼受歡迎 -->
+  <section>
+    <div class="slide-inner">
+      <div class="label">優點</div>
+      <h2 class="section-title">為什麼 GAS <span>這麼受歡迎？</span></h2>
+      <div class="merit-grid">
+        <div class="merit-card">
+          <div class="m-num">01</div>
+          <h3>不用安裝任何軟體</h3>
+          <p>有瀏覽器 + Google 帳號就能開始，打開網頁就能寫程式。</p>
+        </div>
+        <div class="merit-card">
+          <div class="m-num" style="color:var(--gas-red)">02</div>
+          <h3>基於 JavaScript</h3>
+          <p>世界最流行語言之一，學習資源豐富，做過網頁就有基礎。</p>
+        </div>
+        <div class="merit-card">
+          <div class="m-num" style="color:var(--gas-green)">03</div>
+          <h3>完全免費</h3>
+          <p>Google 提供的免費額度對個人、學校、中小企業都非常夠用。</p>
+        </div>
+        <div class="merit-card">
+          <div class="m-num" style="color:var(--gas-yellow)">04</div>
+          <h3>雲端執行不怕關機</h3>
+          <p>程式在 Google 伺服器跑，電腦關掉排程照樣準時執行。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 架構說明 -->
+  <section>
+    <div class="slide-inner">
+      <div class="label">系統架構</div>
+      <h2 class="section-title">GAS <span>前端 / 後端 / 資料庫</span></h2>
+      <div class="arch-diagram">
+        <div class="arch-block">
+          <div class="ab-icon">🌐</div>
+          <div class="ab-label">前端</div>
+          <div class="ab-sub">index.html<br>（使用者畫面）</div>
+        </div>
+        <div class="arch-arrow">⟺</div>
+        <div class="arch-block highlight">
+          <div class="ab-icon">⚙️</div>
+          <div class="ab-label">後端 (GAS)</div>
+          <div class="ab-sub">Code.gs<br>doGet() 部署</div>
+        </div>
+        <div class="arch-arrow">⟺</div>
+        <div class="arch-block">
+          <div class="ab-icon">📊</div>
+          <div class="ab-label">資料庫</div>
+          <div class="ab-sub">Google Sheets<br>（免費儲存）</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-block">
+          <div class="ab-icon">🔔</div>
+          <div class="ab-label">通知</div>
+          <div class="ab-sub">LINE Bot<br>Google Chat</div>
+        </div>
+      </div>
+      <div class="arch-note">
+        ⚠️ 新增 HTML 檔案時<strong>不須加 .html 副檔名</strong>！<br>
+        doGet() 裡寫的名稱就是頁面入口，大小寫有差異要注意。
+      </div>
+    </div>
+  </section>
+
+  <!-- 重點整理 -->
+  <section>
+    <div class="slide-inner">
+      <div class="label">重點整理</div>
+      <h2 class="section-title">開發前必知的<span>5 件事</span></h2>
+      <div class="key-list">
+        <div class="key-item">
+          <div class="key-num">1</div>
+          <div class="key-text"><strong>前端 = HTML 檔案</strong>，首頁通常命名為 <code>index</code>，由 <code>doGet()</code> 決定要顯示哪個頁面。</div>
+        </div>
+        <div class="key-item">
+          <div class="key-num">2</div>
+          <div class="key-text"><strong>後端 = .gs 檔案</strong>，可用英文或中文命名，處理邏輯與資料。</div>
+        </div>
+        <div class="key-item">
+          <div class="key-num">3</div>
+          <div class="key-text"><strong>Google Sheets = 資料庫</strong>，免費、簡單、直觀，是 GAS 的最佳搭檔。</div>
+        </div>
+        <div class="key-item">
+          <div class="key-num">4</div>
+          <div class="key-text"><strong>LINE Bot / Google Chat</strong>讓系統有了<strong>即時通知</strong>的能力。</div>
+        </div>
+        <div class="key-item">
+          <div class="key-num">5</div>
+          <div class="key-text"><strong>觸發條件（Trigger）</strong>讓程式自動排程執行，實現真正的無人化服務。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 快捷鍵與程式撰寫 -->
+  <section>
+    <div style="padding:18px 36px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+      <div class="label" style="margin-bottom:2px;">實用技巧</div>
+      <h2 class="section-title" style="font-size:1.4em; margin-bottom:8px;">常用<span>快捷鍵</span>與<span>程式撰寫</span></h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; flex:1; min-height:0;">
+
+        <!-- 左欄：鍵盤組合 -->
+        <div style="display:flex; flex-direction:column; gap:0; overflow:hidden;">
+          <div style="font-size:0.62em; color:var(--gas-blue); font-family:'JetBrains Mono',monospace; margin-bottom:5px;">⌨️ 常用鍵盤組合</div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="display:flex; gap:8px; align-items:center; background:var(--card); border:1px solid var(--border); border-radius:7px; padding:7px 10px;">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.7em; background:var(--border); color:var(--gas-yellow); padding:2px 8px; border-radius:4px; flex-shrink:0;">Ctrl + A</div>
+              <div style="font-size:0.7em; color:var(--text);">全選</div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; background:var(--card); border:1px solid var(--border); border-radius:7px; padding:7px 10px;">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.7em; background:var(--border); color:var(--gas-yellow); padding:2px 8px; border-radius:4px; flex-shrink:0;">Ctrl + C</div>
+              <div style="font-size:0.7em; color:var(--text);">複製</div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; background:var(--card); border:1px solid var(--border); border-radius:7px; padding:7px 10px;">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.7em; background:var(--border); color:var(--gas-yellow); padding:2px 8px; border-radius:4px; flex-shrink:0;">Ctrl + V</div>
+              <div style="font-size:0.7em; color:var(--text);">貼上</div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; background:var(--card); border:1px solid var(--border); border-radius:7px; padding:7px 10px;">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.7em; background:var(--border); color:var(--gas-yellow); padding:2px 8px; border-radius:4px; flex-shrink:0;">Ctrl + F</div>
+              <div style="font-size:0.7em; color:var(--text);">尋找</div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:flex-start; background:#1a1212; border:1px solid var(--gas-red); border-radius:7px; padding:7px 10px;">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.7em; background:var(--gas-red); color:#fff; padding:2px 8px; border-radius:4px; flex-shrink:0; white-space:nowrap; margin-top:1px;">Shift + Enter</div>
+              <div style="font-size:0.68em; color:var(--text); line-height:1.4;">強制換行<br><span style="color:var(--muted); font-size:0.9em;">與 Gemini 對話換行用此，直接 Enter 會送出！</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右欄：程式撰寫 -->
+        <div style="display:flex; flex-direction:column; gap:0; overflow:hidden;">
+          <div style="font-size:0.62em; color:var(--gas-green); font-family:'JetBrains Mono',monospace; margin-bottom:5px;">💻 程式撰寫</div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <div style="background:var(--card); border:1px solid var(--border); border-radius:7px; padding:8px 12px;">
+              <div style="font-size:0.62em; color:var(--muted); margin-bottom:3px;">單行註解</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.78em; color:var(--gas-green);">// 這是單行註解</div>
+              <div style="font-size:0.6em; color:var(--muted); margin-top:3px;">只能註解「該行」後面的內容</div>
+            </div>
+            <div style="background:var(--card); border:1px solid var(--border); border-radius:7px; padding:8px 12px;">
+              <div style="font-size:0.62em; color:var(--muted); margin-bottom:3px;">整段註解</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.78em; color:var(--gas-green); line-height:1.5;">/*<br>&nbsp;&nbsp;可以跨越多行，整段都是註解<br>*/</div>
+              <div style="font-size:0.6em; color:var(--muted); margin-top:3px;">用 <code style="font-family:monospace;color:var(--gas-blue)">/*</code> 開頭、<code style="font-family:monospace;color:var(--gas-blue)">*/</code> 結尾</div>
+            </div>
+            <div style="background:#0d1a1a; border:1px solid var(--gas-green); border-radius:7px; padding:8px 12px; font-size:0.66em; color:var(--gas-green); line-height:1.5;">
+              💡 註解的用途：說明程式的功能，或暫時關掉某段程式不讓它執行
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- 名詞定義 -->
+  <section>
+    <div style="padding:12px 36px 8px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+      <div class="label" style="margin-bottom:2px;">名詞定義</div>
+      <h2 class="section-title" style="font-size:1.25em; margin-bottom:6px;">常見的<span> ID </span>與<span>試算表讀取</span></h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; flex:1; min-height:0; overflow:hidden;">
+
+        <!-- 左欄：ID 說明 -->
+        <div style="display:flex; flex-direction:column; gap:5px; overflow:hidden;">
+          <div style="font-size:0.56em; color:var(--gas-yellow); font-family:'JetBrains Mono',monospace; margin-bottom:1px;">🆔 常見的 ID</div>
+
+          <div style="background:var(--card); border:1px solid var(--border); border-radius:7px; padding:6px 10px;">
+            <div style="font-size:0.58em; color:var(--gas-yellow); font-family:'JetBrains Mono',monospace; margin-bottom:1px;">📊 Google Sheets ID</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.5em; color:var(--muted); word-break:break-all; line-height:1.4;">
+              https://docs.google.com/spreadsheets/d/<span style="background:#2a2000; color:var(--gas-yellow); padding:1px 3px; border-radius:3px;">1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms</span>/edit
+            </div>
+            <div style="font-size:0.55em; color:var(--muted); margin-top:2px;">/d/ 之後、/edit 之前那一串 = <strong style="color:var(--gas-yellow)">Sheets ID</strong></div>
+          </div>
+
+          <div style="background:var(--card); border:1px solid var(--border); border-radius:7px; padding:6px 10px;">
+            <div style="font-size:0.58em; color:var(--gas-blue); font-family:'JetBrains Mono',monospace; margin-bottom:1px;">📁 Google Drive 資料夾 ID</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.5em; color:var(--muted); word-break:break-all; line-height:1.4;">
+              https://drive.google.com/drive/folders/<span style="background:#001a2a; color:var(--gas-blue); padding:1px 3px; border-radius:3px;">1a2b3c4d5e6f7g8h9i</span>
+            </div>
+            <div style="font-size:0.55em; color:var(--muted); margin-top:2px;">/folders/ 之後那一串 = <strong style="color:var(--gas-blue)">資料夾 ID</strong></div>
+          </div>
+
+          <div style="background:var(--card); border:1px solid var(--border); border-radius:7px; padding:6px 10px;">
+            <div style="font-size:0.58em; color:var(--gas-green); font-family:'JetBrains Mono',monospace; margin-bottom:1px;">🖼️ 圖片 ID（需透過共用連結）</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.48em; color:var(--muted); word-break:break-all; line-height:1.4;">
+              https://drive.google.com/file/d/<span style="background:#001a0a; color:var(--gas-green); padding:1px 3px; border-radius:3px;">1n-scmbz0zqbEFBJEo_qJ_IJT-V3uo3yo</span>/view?usp=sharing
+            </div>
+            <div style="font-size:0.55em; color:var(--muted); margin-top:2px;">/d/ 與 /view 之間那一串 = <strong style="color:var(--gas-green)">圖片 ID</strong></div>
+          </div>
+
+        </div>
+
+        <!-- 右欄：試算表讀取方式 -->
+        <div style="display:flex; flex-direction:column; gap:3px; overflow:hidden;">
+          <div style="font-size:0.56em; color:var(--gas-red); font-family:'JetBrains Mono',monospace; margin-bottom:1px;">📖 Google Sheets 四種讀取方式</div>
+
+          <div style="background:var(--card); border:1px solid var(--border); border-radius:6px; padding:5px 9px; flex:1;">
+            <div style="font-size:0.52em; color:var(--muted); margin-bottom:1px;">① 指定試算表 ＋ 指定工作表</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.5em; color:var(--gas-green); line-height:1.35;">const sheet = SpreadsheetApp<br>&nbsp;&nbsp;.openById(<span style="color:var(--gas-yellow)">SPREADSHEET_ID</span>)<br>&nbsp;&nbsp;.getSheetByName(<span style="color:var(--gas-yellow)">SHEET_NAME</span>);</div>
+          </div>
+
+          <div style="background:var(--card); border:1px solid var(--border); border-radius:6px; padding:5px 9px; flex:1;">
+            <div style="font-size:0.52em; color:var(--muted); margin-bottom:1px;">② 當前試算表 ＋ 當前工作表</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.5em; color:var(--gas-green); line-height:1.35;">var sheet = SpreadsheetApp<br>&nbsp;&nbsp;.getActiveSpreadsheet()<br>&nbsp;&nbsp;.getActiveSheet();</div>
+          </div>
+
+          <div style="background:var(--card); border:1px solid var(--border); border-radius:6px; padding:5px 9px; flex:1;">
+            <div style="font-size:0.52em; color:var(--muted); margin-bottom:1px;">③ 指定試算表 ＋ 當前工作表</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.5em; color:var(--gas-green); line-height:1.35;">const sheet = SpreadsheetApp<br>&nbsp;&nbsp;.openById(<span style="color:var(--gas-yellow)">SHEET_ID</span>)<br>&nbsp;&nbsp;.getActiveSheet();</div>
+          </div>
+
+          <div style="background:var(--card); border:1px solid var(--border); border-radius:6px; padding:5px 9px; flex:1;">
+            <div style="font-size:0.52em; color:var(--muted); margin-bottom:1px;">④ 當前試算表 ＋ 指定工作表</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.5em; color:var(--gas-green); line-height:1.35;">var sheet = SpreadsheetApp<br>&nbsp;&nbsp;.getActiveSpreadsheet()<br>&nbsp;&nbsp;.getSheetByName(<span style="color:var(--gas-yellow)">'工作表名稱'</span>);</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Google Sheets 操作 -->
+  <section>
+
+    <!-- 子頁 1：讀取資料 -->
+    <section>
+      <div style="padding:10px 44px 6px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:2px;">Google Sheets 操作</div>
+        <h2 class="section-title" style="font-size:1.1em; margin-bottom:6px;">📖 <span>讀取</span>試算表資料</h2>
+        <div style="display:flex; flex-direction:column; gap:5px; flex:1; min-height:0;">
+
+          <div style="background:var(--card); border-left:4px solid var(--gas-green); border-radius:0 8px 8px 0; padding:6px 12px;">
+            <div style="font-size:0.6em; font-weight:700; color:var(--gas-green); margin-bottom:2px;">① 讀取單一儲存格</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.48em; color:var(--gas-green); line-height:1.35; background:var(--mid); padding:5px 9px; border-radius:6px;">const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();<br>const val = sheet.getRange(<span style="color:var(--gas-yellow)">"A1"</span>).getValue();<br>Logger.log(val);</div>
+          </div>
+
+          <div style="background:var(--card); border-left:4px solid var(--gas-blue); border-radius:0 8px 8px 0; padding:6px 12px;">
+            <div style="font-size:0.6em; font-weight:700; color:var(--gas-blue); margin-bottom:2px;">② 讀取整個範圍（二維陣列）</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.48em; color:var(--gas-green); line-height:1.35; background:var(--mid); padding:5px 9px; border-radius:6px;">// 讀取 A1:C10 所有資料，回傳二維陣列<br>const data = sheet.getRange(<span style="color:var(--gas-yellow)">"A1:C10"</span>).getValues();<br>// 逐行處理<br>data.forEach(row =&gt; { Logger.log(<span style="color:var(--gas-yellow)">`姓名: ${row[0]}, 分數: ${row[1]}`</span>); });</div>
+          </div>
+
+          <div style="background:var(--card); border-left:4px solid var(--gas-yellow); border-radius:0 8px 8px 0; padding:6px 12px;">
+            <div style="font-size:0.6em; font-weight:700; color:var(--gas-yellow); margin-bottom:2px;">③ 讀取到最後一行（動態範圍）</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.48em; color:var(--gas-green); line-height:1.35; background:var(--mid); padding:5px 9px; border-radius:6px;">// 自動偵測資料有幾行，不用寫死範圍<br>const lastRow = sheet.getLastRow();<br>const data = sheet.getRange(<span style="color:var(--gas-yellow)">1, 1, lastRow, 3</span>).getValues();<br><span style="color:var(--muted)">// getRange(起始列, 起始欄, 總列數, 總欄數)</span></div>
+          </div>
+
+        </div>
+        <div style="margin-top:5px; text-align:center; font-size:0.56em; color:var(--muted); flex-shrink:0;">⬇ 繼續看寫入資料</div>
+      </div>
+    </section>
+
+    <!-- 子頁 2：寫入資料 -->
+    <section>
+      <div style="padding:12px 44px 6px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:2px;">Google Sheets 操作</div>
+        <h2 class="section-title" style="font-size:1.2em; margin-bottom:6px;">✏️ <span>寫入</span>試算表資料</h2>
+        <div style="display:flex; flex-direction:column; gap:5px; flex:1; min-height:0;">
+
+          <div style="background:var(--card); border-left:4px solid var(--gas-green); border-radius:0 8px 8px 0; padding:6px 12px;">
+            <div style="font-size:0.62em; font-weight:700; color:var(--gas-green); margin-bottom:3px;">寫入單一儲存格</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.52em; color:var(--gas-green); line-height:1.4; background:var(--mid); padding:6px 10px; border-radius:6px;">// 在 B2 寫入文字<br>sheet.getRange(<span style="color:var(--gas-yellow)">"B2"</span>).setValue(<span style="color:var(--gas-yellow)">"Hello GAS!"</span>);<br>// 在 C3 寫入當前時間<br>sheet.getRange(<span style="color:var(--gas-yellow)">"C3"</span>).setValue(<span style="color:var(--gas-yellow)">new Date()</span>);</div>
+          </div>
+
+          <div style="background:var(--card); border-left:4px solid var(--gas-blue); border-radius:0 8px 8px 0; padding:6px 12px;">
+            <div style="font-size:0.62em; font-weight:700; color:var(--gas-blue); margin-bottom:3px;">在最後一行新增一筆資料</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.52em; color:var(--gas-green); line-height:1.4; background:var(--mid); padding:6px 10px; border-radius:6px;">const lastRow = sheet.getLastRow();<br>// 在下一行寫入一列資料（陣列對應欄位）<br>sheet.getRange(<span style="color:var(--gas-yellow)">lastRow + 1, 1, 1, 3</span>).setValues([<br>&nbsp;&nbsp;[<span style="color:var(--gas-yellow)">"王小明"</span>, <span style="color:var(--gas-yellow)">95</span>, <span style="color:var(--gas-yellow)">new Date()</span>]<br>]);</div>
+          </div>
+
+          <div style="background:var(--card); border-left:4px solid var(--gas-red); border-radius:0 8px 8px 0; padding:6px 12px;">
+            <div style="font-size:0.62em; font-weight:700; color:var(--gas-red); margin-bottom:3px;">appendRow — 最簡單的新增方式 ⭐</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.52em; color:var(--gas-green); line-height:1.4; background:var(--mid); padding:6px 10px; border-radius:6px;">// 直接在最後加一行，最簡潔！<br>sheet.appendRow([<span style="color:var(--gas-yellow)">"王小明"</span>, <span style="color:var(--gas-yellow)">95</span>, <span style="color:var(--gas-yellow)">new Date()</span>]);</div>
+          </div>
+
+        </div>
+        <div style="margin-top:5px; text-align:center; font-size:0.58em; color:var(--muted); flex-shrink:0;">⬇ 繼續看實用技巧</div>
+      </div>
+    </section>
+
+    <!-- 子頁 3：實用技巧 -->
+    <section>
+      <div style="padding:14px 44px 8px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:2px;">Google Sheets 操作</div>
+        <h2 class="section-title" style="font-size:1.3em; margin-bottom:8px;">⚡ <span>實用技巧</span>與常見模式</h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; flex:1; min-height:0;">
+
+          <div style="display:flex; flex-direction:column; gap:7px;">
+            <div style="background:var(--card); border-left:4px solid var(--gas-yellow); border-radius:0 8px 8px 0; padding:8px 14px;">
+              <div style="font-size:0.65em; font-weight:700; color:var(--gas-yellow); margin-bottom:4px;">清除儲存格內容</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.52em; color:var(--gas-green); line-height:1.5; background:var(--mid); padding:6px 10px; border-radius:6px;">// 清除值但保留格式<br>sheet.getRange(<span style="color:var(--gas-yellow)">"A1:C10"</span>).clearContent();<br><br>// 全部清除（含格式）<br>sheet.getRange(<span style="color:var(--gas-yellow)">"A1:C10"</span>).clear();</div>
+            </div>
+
+            <div style="background:var(--card); border-left:4px solid var(--gas-green); border-radius:0 8px 8px 0; padding:8px 14px;">
+              <div style="font-size:0.65em; font-weight:700; color:var(--gas-green); margin-bottom:4px;">搜尋特定值</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.52em; color:var(--gas-green); line-height:1.5; background:var(--mid); padding:6px 10px; border-radius:6px;">const data = sheet.getDataRange().getValues();<br>const found = data.find(row => row[0] === <span style="color:var(--gas-yellow)">"王小明"</span>);<br>Logger.log(found);</div>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:7px;">
+            <div style="background:var(--card); border-left:4px solid var(--gas-blue); border-radius:0 8px 8px 0; padding:8px 14px;">
+              <div style="font-size:0.65em; font-weight:700; color:var(--gas-blue); margin-bottom:4px;">getDataRange — 自動抓全部資料</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.52em; color:var(--gas-green); line-height:1.5; background:var(--mid); padding:6px 10px; border-radius:6px;">// 不用指定範圍，自動抓有資料的區域<br>const all = sheet.getDataRange().getValues();<br><br>// 跳過標題列（第一行）<br>const rows = all.slice(<span style="color:var(--gas-yellow)">1</span>);</div>
+            </div>
+
+            <div style="background:#0d1a1a; border:1px solid var(--gas-green); border-radius:8px; padding:10px 14px;">
+              <div style="font-size:0.62em; color:var(--gas-green); line-height:1.6;">
+                💡 <strong>效能提醒</strong><br>
+                盡量用 <code style="font-family:monospace; color:var(--gas-yellow)">getValues()</code> 一次讀取，避免在迴圈裡重複呼叫 <code style="font-family:monospace; color:var(--gas-yellow)">getValue()</code>，會大幅拖慢速度！
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div style="margin-top:6px; text-align:center; font-size:0.6em; color:var(--muted); flex-shrink:0;">⬆ 向上返回 / ➡ 下一主題</div>
+      </div>
+    </section>
+
+  </section>
+  	<!-- 結尾 -->
+  <section>
+    <div class="end-card">
+      <p class="big">開始寫你的<span class="accent">第一個腳本</span>吧！</p>
+      <p class="sub">GAS 不需要伺服器、不需要費用、不需要安裝環境。只要一個 Google 帳號，就能讓學校的工作變得更聰明。</p>
+      <div class="end-tags">
+        <span>#自動化</span>
+        <span>#JavaScript</span>
+        <span>#免費</span>
+        <span>#雲端執行</span>
+        <span>#學校資訊化</span>
+      </div>
+      <p class="powered">Vincent Wang ⚡ Powered By Claude</p>
+    </div>
+  </section>
+
+  <!-- 第一支程式 -->
+  <section>
+
+    <!-- 子頁 1：任務說明 -->
+    <section>
+      <div style="padding:14px 44px 8px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:2px;">第一支程式</div>
+        <h2 class="section-title" style="font-size:1.3em; margin-bottom:10px;">🎯 我們要做什麼？</h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; flex:1; min-height:0;">
+
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="background:var(--card); border:1px solid var(--gas-yellow); border-radius:10px; padding:12px 16px;">
+              <div style="font-size:0.75em; font-weight:900; color:var(--gas-yellow); margin-bottom:8px;">📋 任務一：遮蔽姓名</div>
+              <div style="display:flex; flex-direction:column; gap:5px;">
+                <div style="font-size:0.65em; color:var(--muted); background:var(--mid); border-radius:6px; padding:6px 10px;">原始資料：<span style="color:var(--text); font-weight:700;">王小明</span></div>
+                <div style="text-align:center; font-size:0.8em; color:var(--gas-yellow);">↓ GAS 處理</div>
+                <div style="font-size:0.65em; color:var(--muted); background:var(--mid); border-radius:6px; padding:6px 10px;">輸出結果：<span style="color:var(--gas-yellow); font-weight:700;">王○明</span></div>
+              </div>
+              <div style="font-size:0.6em; color:var(--muted); margin-top:8px; line-height:1.5;">把姓名中間那個字替換成「○」，保護個資但仍可辨識</div>
+            </div>
+
+            <div style="background:var(--card); border:1px solid var(--gas-blue); border-radius:10px; padding:12px 16px;">
+              <div style="font-size:0.75em; font-weight:900; color:var(--gas-blue); margin-bottom:8px;">🔧 任務二：建立工具列</div>
+              <div style="font-size:0.63em; color:var(--muted); line-height:1.6;">在 Google 試算表頂端選單新增一個<strong style="color:var(--text)">「自訂工具列」</strong>，讓老師直接點選按鈕就能執行程式，不需要進 GAS 編輯器</div>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 16px; flex:1;">
+              <div style="font-size:0.68em; font-weight:700; color:var(--text); margin-bottom:8px;">📊 試算表範例結構</div>
+              <table style="width:100%; font-family:'JetBrains Mono',monospace; font-size:0.55em; border-collapse:collapse;">
+                <tr style="background:var(--mid);">
+                  <td style="padding:4px 8px; border:1px solid var(--border); color:var(--muted);">欄A</td>
+                  <td style="padding:4px 8px; border:1px solid var(--border); color:var(--muted);">欄B</td>
+                  <td style="padding:4px 8px; border:1px solid var(--border); color:var(--muted);">欄C</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 8px; border:1px solid var(--border); color:var(--gas-yellow);">姓名（原始）</td>
+                  <td style="padding:4px 8px; border:1px solid var(--border); color:var(--text);">班級</td>
+                  <td style="padding:4px 8px; border:1px solid var(--border); color:var(--gas-green);">遮蔽後姓名</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 8px; border:1px solid var(--border); color:var(--muted);">王小明</td>
+                  <td style="padding:4px 8px; border:1px solid var(--border); color:var(--muted);">三年一班</td>
+                  <td style="padding:4px 8px; border:1px solid var(--border); color:var(--gas-yellow);">王○明</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 8px; border:1px solid var(--border); color:var(--muted);">陳大中</td>
+                  <td style="padding:4px 8px; border:1px solid var(--border); color:var(--muted);">三年二班</td>
+                  <td style="padding:4px 8px; border:1px solid var(--border); color:var(--gas-yellow);">陳○中</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 8px; border:1px solid var(--border); color:var(--muted);">李美華</td>
+                  <td style="padding:4px 8px; border:1px solid var(--border); color:var(--muted);">三年三班</td>
+                  <td style="padding:4px 8px; border:1px solid var(--border); color:var(--gas-yellow);">李○華</td>
+                </tr>
+              </table>
+            </div>
+            <div style="background:#0d1a0a; border:1px solid var(--gas-green); border-radius:8px; padding:8px 14px;">
+              <div style="font-size:0.62em; color:var(--gas-green);">💡 A欄放原始姓名，C欄用GAS自動寫入遮蔽後的結果</div>
+            </div>
+          </div>
+
+        </div>
+        <div style="margin-top:6px; text-align:center; font-size:0.58em; color:var(--muted); flex-shrink:0;">⬇ 看程式碼</div>
+      </div>
+    </section>
+
+
+    <!-- 子頁 2：程式碼 -->
+    <section>
+      <div style="padding:10px 44px 5px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:1px;">第一支程式</div>
+        <h2 class="section-title" style="font-size:1em; margin-bottom:5px;">💻 完整程式碼</h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; flex:1; min-height:0; overflow:hidden;">
+
+          <!-- 左欄：遮蔽姓名函式 -->
+          <div style="display:flex; flex-direction:column; gap:4px; min-height:0;">
+            <div style="font-size:0.58em; color:var(--gas-green); font-family:'JetBrains Mono',monospace;">① 遮蔽姓名主函式</div>
+            <div style="background:var(--mid); border:1px solid var(--border); border-radius:7px; padding:7px 10px; flex:1; overflow:hidden;">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.4em; color:var(--gas-green); line-height:1.38;">
+                <span style="color:var(--muted)">// 遮蔽 A 欄姓名，結果寫入 C 欄</span><br>
+                <span style="color:var(--gas-blue)">function</span> <span style="color:var(--gas-yellow)">maskNames</span>() {<br>
+                &nbsp;<span style="color:var(--gas-blue)">const</span> sheet = SpreadsheetApp<br>
+                &nbsp;&nbsp;.getActiveSpreadsheet().getActiveSheet();<br>
+                &nbsp;<span style="color:var(--gas-blue)">const</span> lastRow = sheet.getLastRow();<br>
+                &nbsp;<span style="color:var(--gas-blue)">const</span> names = sheet<br>
+                &nbsp;&nbsp;.getRange(<span style="color:var(--gas-yellow)">2, 1, lastRow-1, 1</span>).getValues();<br><br>
+                &nbsp;<span style="color:var(--gas-blue)">const</span> masked = names.map(row => {<br>
+                &nbsp;&nbsp;<span style="color:var(--gas-blue)">const</span> name = row[<span style="color:var(--gas-yellow)">0</span>];<br>
+                &nbsp;&nbsp;<span style="color:var(--gas-blue)">if</span> (name.length &lt; <span style="color:var(--gas-yellow)">2</span>) <span style="color:var(--gas-blue)">return</span> [name];<br>
+                &nbsp;&nbsp;<span style="color:var(--gas-blue)">const</span> result =<br>
+                &nbsp;&nbsp;&nbsp;name[<span style="color:var(--gas-yellow)">0</span>] + <span style="color:var(--gas-yellow)">'○'</span> + name.slice(<span style="color:var(--gas-yellow)">2</span>);<br>
+                &nbsp;&nbsp;<span style="color:var(--gas-blue)">return</span> [result];<br>
+                &nbsp;});<br><br>
+                &nbsp;<span style="color:var(--muted)">// 寫入 C 欄（從第2列起）</span><br>
+                &nbsp;sheet.getRange(<span style="color:var(--gas-yellow)">2, 3, masked.length, 1</span>)<br>
+                &nbsp;&nbsp;.setValues(masked);<br>
+                &nbsp;SpreadsheetApp.getUi().alert(<span style="color:var(--gas-yellow)">'✅ 完成！'</span>);<br>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- 右欄：工具列 + 說明 -->
+          <div style="display:flex; flex-direction:column; gap:4px; min-height:0;">
+            <div style="font-size:0.58em; color:var(--gas-blue); font-family:'JetBrains Mono',monospace;">② 建立自訂工具列</div>
+            <div style="background:var(--mid); border:1px solid var(--border); border-radius:7px; padding:7px 10px;">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.45em; color:var(--gas-green); line-height:1.38;">
+                <span style="color:var(--muted)">// 開啟試算表時自動建立選單</span><br>
+                <span style="color:var(--gas-blue)">function</span> <span style="color:var(--gas-yellow)">onOpen</span>() {<br>
+                &nbsp;SpreadsheetApp.getUi()<br>
+                &nbsp;&nbsp;.createMenu(<span style="color:var(--gas-yellow)">'🔧 我的工具'</span>)<br>
+                &nbsp;&nbsp;.addItem(<span style="color:var(--gas-yellow)">'遮蔽姓名中間字'</span>, <span style="color:var(--gas-yellow)">'maskNames'</span>)<br>
+                &nbsp;&nbsp;.addToUi();<br>
+                }
+              </div>
+            </div>
+
+            <div style="font-size:0.58em; color:var(--gas-yellow); font-family:'JetBrains Mono',monospace; margin-top:2px;">③ 重點說明</div>
+            <div style="display:flex; flex-direction:column; gap:3px;">
+              <div style="background:var(--card); border-left:3px solid var(--gas-green); border-radius:0 5px 5px 0; padding:4px 9px; font-size:0.56em; color:var(--text);">
+                <code style="color:var(--gas-yellow); font-family:monospace;">name[0]</code> 取第1個字（姓）
+              </div>
+              <div style="background:var(--card); border-left:3px solid var(--gas-blue); border-radius:0 5px 5px 0; padding:4px 9px; font-size:0.56em; color:var(--text);">
+                <code style="color:var(--gas-yellow); font-family:monospace;">name.slice(2)</code> 取第3字之後（名）
+              </div>
+              <div style="background:var(--card); border-left:3px solid var(--gas-yellow); border-radius:0 5px 5px 0; padding:4px 9px; font-size:0.56em; color:var(--text);">
+                <code style="color:var(--gas-yellow); font-family:monospace;">onOpen()</code> 開檔時自動執行的觸發器
+              </div>
+              <div style="background:var(--card); border-left:3px solid var(--gas-red); border-radius:0 5px 5px 0; padding:4px 9px; font-size:0.56em; color:var(--text);">
+                <code style="color:var(--gas-yellow); font-family:monospace;">createMenu()</code> 在選單列新增自訂按鈕
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div style="margin-top:4px; text-align:center; font-size:0.54em; color:var(--muted); flex-shrink:0;">⬆ 向上返回 / ➡ 下一主題</div>
+      </div>
+    </section>
+
+  </section>
+
+  
+
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+<script>
+  // ── 音效（Web Audio API，無需外部檔案）──
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  let ctx;
+
+  function initAudio() {
+    if (!ctx) ctx = new AudioCtx();
+  }
+
+  function playPageSound() {
+    if (!ctx) return;
+    // 短促的「咻」音：sweep down
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.type = 'sine';
+    const now = ctx.currentTime;
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.exponentialRampToValueAtTime(220, now + 0.18);
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+    osc.start(now);
+    osc.stop(now + 0.25);
+  }
+
+  function playClickSound() {
+    if (!ctx) return;
+    // 乾脆的「叩」聲
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 8);
+    }
+    const src = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1200;
+    src.buffer = buf;
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    src.start();
+  }
+
+  // 初始化 Reveal
+  // 隨機換頁效果池
+  const transitions = ['none', 'fade', 'slide', 'convex', 'concave', 'zoom'];
+  const bgTransitions = ['none', 'fade', 'slide', 'convex', 'concave', 'zoom'];
+
+  Reveal.initialize({
+    hash: true,
+    transition: 'slide',
+    transitionSpeed: 'default',
+    backgroundTransition: 'fade',
+    controls: true,
+    progress: true,
+    slideNumber: 'c/t',
+    showSlideNumber: 'all',
+    center: false,
+    width: 1200,
+    height: 700,
+    margin: 0.04,
+  });
+
+  // 第一次互動後解鎖 AudioContext
+  document.addEventListener('click', initAudio, { once: true });
+  document.addEventListener('keydown', initAudio, { once: true });
+
+  // 換頁：每次隨機切換動畫
+  Reveal.on('slidechanged', () => {
+    const t = transitions[Math.floor(Math.random() * transitions.length)];
+    const bt = bgTransitions[Math.floor(Math.random() * bgTransitions.length)];
+    Reveal.configure({ transition: t, backgroundTransition: bt });
+    initAudio();
+    playPageSound();
+  });
+
+  // 控制按鈕點擊音
+  document.querySelectorAll('.controls button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      initAudio();
+      playClickSound();
+    });
+  });
+</script>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBwooMJ0vsEkQTFJ7HDRg8i4ex0nEPa2Tk",
+    authDomain: "web-login-dd626.firebaseapp.com",
+    projectId: "web-login-dd626",
+    storageBucket: "web-login-dd626.firebasestorage.app",
+    messagingSenderId: "128529685419",
+    appId: "1:128529685419:web:7dc95d7fd209bd877a90ee",
+    measurementId: "G-L8NHV8CRWF"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const SURVEY_DOC = doc(db, "gas_survey", "votes");
+  const colors = ["var(--gas-red)","var(--gas-yellow)","var(--gas-blue)","var(--gas-green)"];
+  let myVote = null;
+  let voted = false;
+
+  // 初始化文件（若不存在）
+  async function ensureDoc() {
+    const snap = await getDoc(SURVEY_DOC);
+    if (!snap.exists()) {
+      await setDoc(SURVEY_DOC, { v0:0, v1:0, v2:0, v3:0 });
+    }
+  }
+
+  // 即時監聽（一進入頁面就顯示所有票數）
+  function listenVotes() {
+    // 先把進度條都顯示出來（初始 0%）
+    for (let i = 0; i < 4; i++) {
+      const wrap = document.querySelector(".s-bar[data-val='" + i + "']").parentElement;
+      const countEl = document.querySelector(".s-count[data-val='" + i + "']");
+      if (wrap) wrap.style.display = "block";
+      if (countEl) { countEl.style.display = "block"; countEl.textContent = "0 票（0%）"; }
+    }
+
+    onSnapshot(SURVEY_DOC, (snap) => {
+      if (!snap.exists()) return;
+      const d = snap.data();
+      const counts = [d.v0||0, d.v1||0, d.v2||0, d.v3||0];
+      const total = counts.reduce((a,b)=>a+b, 0);
+
+      document.getElementById("survey-total").textContent = "總計 " + total + " 票";
+      document.getElementById("survey-status").textContent = "🔴 即時同步中";
+
+      // 不管有沒有投票，都即時更新票數與進度條
+      counts.forEach((cnt, i) => {
+        const pct = total > 0 ? Math.round(cnt / total * 100) : 0;
+        const bar = document.querySelector(".s-bar[data-val='" + i + "']");
+        const countEl = document.querySelector(".s-count[data-val='" + i + "']");
+        const wrap = bar ? bar.parentElement : null;
+        if (bar) bar.style.width = pct + "%";
+        if (wrap) wrap.style.display = "block";
+        if (countEl) { countEl.textContent = cnt + " 票（" + pct + "%）"; countEl.style.display = "block"; }
+      });
+    });
+  }
+
+  // 投票函式（掛到 window 讓 onclick 可呼叫）
+  window.vote = async function(val) {
+    if (voted) return;
+    voted = true;
+    myVote = val;
+
+    // 更新畫面：鎖定選項、highlight 選中
+    document.querySelectorAll(".s-opt").forEach(el => {
+      el.style.cursor = "default";
+      if (parseInt(el.dataset.val) === val) {
+        el.style.borderColor = colors[val];
+        el.style.background = "rgba(255,255,255,0.05)";
+      } else {
+        el.style.opacity = "0.5";
+      }
+    });
+
+    // 寫入 Firestore（increment 用 FieldValue，這裡改用 read-modify-write）
+    try {
+      const snap = await getDoc(SURVEY_DOC);
+      const d = snap.exists() ? snap.data() : {v0:0,v1:0,v2:0,v3:0};
+      d["v"+val] = (d["v"+val] || 0) + 1;
+      await setDoc(SURVEY_DOC, d);
+    } catch(e) {
+      console.error(e);
+      document.getElementById("survey-status").textContent = "⚠️ 寫入失敗：" + e.message;
+    }
+  };
+
+  // 啟動
+  ensureDoc().then(listenVotes).catch(e => {
+    document.getElementById("survey-status").textContent = "⚠️ Firebase 連線失敗";
+    console.error(e);
+  });
+</script>
+</body>
+</html>
