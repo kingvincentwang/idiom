@@ -4,254 +4,395 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>問卷調查與進度統計</title>
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* 客製化霓虹發光與背景動畫 */
     @keyframes pulse-glow {
       0%, 100% { opacity: 0.6; filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.6)); }
       50% { opacity: 1; filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.9)); }
     }
-    .neon-pulse {
-      animation: pulse-glow 2s infinite;
+    .neon-pulse { animation: pulse-glow 2s infinite; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* 分頁切換動畫 */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* 管理員登入表單 */
+    #admin-login-form input {
+      background: rgba(15,23,42,0.8);
+      border: 1px solid rgba(59,130,246,0.3);
+      border-radius: 0.5rem;
+      padding: 0.6rem 1rem;
+      color: #e2e8f0;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
     }
-    /* 隱藏滾動條但保持功能 */
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
+    #admin-login-form input:focus {
+      border-color: rgba(34,211,238,0.7);
     }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
+
+    /* 重置確認按鈕 */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-4px); }
+      40%, 80% { transform: translateX(4px); }
     }
+    .shake { animation: shake 0.4s ease; }
   </style>
 </head>
 <body class="min-h-screen bg-slate-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-950 via-slate-950 to-black flex flex-col items-center py-12 px-4 font-sans text-blue-50">
 
-  <!-- 讀取遮罩 (Loading Screen - 首次載入時出現) -->
+  <!-- 讀取遮罩 -->
   <div id="loading-screen" class="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center transition-opacity duration-500">
-    <div class="text-xl text-cyan-400 font-semibold tracking-widest neon-pulse mb-2">
-      SYSTEM CONNECTING...
-    </div>
+    <div class="text-xl text-cyan-400 font-semibold tracking-widest neon-pulse mb-2">SYSTEM CONNECTING...</div>
     <div class="text-xs text-blue-400/60 font-mono text-center px-4">ESTABLISHING REAL-TIME CONNECTION TO FIREBASE SECURE CLOUD...</div>
   </div>
 
   <!-- 主容器 -->
   <div class="max-w-2xl w-full bg-slate-900/40 backdrop-blur-xl border border-blue-500/30 rounded-2xl shadow-[0_0_50px_-12px_rgba(59,130,246,0.5)] overflow-hidden p-6 sm:p-8">
-    
+
     <!-- 標頭 -->
-    <header class="text-center mb-8">
+    <header class="text-center mb-6">
       <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-2 drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]">
         研習問卷調查與進度統計表
       </h1>
       <p class="text-blue-300/70 text-sm tracking-wide">
         數據已與 Firebase 雲端同步 <span class="text-cyan-400 font-semibold">🧬 Websocket 毫秒級即時更新</span>
       </p>
-      
-      <!-- 錯誤顯示區塊 -->
       <div id="error-container" class="hidden mt-3 p-3 bg-red-950/40 border border-red-500/40 rounded-lg text-red-400 text-sm">
         <span id="error-message"></span>
       </div>
     </header>
 
-    <!-- 📊 實時數據數據監控中心 (毫秒級同步) -->
-    <section class="mb-8 bg-cyan-950/20 border border-cyan-500/30 rounded-xl p-5 shadow-[0_0_20px_rgba(6,182,212,0.15)] backdrop-blur-md">
-      <h2 class="text-lg font-semibold mb-4 text-cyan-300 flex items-center justify-between border-b border-cyan-500/20 pb-2">
-        <span class="flex items-center gap-2">📊 調查結果統計</span>
-        <span class="text-xs text-cyan-400/80 animate-pulse font-mono flex items-center gap-1.5">
-          <span class="h-2 w-2 rounded-full bg-cyan-400"></span> LIVE SYSTEM
-        </span>
-      </h2>
-      
-      <!-- 調查結果進度條 -->
-      <div class="space-y-4">
-        <!-- 選項 1 結果 -->
-        <div>
-          <div class="flex justify-between text-xs mb-1">
-            <span class="text-blue-200/80">1. 從沒聽過，那是什麼碗糕</span>
-            <span class="text-cyan-400 font-bold"><span id="live-votes-1">0</span> 票 (<span id="live-pct-1">0%</span>)</span>
+    <!-- ═══════════════════════════════════════
+         分頁標籤列
+    ═══════════════════════════════════════ -->
+    <div class="flex gap-1 mb-6 bg-slate-950/50 rounded-xl p-1 border border-blue-500/20">
+      <button id="tab-survey-btn" onclick="switchTab('survey')"
+        class="tab-btn flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all text-cyan-300 bg-blue-600/20 border border-cyan-500/40">
+        📊 問卷調查
+      </button>
+      <button id="tab-progress-btn" onclick="switchTab('progress')"
+        class="tab-btn flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all text-blue-300/60 hover:text-blue-200 hover:bg-white/5">
+        🔢 進度統計
+      </button>
+      <button id="tab-board-btn" onclick="switchTab('board')"
+        class="tab-btn flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all text-blue-300/60 hover:text-blue-200 hover:bg-white/5">
+        💬 佈告欄
+      </button>
+      <button id="tab-admin-btn" onclick="switchTab('admin')"
+        class="tab-btn flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all text-blue-300/60 hover:text-red-300 hover:bg-red-950/20">
+        ⚙️ 管理
+      </button>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         分頁一：問卷調查
+    ═══════════════════════════════════════ -->
+    <div id="tab-survey" class="tab-panel active space-y-6">
+
+      <!-- 統計結果 -->
+      <section class="bg-cyan-950/20 border border-cyan-500/30 rounded-xl p-5 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+        <h2 class="text-lg font-semibold mb-4 text-cyan-300 flex items-center justify-between border-b border-cyan-500/20 pb-2">
+          <span class="flex items-center gap-2">📊 調查結果統計</span>
+          <span class="text-xs text-cyan-400/80 animate-pulse font-mono flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-cyan-400"></span> LIVE
+          </span>
+        </h2>
+        <div class="space-y-4">
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-blue-200/80">1. 從沒聽過，那是什麼碗糕</span>
+              <span class="text-cyan-400 font-bold"><span id="live-votes-1">0</span> 票 (<span id="live-pct-1">0%</span>)</span>
+            </div>
+            <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-blue-500/10">
+              <div id="live-bar-1" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-1000 ease-out" style="width:0%"></div>
+            </div>
           </div>
-          <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-blue-500/10">
-            <div id="live-bar-1" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-blue-200/80">2. 知道這個東西，但沒用過</span>
+              <span class="text-cyan-400 font-bold"><span id="live-votes-2">0</span> 票 (<span id="live-pct-2">0%</span>)</span>
+            </div>
+            <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-blue-500/10">
+              <div id="live-bar-2" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-1000 ease-out" style="width:0%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-blue-200/80">3. 有使用過，曾經布署過網頁</span>
+              <span class="text-cyan-400 font-bold"><span id="live-votes-3">0</span> 票 (<span id="live-pct-3">0%</span>)</span>
+            </div>
+            <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-blue-500/10">
+              <div id="live-bar-3" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-1000 ease-out" style="width:0%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-blue-200/80">4. 很常使用，且部署過很多專案</span>
+              <span class="text-cyan-400 font-bold"><span id="live-votes-4">0</span> 票 (<span id="live-pct-4">0%</span>)</span>
+            </div>
+            <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-blue-500/10">
+              <div id="live-bar-4" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-1000 ease-out" style="width:0%"></div>
+            </div>
           </div>
         </div>
-
-        <!-- 選項 2 結果 -->
-        <div>
-          <div class="flex justify-between text-xs mb-1">
-            <span class="text-blue-200/80">2. 知道這個東西，但沒用過</span>
-            <span class="text-cyan-400 font-bold"><span id="live-votes-2">0</span> 票 (<span id="live-pct-2">0%</span>)</span>
-          </div>
-          <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-blue-500/10">
-            <div id="live-bar-2" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
-          </div>
+        <div class="text-right mt-3 text-xs text-cyan-400/60 font-medium tracking-wide">
+          累積總投票數: <span id="total-gas-votes">0</span> 票
         </div>
+      </section>
 
-        <!-- 選項 3 結果 -->
-        <div>
-          <div class="flex justify-between text-xs mb-1">
-            <span class="text-blue-200/80">3. 有使用過，曾經布署過網頁</span>
-            <span class="text-cyan-400 font-bold"><span id="live-votes-3">0</span> 票 (<span id="live-pct-3">0%</span>)</span>
-          </div>
-          <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-blue-500/10">
-            <div id="live-bar-3" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
-          </div>
-        </div>
-
-        <!-- 選項 4 結果 -->
-        <div>
-          <div class="flex justify-between text-xs mb-1">
-            <span class="text-blue-200/80">4. 很常使用，且部署過很多專案</span>
-            <span class="text-cyan-400 font-bold"><span id="live-votes-4">0</span> 票 (<span id="live-pct-4">0%</span>)</span>
-          </div>
-          <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-blue-500/10">
-            <div id="live-bar-4" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="text-right mt-3 text-xs text-cyan-400/60 font-medium tracking-wide">
-        累積總投票數: <span id="total-gas-votes">0</span> 票
-      </div>
-    </section>
-
-    <!-- 🗳️ 投票與點擊互動區 -->
-    <div class="space-y-6">
-      
-      <!-- GAS 調查選項按鈕 -->
+      <!-- 投票按鈕 -->
       <section class="bg-blue-950/30 border border-blue-500/20 rounded-xl p-5">
         <h2 class="text-lg font-semibold mb-4 text-cyan-300 flex items-center justify-between border-b border-blue-500/20 pb-2">
           <span>📝 調查您對GAS的了解程度 (每人限投一票)</span>
           <span id="survey-status-badge" class="text-xs px-2 py-0.5 bg-blue-500/20 text-cyan-300 rounded border border-cyan-400/30 font-mono">尚未投票</span>
         </h2>
-        
         <div class="grid grid-cols-1 gap-2.5">
-          <button id="gas-opt-1" class="survey-option w-full text-left p-3.5 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/50 hover:bg-white/10 shadow-sm transition-all flex items-center gap-3 group focus:outline-none">
-            <span class="opt-marker text-xs px-2 py-1 rounded bg-white/10 text-cyan-300 font-bold transition-all">1</span>
+          <button id="gas-opt-1" class="survey-option w-full text-left p-3.5 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/50 hover:bg-white/10 shadow-sm transition-all flex items-center gap-3 focus:outline-none">
+            <span class="opt-marker text-xs px-2 py-1 rounded bg-white/10 text-cyan-300 font-bold">1</span>
             <span class="text-sm font-medium text-blue-100/90">從沒聽過，那是什麼碗糕</span>
           </button>
-
-          <button id="gas-opt-2" class="survey-option w-full text-left p-3.5 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/50 hover:bg-white/10 shadow-sm transition-all flex items-center gap-3 group focus:outline-none">
-            <span class="opt-marker text-xs px-2 py-1 rounded bg-white/10 text-cyan-300 font-bold transition-all">2</span>
+          <button id="gas-opt-2" class="survey-option w-full text-left p-3.5 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/50 hover:bg-white/10 shadow-sm transition-all flex items-center gap-3 focus:outline-none">
+            <span class="opt-marker text-xs px-2 py-1 rounded bg-white/10 text-cyan-300 font-bold">2</span>
             <span class="text-sm font-medium text-blue-100/90">知道這個東西，但沒用過</span>
           </button>
-
-          <button id="gas-opt-3" class="survey-option w-full text-left p-3.5 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/50 hover:bg-white/10 shadow-sm transition-all flex items-center gap-3 group focus:outline-none">
-            <span class="opt-marker text-xs px-2 py-1 rounded bg-white/10 text-cyan-300 font-bold transition-all">3</span>
+          <button id="gas-opt-3" class="survey-option w-full text-left p-3.5 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/50 hover:bg-white/10 shadow-sm transition-all flex items-center gap-3 focus:outline-none">
+            <span class="opt-marker text-xs px-2 py-1 rounded bg-white/10 text-cyan-300 font-bold">3</span>
             <span class="text-sm font-medium text-blue-100/90">有使用過，曾經布署過網頁</span>
           </button>
-
-          <button id="gas-opt-4" class="survey-option w-full text-left p-3.5 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/50 hover:bg-white/10 shadow-sm transition-all flex items-center gap-3 group focus:outline-none">
-            <span class="opt-marker text-xs px-2 py-1 rounded bg-white/10 text-cyan-300 font-bold transition-all">4</span>
+          <button id="gas-opt-4" class="survey-option w-full text-left p-3.5 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/50 hover:bg-white/10 shadow-sm transition-all flex items-center gap-3 focus:outline-none">
+            <span class="opt-marker text-xs px-2 py-1 rounded bg-white/10 text-cyan-300 font-bold">4</span>
             <span class="text-sm font-medium text-blue-100/90">很常使用，且部署過很多專案</span>
           </button>
         </div>
       </section>
+    </div>
 
-      <!-- 統計資料與按鈕 -->
+    <!-- ═══════════════════════════════════════
+         分頁二：進度統計
+    ═══════════════════════════════════════ -->
+    <div id="tab-progress" class="tab-panel">
       <section class="bg-blue-950/30 border border-blue-500/20 rounded-xl p-5">
         <h2 class="text-lg font-semibold mb-4 text-cyan-300 border-b border-blue-500/20 pb-2">
           🔢 使用數字按鈕來統計所有人的進度 (每個按鈕限按乙次)
         </h2>
-        
-        <!-- 1~9 的計數小卡 -->
-        <div class="grid grid-cols-3 sm:grid-cols-9 gap-2 mb-4">
-          <template id="stat-card-template">
-            <div class="stat-card flex flex-col items-center bg-white/5 border border-white/10 rounded-lg py-2 shadow-sm backdrop-blur-sm transition-all">
-              <span class="text-[10px] text-blue-300/50 font-bold tracking-widest mb-0.5">BTN_X</span>
-              <span class="val-text text-xl font-black text-cyan-400 drop-shadow-[0_0_6px_rgba(34,211,238,0.6)]">0</span>
-            </div>
-          </template>
-          <div id="stat-cards-container" class="grid grid-cols-3 sm:grid-cols-9 gap-2 col-span-3 sm:col-span-9"></div>
-        </div>
 
-        <!-- 點擊測試按鈕 -->
-        <div class="grid grid-cols-3 gap-3 w-full max-w-sm mx-auto">
-          <template id="btn-template">
-            <button class="click-btn aspect-square flex items-center justify-center text-2xl font-bold text-cyan-100 bg-blue-600/20 hover:bg-cyan-500/30 active:bg-cyan-400/50 active:scale-95 border border-cyan-500/30 hover:border-cyan-400/80 rounded-xl transition-all duration-200 select-none backdrop-blur-md">X</button>
-          </template>
-          <div id="btns-container" class="grid grid-cols-3 gap-3 col-span-3 w-full"></div>
-        </div>
+        <div id="stat-cards-container" class="grid grid-cols-3 sm:grid-cols-9 gap-2 mb-4"></div>
+
+        <div id="btns-container" class="grid grid-cols-3 gap-3 w-full max-w-sm mx-auto"></div>
       </section>
+    </div>
 
-      <!-- 💬 實時文字佈告欄 -->
+    <!-- ═══════════════════════════════════════
+         分頁三：即時佈告欄
+    ═══════════════════════════════════════ -->
+    <div id="tab-board" class="tab-panel">
       <section class="bg-slate-900/60 border border-blue-500/20 rounded-xl p-5 backdrop-blur-md">
         <h2 class="text-lg font-semibold mb-4 text-cyan-300 border-b border-blue-500/20 pb-2 flex items-center justify-between">
           <span>💬 即時文字佈告欄</span>
           <span class="text-[10px] text-blue-400/60 font-mono">REAL-TIME TEXT BOARD</span>
         </h2>
-        
-        <!-- 輸入與上傳 -->
         <div class="flex gap-2 mb-4">
-          <input type="text" id="text-input" placeholder="有什麼想說的？輸入文字..." max="100" class="flex-1 bg-slate-950 border border-blue-500/30 rounded-lg px-4 py-2 text-sm text-blue-50 placeholder-blue-300/30 focus:outline-none focus:border-cyan-400/80 transition-all">
-          <button id="upload-btn" onclick="window.uploadText()" class="px-5 py-2 text-sm font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 rounded-lg active:scale-95 transition-all shadow-[0_0_15px_rgba(34,211,238,0.2)]">
+          <input type="text" id="text-input" placeholder="有什麼想說的？輸入文字..." maxlength="100"
+            class="flex-1 bg-slate-950 border border-blue-500/30 rounded-lg px-4 py-2 text-sm text-blue-50 placeholder-blue-300/30 focus:outline-none focus:border-cyan-400/80 transition-all">
+          <button id="upload-btn" onclick="window.uploadText()"
+            class="px-5 py-2 text-sm font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 rounded-lg active:scale-95 transition-all">
             上傳
           </button>
         </div>
-
-        <!-- 歷史文字串流 (修正：將 no-text-prompt 移出 text-history-container 防止 innerHTML 被清空造成 null 崩潰) -->
         <div id="no-text-prompt" class="text-center py-4 text-xs text-blue-300/30 tracking-wide">目前尚無上傳紀錄...</div>
-        <div id="text-history-container" class="space-y-2 max-h-48 overflow-y-auto pr-1 no-scrollbar text-sm">
-        </div>
+        <div id="text-history-container" class="space-y-2 max-h-64 overflow-y-auto pr-1 no-scrollbar text-sm"></div>
       </section>
     </div>
 
-  </div>
+    <!-- ═══════════════════════════════════════
+         分頁四：管理員
+    ═══════════════════════════════════════ -->
+    <div id="tab-admin" class="tab-panel">
 
-  <!-- Firebase JavaScript SDK 模組 (v11.6.1) -->
+      <!-- 狀態A：未登入 → 顯示登入表單 -->
+      <div id="admin-login-panel">
+        <section class="bg-red-950/20 border border-red-500/20 rounded-xl p-6">
+          <h2 class="text-lg font-semibold mb-1 text-red-300 flex items-center gap-2">
+            🔐 管理員登入
+          </h2>
+          <p class="text-xs text-blue-300/50 mb-5">此頁面僅限授權管理員存取。請使用您的 Firebase Email 帳密登入。</p>
+
+          <div id="admin-login-form" class="space-y-4 max-w-sm mx-auto">
+            <div>
+              <label class="text-xs text-blue-300/70 mb-1 block">電子信箱</label>
+              <input type="email" id="admin-email" placeholder="admin@example.com" autocomplete="email">
+            </div>
+            <div>
+              <label class="text-xs text-blue-300/70 mb-1 block">密碼</label>
+              <input type="password" id="admin-password" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <div id="admin-login-error" class="hidden text-red-400 text-xs p-2 bg-red-950/40 border border-red-500/20 rounded-lg"></div>
+            <button id="admin-login-btn" onclick="window.adminLogin()"
+              class="w-full py-2.5 text-sm font-bold bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-lg active:scale-95 transition-all shadow-[0_0_15px_rgba(220,38,38,0.2)]">
+              登入管理後台
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <!-- 狀態B：已登入 → 顯示管理操作 -->
+      <div id="admin-dashboard" class="hidden space-y-4">
+
+        <!-- 已登入資訊列 -->
+        <div class="flex items-center justify-between px-4 py-2.5 bg-green-950/30 border border-green-500/20 rounded-xl text-sm">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
+            <span class="text-green-300 font-mono text-xs">已登入：<span id="admin-user-email" class="text-green-200"></span></span>
+          </div>
+          <button onclick="window.adminLogout()"
+            class="text-xs text-red-400/70 hover:text-red-300 border border-red-500/20 hover:border-red-400/40 px-3 py-1 rounded-lg transition-all">
+            登出
+          </button>
+        </div>
+
+        <!-- 重置操作區 -->
+        <section class="bg-slate-900/60 border border-orange-500/20 rounded-xl p-5 space-y-3">
+          <h2 class="text-base font-semibold text-orange-300 border-b border-orange-500/20 pb-2 flex items-center gap-2">
+            ⚠️ 資料重置操作
+          </h2>
+
+          <!-- 問卷投票 重置 -->
+          <div class="flex items-center justify-between p-3.5 bg-white/3 border border-white/10 rounded-lg">
+            <div>
+              <div class="text-sm font-medium text-blue-100">問卷投票紀錄</div>
+              <div class="text-xs text-blue-300/50 mt-0.5">清除選項 1–4 的所有得票數</div>
+            </div>
+            <button onclick="window.resetSurvey()"
+              class="reset-btn px-4 py-1.5 text-xs font-bold text-orange-300 border border-orange-500/30 hover:bg-orange-950/40 rounded-lg transition-all active:scale-95">
+              清除投票
+            </button>
+          </div>
+
+          <!-- 按鈕計數 重置 -->
+          <div class="flex items-center justify-between p-3.5 bg-white/3 border border-white/10 rounded-lg">
+            <div>
+              <div class="text-sm font-medium text-blue-100">進度統計按鈕計數</div>
+              <div class="text-xs text-blue-300/50 mt-0.5">清除按鈕 1–9 的點擊統計</div>
+            </div>
+            <button onclick="window.resetButtons()"
+              class="reset-btn px-4 py-1.5 text-xs font-bold text-orange-300 border border-orange-500/30 hover:bg-orange-950/40 rounded-lg transition-all active:scale-95">
+              清除計數
+            </button>
+          </div>
+
+          <!-- 佈告欄 重置 -->
+          <div class="flex items-center justify-between p-3.5 bg-white/3 border border-white/10 rounded-lg">
+            <div>
+              <div class="text-sm font-medium text-blue-100">佈告欄訊息</div>
+              <div class="text-xs text-blue-300/50 mt-0.5">刪除所有留言（無法復原）</div>
+            </div>
+            <button onclick="window.resetMessages()"
+              class="reset-btn px-4 py-1.5 text-xs font-bold text-orange-300 border border-orange-500/30 hover:bg-orange-950/40 rounded-lg transition-all active:scale-95">
+              清除留言
+            </button>
+          </div>
+
+          <!-- 一鍵全部重置 -->
+          <div class="pt-2 border-t border-red-500/10">
+            <button id="reset-all-btn" onclick="window.resetAll()"
+              class="w-full py-3 text-sm font-black text-red-300 bg-red-950/30 hover:bg-red-900/40 border border-red-500/30 hover:border-red-400/60 rounded-xl transition-all active:scale-95 tracking-wide">
+              🔴 一鍵清除全部資料
+            </button>
+            <p class="text-center text-[10px] text-red-400/40 mt-1.5">包含投票、計數、留言（使用者 localStorage 除外）</p>
+          </div>
+        </section>
+
+        <!-- 操作紀錄 -->
+        <section class="bg-slate-900/40 border border-blue-500/10 rounded-xl p-4">
+          <h3 class="text-xs font-semibold text-blue-300/60 mb-2 tracking-widest">操作紀錄 LOG</h3>
+          <div id="admin-log" class="space-y-1 max-h-36 overflow-y-auto no-scrollbar text-[11px] font-mono text-blue-300/40">
+            <div>— 尚無操作紀錄 —</div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+  </div><!-- /主容器 -->
+
+  <!-- ============================================
+       Template (進度統計按鈕與卡片)
+  ============================================ -->
+  <template id="stat-card-template">
+    <div class="stat-card flex flex-col items-center bg-white/5 border border-white/10 rounded-lg py-2 shadow-sm transition-all">
+      <span class="label-text text-[10px] text-blue-300/50 font-bold tracking-widest mb-0.5">BTN_X</span>
+      <span class="val-text text-xl font-black text-cyan-400 drop-shadow-[0_0_6px_rgba(34,211,238,0.6)]">0</span>
+    </div>
+  </template>
+  <template id="btn-template">
+    <button class="click-btn aspect-square flex items-center justify-center text-2xl font-bold text-cyan-100 bg-blue-600/20 hover:bg-cyan-500/30 active:bg-cyan-400/50 active:scale-95 border border-cyan-500/30 hover:border-cyan-400/80 rounded-xl transition-all duration-200 select-none backdrop-blur-md"></button>
+  </template>
+
+  <!-- ============================================
+       Firebase SDK + 全部邏輯
+  ============================================ -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, collection, onSnapshot, setDoc, updateDoc, addDoc, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import {
+      getAuth, signInWithCustomToken, signInAnonymously,
+      signInWithEmailAndPassword, signOut, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import {
+      getFirestore, doc, collection, onSnapshot,
+      setDoc, updateDoc, addDoc, getDocs, deleteDoc, increment, writeBatch
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // ==========================================
-    // 🛠️ Firebase 本地端手動設定區 (當您下載此檔案獨立在 GitHub 或本機執行時)
-    // ==========================================
+    // ── Firebase 設定 ──────────────────────────
     const localFirebaseConfig = {
       apiKey: "AIzaSyBwooMJ0vsEkQTFJ7HDRg8i4ex0nEPa2Tk",
-	  authDomain: "web-login-dd626.firebaseapp.com",
-	  projectId: "web-login-dd626",
-	  storageBucket: "web-login-dd626.firebasestorage.app",
-	  messagingSenderId: "128529685419",
-	  appId: "1:128529685419:web:7dc95d7fd209bd877a90ee",
+      authDomain: "web-login-dd626.firebaseapp.com",
+      projectId: "web-login-dd626",
+      storageBucket: "web-login-dd626.firebasestorage.app",
+      messagingSenderId: "128529685419",
+      appId: "1:128529685419:web:7dc95d7fd209bd877a90ee",
     };
-
-    // 自動切換平台注入金鑰或本地金鑰
-    const firebaseConfig = typeof __firebase_config !== 'undefined' 
-      ? JSON.parse(__firebase_config) 
-      : localFirebaseConfig;
-      
+    const firebaseConfig = typeof __firebase_config !== 'undefined'
+      ? JSON.parse(__firebase_config) : localFirebaseConfig;
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-    // 初始化 Firebase 元件
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // 狀態變數
-    let counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
-    let gasCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    // ── 狀態 ───────────────────────────────────
+    let counts    = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0 };
+    let gasCounts = { 1:0, 2:0, 3:0, 4:0 };
     let currentUser = null;
+    let adminUser   = null;   // 管理員 Firebase Email 帳號
 
-    // 本地防灌水紀錄 (整合本地快取 & Firebase 私有路徑)
-    let userHistory = {
-      votedGas: null,       
-      clickedButtons: []    
-    };
+    let userHistory = { votedGas: null, clickedButtons: [] };
 
-    // 動態生成 1 ~ 9 的 UI 元件
+    // ── DOM refs ────────────────────────────────
+    const loadingScreen   = document.getElementById('loading-screen');
+    const errorContainer  = document.getElementById('error-container');
+    const errorMessage    = document.getElementById('error-message');
+    const totalGasVotesEl = document.getElementById('total-gas-votes');
+    const surveyBadge     = document.getElementById('survey-status-badge');
+    const adminLoginPanel = document.getElementById('admin-login-panel');
+    const adminDashboard  = document.getElementById('admin-dashboard');
+    const adminUserEmail  = document.getElementById('admin-user-email');
+    const adminLogEl      = document.getElementById('admin-log');
+
+    // ── 動態生成 1–9 按鈕 & 卡片 ──────────────
     const cardsContainer = document.getElementById('stat-cards-container');
-    const btnsContainer = document.getElementById('btns-container');
-    const cardTemplate = document.getElementById('stat-card-template');
-    const btnTemplate = document.getElementById('btn-template');
+    const btnsContainer  = document.getElementById('btns-container');
 
     for (let i = 1; i <= 9; i++) {
-      const cardClone = cardTemplate.content.cloneNode(true);
+      const cardClone = document.getElementById('stat-card-template').content.cloneNode(true);
       cardClone.querySelector('.stat-card').id = `card-${i}`;
-      cardClone.querySelector('.val-text').id = `stat-${i}`;
-      cardClone.querySelector('span').textContent = `BTN_${i}`;
+      cardClone.querySelector('.val-text').id  = `stat-${i}`;
+      cardClone.querySelector('.label-text').textContent = `BTN_${i}`;
       cardsContainer.appendChild(cardClone);
 
-      const btnClone = btnTemplate.content.cloneNode(true);
+      const btnClone = document.getElementById('btn-template').content.cloneNode(true);
       const btn = btnClone.querySelector('.click-btn');
       btn.id = `btn-${i}`;
       btn.textContent = i;
@@ -259,25 +400,35 @@
       btnsContainer.appendChild(btnClone);
     }
 
-    const loadingScreen = document.getElementById('loading-screen');
-    const errorContainer = document.getElementById('error-container');
-    const errorMessage = document.getElementById('error-message');
-    const totalGasVotesText = document.getElementById('total-gas-votes');
-    const surveyStatusBadge = document.getElementById('survey-status-badge');
+    // ── 分頁切換（全域） ────────────────────────
+    window.switchTab = function(tab) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(`tab-${tab}`).classList.add('active');
 
-    // 讀取本地防灌水快取 (雙重防灌水校驗)
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.className = b.className
+          .replace('text-cyan-300 bg-blue-600/20 border border-cyan-500/40', '')
+          .replace('text-red-300 bg-red-950/20 border border-red-500/40', '') + ' text-blue-300/60';
+      });
+
+      const activeBtn = document.getElementById(`tab-${tab}-btn`);
+      if (tab === 'admin') {
+        activeBtn.className = activeBtn.className.replace('text-blue-300/60','') + ' text-red-300 bg-red-950/20 border border-red-500/40';
+      } else {
+        activeBtn.className = activeBtn.className.replace('text-blue-300/60','') + ' text-cyan-300 bg-blue-600/20 border border-cyan-500/40';
+      }
+    };
+
+    // ── 本地防灌水快取 ──────────────────────────
     function loadLocalHistory() {
       const saved = localStorage.getItem('gas_survey_user_history');
       if (saved) {
         try {
           userHistory = JSON.parse(saved);
           if (!userHistory.clickedButtons) userHistory.clickedButtons = [];
-        } catch(e) {
-          console.error("解析本地紀錄失敗", e);
-        }
+        } catch(e) {}
       }
     }
-
     function saveLocalHistory() {
       localStorage.setItem('gas_survey_user_history', JSON.stringify(userHistory));
     }
@@ -287,7 +438,7 @@
       errorContainer.classList.remove('hidden');
     }
 
-    // 1. Firebase 驗證程序 (必須為首要步驟 - Rule 3)
+    // ── 1. Firebase 匿名驗證（一般使用者） ──────
     const initAuth = async () => {
       try {
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -296,323 +447,345 @@
           await signInAnonymously(auth);
         }
       } catch (err) {
-        console.error("驗證失敗:", err);
-        showError("安全驗證失敗。如果您是本地執行，請確保已在您的 Firebase 啟用「匿名登入 (Anonymous Auth)」並填入正確金鑰。");
+        showError("安全驗證失敗。請確認 Firebase 已啟用「匿名登入」。");
         loadingScreen.classList.add('hidden');
       }
     };
-
     initAuth();
 
-    // 監聽 Auth 狀態，並在登入成功後啟動 Firestore 即時監聽通路 (Rule 3)
     onAuthStateChanged(auth, (user) => {
       if (user) {
         currentUser = user;
+        // 若是 Email 登入的管理員
+        if (user.email) {
+          adminUser = user;
+          showAdminDashboard(user.email);
+        }
         startRealtimeDatabase();
       } else {
         currentUser = null;
       }
     });
 
-    // 2. 啟動 Firestore 即時監聽與初始化 (Websocket 毫秒級推送 - 無需再 5 秒輪詢！)
+    // ── 2. Firestore 即時監聽 ───────────────────
     function startRealtimeDatabase() {
       if (!currentUser) return;
-
       loadLocalHistory();
 
-      // 公共資料路徑 (嚴格遵守 Rule 1 路徑限制)
-      const buttonDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'button_counts');
-      const gasDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'gas_survey');
-      const messagesColRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+      const buttonDocRef    = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'button_counts');
+      const gasDocRef       = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'gas_survey');
+      const messagesColRef  = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+      const userHistoryRef  = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'history', 'choices');
 
-      // 個人私有歷史紀錄路徑 (嚴格遵守 Rule 1)
-      const userHistoryDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'history', 'choices');
-
-      let buttonsLoaded = false;
-      let surveyLoaded = false;
-      let historyLoaded = false;
-      let messagesLoaded = false;
-
-      // 檢查是否皆加載完成
-      const checkLoadingFinished = () => {
-        if (buttonsLoaded && surveyLoaded && historyLoaded && messagesLoaded) {
+      let flags = { btn: false, gas: false, hist: false, msg: false };
+      const tryHideLoading = () => {
+        if (Object.values(flags).every(Boolean)) {
           loadingScreen.classList.add('opacity-0');
-          setTimeout(() => {
-            loadingScreen.classList.add('hidden');
-          }, 500);
+          setTimeout(() => loadingScreen.classList.add('hidden'), 500);
         }
       };
 
-      // 監聽按鈕點擊數 (毫秒即時更新)
-      onSnapshot(buttonDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-          counts = docSnap.data();
-        } else {
-          setDoc(buttonDocRef, counts);
-        }
+      onSnapshot(buttonDocRef, snap => {
+        counts = snap.exists() ? snap.data() : counts;
+        if (!snap.exists()) setDoc(buttonDocRef, counts);
         updateButtonsUI();
-        buttonsLoaded = true;
-        checkLoadingFinished();
-      }, (err) => {
-        console.error("讀取按鈕數據失敗:", err);
-        buttonsLoaded = true;
-        checkLoadingFinished();
-      });
+        flags.btn = true; tryHideLoading();
+      }, () => { flags.btn = true; tryHideLoading(); });
 
-      // 監聽 GAS 調查結果 (毫秒即時更新)
-      onSnapshot(gasDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-          gasCounts = docSnap.data();
-        } else {
-          setDoc(gasDocRef, gasCounts);
-        }
+      onSnapshot(gasDocRef, snap => {
+        gasCounts = snap.exists() ? snap.data() : gasCounts;
+        if (!snap.exists()) setDoc(gasDocRef, gasCounts);
         updateSurveyUI();
-        surveyLoaded = true;
-        checkLoadingFinished();
-      }, (err) => {
-        console.error("讀取 GAS 調查失敗:", err);
-        surveyLoaded = true;
-        checkLoadingFinished();
-      });
+        flags.gas = true; tryHideLoading();
+      }, () => { flags.gas = true; tryHideLoading(); });
 
-      // 監聽「個人歷史紀錄」以防止灌水並套用按鈕鎖
-      onSnapshot(userHistoryDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const cloudHistory = docSnap.data();
-          // 合併雲端與本地端防灌水選擇，確保就算跨瀏覽器也能維持鎖定狀態
-          userHistory.votedGas = cloudHistory.votedGas !== undefined ? cloudHistory.votedGas : userHistory.votedGas;
-          userHistory.clickedButtons = Array.from(new Set([...(cloudHistory.clickedButtons || []), ...userHistory.clickedButtons]));
+      onSnapshot(userHistoryRef, snap => {
+        if (snap.exists()) {
+          const cloud = snap.data();
+          userHistory.votedGas = cloud.votedGas !== undefined ? cloud.votedGas : userHistory.votedGas;
+          userHistory.clickedButtons = Array.from(new Set([...(cloud.clickedButtons||[]), ...userHistory.clickedButtons]));
           saveLocalHistory();
         } else {
-          setDoc(userHistoryDocRef, userHistory);
+          setDoc(userHistoryRef, userHistory);
         }
         applyAntiSpamLocks();
-        historyLoaded = true;
-        checkLoadingFinished();
-      }, (err) => {
-        console.error("讀取個人歷史紀錄失敗:", err);
-        historyLoaded = true;
-        checkLoadingFinished();
-      });
+        flags.hist = true; tryHideLoading();
+      }, () => { flags.hist = true; tryHideLoading(); });
 
-      // 監聽「實時文字佈告欄」(遵守 Rule 2: 收集全部，在前端記憶體進行排序)
-      onSnapshot(messagesColRef, (colSnap) => {
-        const rawHistory = [];
-        colSnap.forEach(doc => {
-          rawHistory.push(doc.data());
-        });
-        
-        // 記憶體內進行排序（依時間戳記 timestamp 倒序，最新留言排在最前面）
-        rawHistory.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-        updateTextHistoryUI(rawHistory);
-        messagesLoaded = true;
-        checkLoadingFinished();
-      }, (err) => {
-        console.error("讀取佈告欄訊息失敗:", err);
-        messagesLoaded = true;
-        checkLoadingFinished();
-      });
+      onSnapshot(messagesColRef, colSnap => {
+        const arr = [];
+        colSnap.forEach(d => arr.push(d.data()));
+        arr.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+        updateTextHistoryUI(arr);
+        flags.msg = true; tryHideLoading();
+      }, () => { flags.msg = true; tryHideLoading(); });
     }
 
-    // 3. UI 渲染方法
+    // ── 3. UI 渲染 ──────────────────────────────
     function updateButtonsUI() {
       for (let i = 1; i <= 9; i++) {
-        const statEl = document.getElementById(`stat-${i}`);
-        if (statEl) {
-          statEl.textContent = counts[i] || 0;
-        }
+        const el = document.getElementById(`stat-${i}`);
+        if (el) el.textContent = counts[i] || 0;
       }
     }
 
     function updateSurveyUI() {
-      const totalVotes = Object.values(gasCounts).reduce((a, b) => Number(a) + Number(b), 0);
-      totalGasVotesText.textContent = totalVotes;
-
+      const total = Object.values(gasCounts).reduce((a,b) => Number(a)+Number(b), 0);
+      totalGasVotesEl.textContent = total;
       for (let i = 1; i <= 4; i++) {
-        const votes = Number(gasCounts[i]) || 0;
-        const percentage = totalVotes === 0 ? 0 : Math.round((votes / totalVotes) * 100);
-
-        document.getElementById(`live-votes-${i}`).textContent = votes;
-        document.getElementById(`live-pct-${i}`).textContent = `${percentage}%`;
-        document.getElementById(`live-bar-${i}`).style.width = `${percentage}%`;
+        const v = Number(gasCounts[i]) || 0;
+        const pct = total === 0 ? 0 : Math.round((v/total)*100);
+        document.getElementById(`live-votes-${i}`).textContent = v;
+        document.getElementById(`live-pct-${i}`).textContent   = `${pct}%`;
+        document.getElementById(`live-bar-${i}`).style.width   = `${pct}%`;
       }
     }
 
-    // 修正後的文字渲染邏輯：現在 no-text-prompt 獨立在外，不會被 InnerHTML 意外清除
-    function updateTextHistoryUI(historyArray) {
-      const container = document.getElementById('text-history-container');
+    function updateTextHistoryUI(arr) {
+      const container    = document.getElementById('text-history-container');
       const noDataPrompt = document.getElementById('no-text-prompt');
-      
-      if (!historyArray || historyArray.length === 0) {
-        if (noDataPrompt) noDataPrompt.classList.remove('hidden');
+      if (!arr || arr.length === 0) {
+        noDataPrompt.classList.remove('hidden');
         container.innerHTML = '';
         return;
       }
-      
-      if (noDataPrompt) noDataPrompt.classList.add('hidden');
+      noDataPrompt.classList.add('hidden');
       container.innerHTML = '';
-      
-      historyArray.forEach(item => {
-        const msgBox = document.createElement('div');
-        msgBox.className = "p-3 bg-white/5 border border-white/5 rounded-lg flex flex-col gap-1 hover:border-blue-500/20 transition-all";
-        
-        const displayTime = item.timeStr || new Date(item.timestamp).toLocaleString();
-        
-        msgBox.innerHTML = `
-          <div class="flex justify-between items-center text-[10px] text-blue-400/50 font-mono">
-            <span>USER_${item.userId ? item.userId.substring(0, 8) : 'REMOTE'}</span>
-            <span>${displayTime}</span>
+      arr.forEach(item => {
+        const box = document.createElement('div');
+        box.className = "p-3 bg-white/5 border border-white/5 rounded-lg flex flex-col gap-1 hover:border-blue-500/20 transition-all";
+        const time = item.timeStr || new Date(item.timestamp).toLocaleString();
+        box.innerHTML = `
+          <div class="flex justify-between text-[10px] text-blue-400/50 font-mono">
+            <span>USER_${item.userId ? item.userId.substring(0,8) : 'REMOTE'}</span>
+            <span>${time}</span>
           </div>
-          <div class="text-blue-100/90 break-all">${escapeHtml(item.content)}</div>
-        `;
-        container.appendChild(msgBox);
+          <div class="text-blue-100/90 break-all">${escapeHtml(item.content)}</div>`;
+        container.appendChild(box);
       });
     }
 
-    function escapeHtml(text) {
-      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    function escapeHtml(t) {
+      return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
     }
 
-    // 4. 防灌水視覺元件鎖定邏輯
+    // ── 4. 防灌水鎖 ────────────────────────────
     function applyAntiSpamLocks() {
-      // 1~9 按鈕鎖
-      const clickedSet = new Set(userHistory.clickedButtons || []);
+      const clicked = new Set(userHistory.clickedButtons || []);
       for (let i = 1; i <= 9; i++) {
-        const btn = document.getElementById(`btn-${i}`);
+        const btn  = document.getElementById(`btn-${i}`);
         const card = document.getElementById(`card-${i}`);
-        if (btn) {
-          if (clickedSet.has(i)) {
-            btn.disabled = true;
-            btn.className = "click-btn aspect-square flex items-center justify-center text-xs font-semibold text-slate-500 bg-slate-900/50 border border-slate-800/80 cursor-not-allowed opacity-30 rounded-xl";
-            btn.innerHTML = `LOCKED`;
-            if (card) card.classList.add('border-cyan-500/40', 'bg-cyan-950/10');
-          } else {
-            btn.disabled = false;
-            btn.className = "click-btn aspect-square flex items-center justify-center text-2xl font-bold text-cyan-100 bg-blue-600/20 hover:bg-cyan-500/30 active:bg-cyan-400/50 active:scale-95 border border-cyan-500/30 hover:border-cyan-400/80 rounded-xl transition-all duration-200 select-none backdrop-blur-md";
-            btn.innerHTML = `${i}`;
-          }
+        if (!btn) continue;
+        if (clicked.has(i)) {
+          btn.disabled = true;
+          btn.className = "click-btn aspect-square flex items-center justify-center text-xs font-semibold text-slate-500 bg-slate-900/50 border border-slate-800/80 cursor-not-allowed opacity-30 rounded-xl";
+          btn.innerHTML = 'LOCKED';
+          card?.classList.add('border-cyan-500/40','bg-cyan-950/10');
+        } else {
+          btn.disabled = false;
+          btn.className = "click-btn aspect-square flex items-center justify-center text-2xl font-bold text-cyan-100 bg-blue-600/20 hover:bg-cyan-500/30 active:bg-cyan-400/50 active:scale-95 border border-cyan-500/30 hover:border-cyan-400/80 rounded-xl transition-all duration-200 select-none backdrop-blur-md";
+          btn.innerHTML = `${i}`;
         }
       }
-
-      // 問卷鎖
-      const votedOption = userHistory.votedGas;
+      const voted = userHistory.votedGas;
       for (let i = 1; i <= 4; i++) {
         const optBtn = document.getElementById(`gas-opt-${i}`);
-        if (optBtn) {
-          const marker = optBtn.querySelector('.opt-marker');
-          if (votedOption !== null && votedOption !== undefined) {
-            optBtn.disabled = true;
-            optBtn.classList.remove('hover:border-cyan-400/50', 'hover:bg-white/10');
-            
-            if (i === votedOption) {
-              optBtn.classList.add('border-cyan-400/80', 'bg-cyan-950/20');
-              if (marker) {
-                marker.textContent = '✓';
-                marker.className = "opt-marker text-xs px-2 py-1 rounded bg-cyan-500 text-slate-950 font-bold";
-              }
-            } else {
-              optBtn.classList.add('opacity-30', 'border-white/5');
-            }
+        if (!optBtn) continue;
+        const marker = optBtn.querySelector('.opt-marker');
+        if (voted !== null && voted !== undefined) {
+          optBtn.disabled = true;
+          optBtn.classList.remove('hover:border-cyan-400/50','hover:bg-white/10');
+          if (i === voted) {
+            optBtn.classList.add('border-cyan-400/80','bg-cyan-950/20');
+            if (marker) { marker.textContent = '✓'; marker.className = "opt-marker text-xs px-2 py-1 rounded bg-cyan-500 text-slate-950 font-bold"; }
           } else {
-            optBtn.disabled = false;
-            optBtn.classList.add('hover:border-cyan-400/50', 'hover:bg-white/10');
-            optBtn.classList.remove('border-cyan-400/80', 'bg-cyan-950/20', 'opacity-30', 'border-white/5');
-            if (marker) {
-              marker.textContent = `${i}`;
-              marker.className = "opt-marker text-xs px-2 py-1 rounded bg-white/10 text-cyan-300 font-bold";
-            }
+            optBtn.classList.add('opacity-30','border-white/5');
           }
+        } else {
+          optBtn.disabled = false;
+          optBtn.classList.add('hover:border-cyan-400/50','hover:bg-white/10');
+          optBtn.classList.remove('border-cyan-400/80','bg-cyan-950/20','opacity-30','border-white/5');
+          if (marker) { marker.textContent = `${i}`; marker.className = "opt-marker text-xs px-2 py-1 rounded bg-white/10 text-cyan-300 font-bold"; }
         }
       }
-
-      if (votedOption) {
-        surveyStatusBadge.textContent = "已完成投票";
-        surveyStatusBadge.className = "text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded border border-green-400/30 font-mono";
+      if (voted) {
+        surveyBadge.textContent = "已完成投票";
+        surveyBadge.className = "text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded border border-green-400/30 font-mono";
       }
     }
 
-    // 5. 使用者互動點擊與即時寫入 (樂觀更新前端，隨即寫入雲端)
-    
-    // 按鈕點擊
-    window.handleButtonClick = async function(buttonId) {
-      if (!currentUser) return;
-      if (new Set(userHistory.clickedButtons).has(buttonId)) return;
-
-      // 樂觀更新
-      counts[buttonId] = (counts[buttonId] || 0) + 1;
-      userHistory.clickedButtons.push(buttonId);
+    // ── 5. 使用者互動 ───────────────────────────
+    window.handleButtonClick = async function(id) {
+      if (!currentUser || new Set(userHistory.clickedButtons).has(id)) return;
+      counts[id] = (counts[id]||0) + 1;
+      userHistory.clickedButtons.push(id);
       saveLocalHistory();
       updateButtonsUI();
       applyAntiSpamLocks();
-
-      const buttonDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'button_counts');
-      const userHistoryDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'history', 'choices');
-
+      const buttonDocRef  = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'button_counts');
+      const userHistRef   = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'history', 'choices');
       try {
-        await updateDoc(buttonDocRef, { [buttonId]: increment(1) });
-        await setDoc(userHistoryDocRef, userHistory);
-      } catch (err) {
-        console.error("更新點擊數失敗:", err);
-      }
+        await updateDoc(buttonDocRef, { [id]: increment(1) });
+        await setDoc(userHistRef, userHistory);
+      } catch(e) { console.error(e); }
     };
 
-    // 問卷投票
-    window.handleGasVote = async function(optionId) {
-      if (!currentUser) return;
-      if (userHistory.votedGas !== null && userHistory.votedGas !== undefined) return;
-
-      // 樂觀更新
-      gasCounts[optionId] = (gasCounts[optionId] || 0) + 1;
-      userHistory.votedGas = optionId;
+    window.handleGasVote = async function(id) {
+      if (!currentUser || userHistory.votedGas !== null && userHistory.votedGas !== undefined) return;
+      gasCounts[id] = (gasCounts[id]||0) + 1;
+      userHistory.votedGas = id;
       saveLocalHistory();
       updateSurveyUI();
       applyAntiSpamLocks();
-
-      const gasDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'gas_survey');
-      const userHistoryDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'history', 'choices');
-
+      const gasDocRef    = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'gas_survey');
+      const userHistRef  = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'history', 'choices');
       try {
-        await updateDoc(gasDocRef, { [optionId]: increment(1) });
-        await setDoc(userHistoryDocRef, userHistory);
-      } catch (err) {
-        console.error("更新問卷失敗:", err);
-      }
+        await updateDoc(gasDocRef, { [id]: increment(1) });
+        await setDoc(userHistRef, userHistory);
+      } catch(e) { console.error(e); }
     };
 
-    // 文字上傳
     window.uploadText = async function() {
       if (!currentUser) return;
       const input = document.getElementById('text-input');
-      const btn = document.getElementById('upload-btn');
-      const text = input.value.trim();
+      const btn   = document.getElementById('upload-btn');
+      const text  = input.value.trim();
       if (!text) return;
-
-      btn.disabled = true;
-      btn.textContent = "上傳中...";
-
-      const messagesColRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
-
+      btn.disabled = true; btn.textContent = "上傳中...";
+      const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
       try {
-        await addDoc(messagesColRef, {
-          userId: currentUser.uid,
-          content: text,
-          timestamp: Date.now(),
-          timeStr: new Date().toLocaleString()
-        });
+        await addDoc(colRef, { userId: currentUser.uid, content: text, timestamp: Date.now(), timeStr: new Date().toLocaleString() });
         input.value = '';
-      } catch (err) {
-        console.error("訊息上傳失敗:", err);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "上傳";
-      }
+      } catch(e) { console.error(e); }
+      finally { btn.disabled = false; btn.textContent = "上傳"; }
     };
 
-    // 綁定事件監聽器
     for (let i = 1; i <= 4; i++) {
       document.getElementById(`gas-opt-${i}`).addEventListener('click', () => window.handleGasVote(i));
     }
+
+    // ── 6. 管理員 Email 登入 ────────────────────
+    function showAdminDashboard(email) {
+      adminLoginPanel.classList.add('hidden');
+      adminDashboard.classList.remove('hidden');
+      adminUserEmail.textContent = email;
+    }
+
+    function hideAdminDashboard() {
+      adminDashboard.classList.add('hidden');
+      adminLoginPanel.classList.remove('hidden');
+      adminUser = null;
+    }
+
+    function addAdminLog(msg) {
+      const line = document.createElement('div');
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      if (adminLogEl.firstChild?.textContent === '— 尚無操作紀錄 —') adminLogEl.innerHTML = '';
+      adminLogEl.prepend(line);
+    }
+
+    window.adminLogin = async function() {
+      const email    = document.getElementById('admin-email').value.trim();
+      const password = document.getElementById('admin-password').value;
+      const errEl    = document.getElementById('admin-login-error');
+      const loginBtn = document.getElementById('admin-login-btn');
+      errEl.classList.add('hidden');
+      loginBtn.disabled = true; loginBtn.textContent = "驗證中...";
+
+      try {
+        const credential = await signInWithEmailAndPassword(auth, email, password);
+        adminUser = credential.user;
+        currentUser = credential.user;
+        showAdminDashboard(email);
+        addAdminLog(`管理員 ${email} 登入成功`);
+      } catch(err) {
+        errEl.textContent = translateFirebaseError(err.code);
+        errEl.classList.remove('hidden');
+      } finally {
+        loginBtn.disabled = false; loginBtn.textContent = "登入管理後台";
+      }
+    };
+
+    window.adminLogout = async function() {
+      try {
+        await signOut(auth);
+        hideAdminDashboard();
+        // 重新匿名登入以維持資料監聽
+        await signInAnonymously(auth);
+      } catch(e) { console.error(e); }
+    };
+
+    function translateFirebaseError(code) {
+      const map = {
+        'auth/user-not-found':     '找不到此電子信箱帳號',
+        'auth/wrong-password':     '密碼錯誤',
+        'auth/invalid-email':      '電子信箱格式不正確',
+        'auth/invalid-credential': '帳號或密碼錯誤',
+        'auth/too-many-requests':  '嘗試次數過多，請稍後再試',
+        'auth/network-request-failed': '網路連線失敗，請檢查網路',
+      };
+      return map[code] || `登入失敗（${code}）`;
+    }
+
+    // ── 7. 管理員重置操作 ───────────────────────
+    function requireAdmin() {
+      if (!adminUser) { alert('請先登入管理員帳號'); return false; }
+      return true;
+    }
+
+    window.resetSurvey = async function() {
+      if (!requireAdmin()) return;
+      if (!confirm('確定要清除所有問卷投票數據？')) return;
+      const ref = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'gas_survey');
+      await setDoc(ref, { 1:0, 2:0, 3:0, 4:0 });
+      addAdminLog('已清除問卷投票紀錄');
+    };
+
+    window.resetButtons = async function() {
+      if (!requireAdmin()) return;
+      if (!confirm('確定要清除所有按鈕點擊計數？')) return;
+      const ref = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'button_counts');
+      await setDoc(ref, { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0 });
+      addAdminLog('已清除進度統計計數');
+    };
+
+    window.resetMessages = async function() {
+      if (!requireAdmin()) return;
+      if (!confirm('確定要刪除所有佈告欄留言？此操作無法復原！')) return;
+      const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+      const snap   = await getDocs(colRef);
+      const batch  = writeBatch(db);
+      snap.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      addAdminLog(`已刪除 ${snap.size} 則佈告欄留言`);
+    };
+
+    window.resetAll = async function() {
+      if (!requireAdmin()) return;
+      const btn = document.getElementById('reset-all-btn');
+      if (!confirm('⚠️ 確定要清除全部資料？\n\n包含：問卷投票 / 按鈕計數 / 所有佈告欄留言\n\n此操作無法復原！')) return;
+
+      btn.disabled = true; btn.textContent = "清除中...";
+      try {
+        const surveyRef  = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'gas_survey');
+        const buttonRef  = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'button_counts');
+        const msgColRef  = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+
+        await setDoc(surveyRef, { 1:0, 2:0, 3:0, 4:0 });
+        await setDoc(buttonRef, { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0 });
+
+        const msgSnap = await getDocs(msgColRef);
+        const batch   = writeBatch(db);
+        msgSnap.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+
+        addAdminLog(`✅ 一鍵全部清除完成（含 ${msgSnap.size} 則留言）`);
+      } catch(err) {
+        addAdminLog(`❌ 清除失敗：${err.message}`);
+      } finally {
+        btn.disabled = false; btn.textContent = "🔴 一鍵清除全部資料";
+      }
+    };
   </script>
 </body>
 </html>
