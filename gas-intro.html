@@ -832,17 +832,17 @@
     </section>
 
   </section>
-  	<!-- 結尾 -->
+
+  <!-- 結尾 -->
   <section>
     <div class="end-card">
-      <p class="big">開始寫你的<span class="accent">第一個腳本</span>吧！</p>
-      <p class="sub">GAS 不需要伺服器、不需要費用、不需要安裝環境。只要一個 Google 帳號，就能讓學校的工作變得更聰明。</p>
+      <p class="big">準備好了嗎？<span class="accent">開始動手</span>吧！</p>
+      <p class="sub">接下來我們用兩個實際範例，帶你從零開始寫出第一支 GAS 程式。</p>
       <div class="end-tags">
-        <span>#自動化</span>
-        <span>#JavaScript</span>
-        <span>#免費</span>
-        <span>#雲端執行</span>
-        <span>#學校資訊化</span>
+        <span>#第一支程式</span>
+        <span>#遮蔽姓名</span>
+        <span>#試卷上傳通知</span>
+        <span>#GAS實做</span>
       </div>
       <p class="powered">Vincent Wang ⚡ Powered By Claude</p>
     </div>
@@ -909,13 +909,19 @@
             <div style="background:#0d1a0a; border:1px solid var(--gas-green); border-radius:8px; padding:8px 14px;">
               <div style="font-size:0.62em; color:var(--gas-green);">💡 A欄放原始姓名，C欄用GAS自動寫入遮蔽後的結果</div>
             </div>
+            <a href="https://docs.google.com/spreadsheets/d/1o7sE8yjMbxO7mKunK4AspFafFMBBV6SIGf7JQdLyPxw/edit?gid=500797430#gid=500797430"
+               target="_blank"
+               style="display:flex; align-items:center; gap:6px; background:#001a2a; border:1px solid var(--gas-blue); border-radius:8px; padding:7px 12px; text-decoration:none; color:var(--gas-blue); font-size:0.6em; font-family:'JetBrains Mono',monospace; margin-top:2px;"
+               onmouseover="this.style.background='#002a3a'" onmouseout="this.style.background='#001a2a'">
+              <span style="font-size:1.1em;">📊</span>
+              <span>完整範例程式碼（第一支程式）→ 點我開啟</span>
+            </a>
           </div>
 
         </div>
         <div style="margin-top:6px; text-align:center; font-size:0.58em; color:var(--muted); flex-shrink:0;">⬇ 看程式碼</div>
       </div>
     </section>
-
 
     <!-- 子頁 2：程式碼 -->
     <section>
@@ -928,7 +934,7 @@
           <div style="display:flex; flex-direction:column; gap:4px; min-height:0;">
             <div style="font-size:0.58em; color:var(--gas-green); font-family:'JetBrains Mono',monospace;">① 遮蔽姓名主函式</div>
             <div style="background:var(--mid); border:1px solid var(--border); border-radius:7px; padding:7px 10px; flex:1; overflow:hidden;">
-              <div style="font-family:'JetBrains Mono',monospace; font-size:0.4em; color:var(--gas-green); line-height:1.38;">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.45em; color:var(--gas-green); line-height:1.38;">
                 <span style="color:var(--muted)">// 遮蔽 A 欄姓名，結果寫入 C 欄</span><br>
                 <span style="color:var(--gas-blue)">function</span> <span style="color:var(--gas-yellow)">maskNames</span>() {<br>
                 &nbsp;<span style="color:var(--gas-blue)">const</span> sheet = SpreadsheetApp<br>
@@ -991,7 +997,225 @@
 
   </section>
 
-  
+  <!-- 實做：試卷上傳通知 -->
+  <section>
+
+    <!-- 子頁 1：系統架構說明 -->
+    <section>
+      <div style="padding:14px 44px 8px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:2px;">第二支程式</div>
+        <h2 class="section-title" style="font-size:1.3em; margin-bottom:10px;">📤 <span>試卷上傳通知</span>系統（純 GAS）</h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; flex:1; min-height:0;">
+
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="background:var(--card); border:1px solid var(--gas-yellow); border-radius:10px; padding:12px 16px;">
+              <div style="font-size:0.72em; font-weight:900; color:var(--gas-yellow); margin-bottom:6px;">🎯 功能目標</div>
+              <div style="display:flex; flex-direction:column; gap:5px;">
+                <div style="font-size:0.63em; color:var(--text); background:var(--mid); border-radius:6px; padding:6px 10px;">① 老師透過 GAS 網頁填寫試卷資訊</div>
+                <div style="font-size:0.63em; color:var(--text); background:var(--mid); border-radius:6px; padding:6px 10px;">② GAS 將資料存入 Google Sheets</div>
+                <div style="font-size:0.63em; color:var(--text); background:var(--mid); border-radius:6px; padding:6px 10px;">③ 自動發送 Google Chat 通知給承辦人</div>
+              </div>
+            </div>
+
+            <div style="background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 16px; flex:1;">
+              <div style="font-size:0.68em; font-weight:700; color:var(--text); margin-bottom:8px;">📋 表單欄位</div>
+              <div style="display:flex; flex-direction:column; gap:4px;">
+                <div style="display:flex; gap:8px; font-size:0.58em;"><span style="color:var(--gas-yellow); font-family:'JetBrains Mono',monospace; width:55px; flex-shrink:0;">科目</span><span style="color:var(--muted);">國語、數學、自然…</span></div>
+                <div style="display:flex; gap:8px; font-size:0.58em;"><span style="color:var(--gas-yellow); font-family:'JetBrains Mono',monospace; width:55px; flex-shrink:0;">年級</span><span style="color:var(--muted);">一年級 ~ 六年級</span></div>
+                <div style="display:flex; gap:8px; font-size:0.58em;"><span style="color:var(--gas-yellow); font-family:'JetBrains Mono',monospace; width:55px; flex-shrink:0;">考試日期</span><span style="color:var(--muted);">日期選擇器</span></div>
+                <div style="display:flex; gap:8px; font-size:0.58em;"><span style="color:var(--gas-yellow); font-family:'JetBrains Mono',monospace; width:55px; flex-shrink:0;">上傳者</span><span style="color:var(--muted);">老師姓名</span></div>
+                <div style="display:flex; gap:8px; font-size:0.58em;"><span style="color:var(--gas-yellow); font-family:'JetBrains Mono',monospace; width:55px; flex-shrink:0;">備註</span><span style="color:var(--muted);">額外說明（選填）</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="font-size:0.65em; color:var(--gas-blue); font-family:'JetBrains Mono',monospace; margin-bottom:2px;">🔧 純 GAS 架構（前後端同一個網址）</div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:8px; flex:1; justify-content:center;">
+              <div style="background:var(--card); border:2px solid var(--gas-yellow); border-radius:8px; padding:10px 20px; text-align:center; width:85%;">
+                <div style="font-size:0.65em; font-weight:700; color:var(--gas-yellow);">⚙️ GAS 部署網址</div>
+                <div style="font-size:0.54em; color:var(--muted); margin-top:3px;">doGet() → 回傳 index.html（前端）</div>
+                <div style="font-size:0.54em; color:var(--muted);">google.script.run → 呼叫後端函式</div>
+              </div>
+              <div style="display:flex; gap:30px;">
+                <div style="text-align:center; font-size:0.6em; color:var(--muted);">↙ 存資料</div>
+                <div style="text-align:center; font-size:0.6em; color:var(--muted);">↘ 發通知</div>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; width:85%;">
+                <div style="background:var(--card); border:2px solid var(--gas-green); border-radius:8px; padding:8px 10px; text-align:center;">
+                  <div style="font-size:0.6em; font-weight:700; color:var(--gas-green);">📊 Google Sheets</div>
+                  <div style="font-size:0.52em; color:var(--muted);">資料儲存</div>
+                </div>
+                <div style="background:var(--card); border:2px solid var(--gas-blue); border-radius:8px; padding:8px 10px; text-align:center;">
+                  <div style="font-size:0.6em; font-weight:700; color:var(--gas-blue);">💬 Google Chat</div>
+                  <div style="font-size:0.52em; color:var(--muted);">即時通知</div>
+                </div>
+              </div>
+              <div style="background:#0d1a0a; border:1px solid var(--gas-green); border-radius:8px; padding:8px 14px; width:85%; box-sizing:border-box;">
+                <div style="font-size:0.6em; color:var(--gas-green);">✅ 只需一個 GAS 網址，不需要 GitHub Pages，零成本！</div>
+              </div>
+            </div>
+
+            <!-- 範例連結 -->
+            <a href="https://docs.google.com/spreadsheets/d/1iqPrjXaz1IOboWH6DfpuoJLsfpgJI-wF9-2Agj53vf8/edit?gid=1228508308#gid=1228508308"
+               target="_blank"
+               style="display:flex; align-items:center; gap:8px; background:#001a2a; border:1px solid var(--gas-blue); border-radius:8px; padding:8px 14px; text-decoration:none; color:var(--gas-blue); font-size:0.62em; font-family:'JetBrains Mono',monospace; transition:background .2s;"
+               onmouseover="this.style.background='#002a3a'" onmouseout="this.style.background='#001a2a'">
+              <span style="font-size:1.2em;">📊</span>
+              <span>範例試算表（含 Code.gs + index.html 完整程式碼）→ 點我開啟</span>
+            </a>
+          </div>
+
+        </div>
+        <div style="margin-top:6px; text-align:center; font-size:0.58em; color:var(--muted); flex-shrink:0;">⬇ 看前端程式碼</div>
+      </div>
+    </section>
+
+    <!-- 子頁 2：index.html 前端 -->
+    <section>
+      <div style="padding:10px 44px 5px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:1px;">第二支程式 · 前端</div>
+        <h2 class="section-title" style="font-size:0.95em; margin-bottom:4px;">🌐 index.html（GAS HTML Service）</h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; flex:1; min-height:0; overflow:hidden;">
+
+          <!-- 左：HTML 表單部分 -->
+          <div style="display:flex; flex-direction:column; gap:4px; min-height:0;">
+            <div style="font-size:0.55em; color:var(--gas-blue); font-family:'JetBrains Mono',monospace;">① HTML 表單結構</div>
+            <div style="background:var(--mid); border:1px solid var(--border); border-radius:7px; padding:6px 9px; flex:1; overflow:hidden;">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.44em; color:var(--gas-green); line-height:1.38;">
+                <span style="color:var(--muted);">&lt;!-- index.html --&gt;</span><br>
+                <span style="color:var(--gas-blue);">&lt;select</span> <span style="color:var(--gas-yellow);">id</span>=<span style="color:var(--gas-red);">"subject"</span><span style="color:var(--gas-blue);">&gt;</span><br>
+                &nbsp;<span style="color:var(--gas-blue);">&lt;option&gt;</span>國語<span style="color:var(--gas-blue);">&lt;/option&gt;&lt;option&gt;</span>數學<span style="color:var(--gas-blue);">&lt;/option&gt;</span><br>
+                <span style="color:var(--gas-blue);">&lt;/select&gt;</span><br>
+                <span style="color:var(--gas-blue);">&lt;input</span> <span style="color:var(--gas-yellow);">type</span>=<span style="color:var(--gas-red);">"date"</span> <span style="color:var(--gas-yellow);">id</span>=<span style="color:var(--gas-red);">"examDate"</span><span style="color:var(--gas-blue);">&gt;</span><br>
+                <span style="color:var(--gas-blue);">&lt;input</span> <span style="color:var(--gas-yellow);">type</span>=<span style="color:var(--gas-red);">"text"</span> <span style="color:var(--gas-yellow);">id</span>=<span style="color:var(--gas-red);">"teacher"</span><span style="color:var(--gas-blue);">&gt;</span><br>
+                <span style="color:var(--gas-blue);">&lt;button</span> <span style="color:var(--gas-yellow);">onclick</span>=<span style="color:var(--gas-red);">"submitForm()"</span><span style="color:var(--gas-blue);">&gt;</span>送出<span style="color:var(--gas-blue);">&lt;/button&gt;</span><br>
+                <span style="color:var(--gas-blue);">&lt;div</span> <span style="color:var(--gas-yellow);">id</span>=<span style="color:var(--gas-red);">"msg"</span><span style="color:var(--gas-blue);">&gt;&lt;/div&gt;</span><br>
+                <span style="color:var(--muted);">…………（更多欄位詳見範例）</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右：JS 呼叫後端 -->
+          <div style="display:flex; flex-direction:column; gap:4px; min-height:0;">
+            <div style="font-size:0.55em; color:var(--gas-yellow); font-family:'JetBrains Mono',monospace;">② JS 呼叫後端（google.script.run）</div>
+            <div style="background:var(--mid); border:1px solid var(--border); border-radius:7px; padding:6px 9px;">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.44em; color:var(--gas-green); line-height:1.38;">
+                <span style="color:var(--gas-blue);">function</span> <span style="color:var(--gas-yellow);">submitForm</span>() {<br>
+                &nbsp;<span style="color:var(--gas-blue);">const</span> data = {<br>
+                &nbsp;&nbsp;subject: getId(<span style="color:var(--gas-yellow);">"subject"</span>),<br>
+                &nbsp;&nbsp;<span style="color:var(--muted);">…………</span><br>
+                &nbsp;};<br>
+                &nbsp;<span style="color:var(--muted);">// GAS 前後端專用橋樑</span><br>
+                &nbsp;google.script.run<br>
+                &nbsp;&nbsp;.withSuccessHandler(<br>
+                &nbsp;&nbsp;&nbsp;r =&gt; msg.textContent = <span style="color:var(--gas-yellow);">"✅ 上傳成功！"</span>)<br>
+                &nbsp;&nbsp;.withFailureHandler(<br>
+                &nbsp;&nbsp;&nbsp;e =&gt; msg.textContent = <span style="color:var(--gas-yellow);">"❌ " + e.message</span>)<br>
+                &nbsp;&nbsp;.saveData(data);<br>
+                }<br>
+                <span style="color:var(--muted);">…………（完整程式詳見範例）</span>
+              </div>
+            </div>
+
+            <div style="background:#0d1a0a; border:1px solid var(--gas-green); border-radius:7px; padding:6px 12px; margin-top:2px;">
+              <div style="font-size:0.56em; color:var(--gas-green);">
+                💡 <code style="font-family:monospace; color:var(--gas-yellow);">google.script.run</code> 是 GAS 獨有，直接呼叫後端函式，無需 fetch！
+              </div>
+            </div>
+
+            <a href="https://docs.google.com/spreadsheets/d/1iqPrjXaz1IOboWH6DfpuoJLsfpgJI-wF9-2Agj53vf8/edit?gid=1228508308#gid=1228508308"
+               target="_blank"
+               style="display:flex; align-items:center; gap:6px; background:#001a2a; border:1px solid var(--gas-blue); border-radius:7px; padding:6px 12px; text-decoration:none; color:var(--gas-blue); font-size:0.58em; font-family:'JetBrains Mono',monospace;"
+               onmouseover="this.style.background='#002a3a'" onmouseout="this.style.background='#001a2a'">
+              <span>📊</span><span>📂 完整範例程式碼 → 點我開啟</span>
+            </a>
+          </div>
+
+        </div>
+        <div style="margin-top:5px; text-align:center; font-size:0.56em; color:var(--muted); flex-shrink:0;">⬇ 看 Code.gs 後端</div>
+      </div>
+    </section>
+
+    <!-- 子頁 3：Code.gs 後端 -->
+    <section>
+      <div style="padding:10px 44px 5px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:1px;">第二支程式 · GAS 後端</div>
+        <h2 class="section-title" style="font-size:0.95em; margin-bottom:4px;">⚙️ Code.gs（後端邏輯）</h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; flex:1; min-height:0; overflow:hidden;">
+
+          <!-- 左：doGet + saveData -->
+          <div style="display:flex; flex-direction:column; gap:4px; min-height:0;">
+            <div style="font-size:0.55em; color:var(--gas-yellow); font-family:'JetBrains Mono',monospace;">① doGet() 回傳頁面 + saveData() 存資料</div>
+            <div style="background:var(--mid); border:1px solid var(--border); border-radius:7px; padding:6px 9px; flex:1; overflow:hidden;">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.43em; color:var(--gas-green); line-height:1.35;">
+                <span style="color:var(--gas-blue);">const</span> SHEET_ID = <span style="color:var(--gas-yellow);">"你的試算表ID"</span>;<br>
+                <span style="color:var(--gas-blue);">const</span> WEBHOOK  = <span style="color:var(--gas-yellow);">"Chat Webhook網址"</span>;<br><br>
+                <span style="color:var(--gas-blue);">function</span> <span style="color:var(--gas-yellow);">doGet</span>() {<br>
+                &nbsp;<span style="color:var(--gas-blue);">return</span> HtmlService<br>
+                &nbsp;&nbsp;.createHtmlOutputFromFile(<span style="color:var(--gas-yellow);">"index"</span>)<br>
+                &nbsp;&nbsp;.setTitle(<span style="color:var(--gas-yellow);">"試卷上傳通知"</span>);<br>
+                }<br><br>
+                <span style="color:var(--gas-blue);">function</span> <span style="color:var(--gas-yellow);">saveData</span>(data) {<br>
+                &nbsp;<span style="color:var(--gas-blue);">const</span> sheet = SpreadsheetApp<br>
+                &nbsp;&nbsp;.openById(SHEET_ID).getActiveSheet();<br>
+                &nbsp;sheet.appendRow([<br>
+                &nbsp;&nbsp;<span style="color:var(--gas-blue);">new</span> Date(), data.subject,<br>
+                &nbsp;&nbsp;data.grade, data.examDate,<br>
+                &nbsp;&nbsp;<span style="color:var(--muted);">…………</span><br>
+                &nbsp;]);<br>
+                &nbsp;sendChat(data);<br>
+                &nbsp;<span style="color:var(--gas-blue);">return</span> <span style="color:var(--gas-yellow);">"ok"</span>;<br>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- 右：sendChat + 部署說明 + 連結 -->
+          <div style="display:flex; flex-direction:column; gap:4px; min-height:0;">
+            <div style="font-size:0.55em; color:var(--gas-blue); font-family:'JetBrains Mono',monospace;">② sendChat() 發送 Google Chat 通知</div>
+            <div style="background:var(--mid); border:1px solid var(--border); border-radius:7px; padding:6px 9px;">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:0.43em; color:var(--gas-green); line-height:1.35;">
+                <span style="color:var(--gas-blue);">function</span> <span style="color:var(--gas-yellow);">sendChat</span>(data) {<br>
+                &nbsp;<span style="color:var(--gas-blue);">const</span> text = <span style="color:var(--gas-yellow);">`📤 試卷上傳通知
+</span><br>
+                &nbsp;&nbsp;<span style="color:var(--gas-yellow);">科目：${data.subject} ${data.grade}
+</span><br>
+                &nbsp;&nbsp;<span style="color:var(--gas-yellow);">日期：${data.examDate}
+`</span>;<br>
+                &nbsp;UrlFetchApp.fetch(WEBHOOK, {<br>
+                &nbsp;&nbsp;method: <span style="color:var(--gas-yellow);">"post"</span>,<br>
+                &nbsp;&nbsp;contentType: <span style="color:var(--gas-yellow);">"application/json"</span>,<br>
+                &nbsp;&nbsp;payload: JSON.stringify({text})<br>
+                &nbsp;});<br>
+                }<br>
+                <span style="color:var(--muted);">…………（完整程式詳見範例）</span>
+              </div>
+            </div>
+
+            <div style="background:#001a2a; border:1px solid var(--gas-blue); border-radius:7px; padding:7px 12px;">
+              <div style="font-size:0.56em; color:var(--gas-blue); line-height:1.6;">
+                🚀 <strong>部署步驟</strong><br>
+                GAS → 部署 → 新增部署 → 網頁應用程式<br>
+                執行身分：<span style="color:var(--gas-yellow);">我</span>　存取：<span style="color:var(--gas-yellow);">所有人（含匿名）</span>
+              </div>
+            </div>
+
+            <a href="https://docs.google.com/spreadsheets/d/1iqPrjXaz1IOboWH6DfpuoJLsfpgJI-wF9-2Agj53vf8/edit?gid=1228508308#gid=1228508308"
+               target="_blank"
+               style="display:flex; align-items:center; gap:6px; background:#001a2a; border:1px solid var(--gas-blue); border-radius:7px; padding:7px 12px; text-decoration:none; color:var(--gas-blue); font-size:0.58em; font-family:'JetBrains Mono',monospace;"
+               onmouseover="this.style.background='#002a3a'" onmouseout="this.style.background='#001a2a'">
+              <span style="font-size:1.1em;">📊</span>
+              <span>完整範例程式碼 → 點我開啟</span>
+            </a>
+          </div>
+
+        </div>
+        <div style="margin-top:4px; text-align:center; font-size:0.54em; color:var(--muted); flex-shrink:0;">⬆ 向上返回 / ➡ 下一主題</div>
+      </div>
+    </section>
+
+  </section>
 
 </div>
 </div>
