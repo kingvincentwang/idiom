@@ -1665,7 +1665,7 @@
     width: 1200,
     height: 700,
     margin: 0.04,
-    plugins: [ RevealNotes ],
+    plugins: (new URLSearchParams(location.search).get('presenter') === 'true') ? [ RevealNotes ] : [],
   });
 
   // 第一次互動後解鎖 AudioContext
