@@ -833,8 +833,6 @@
 
   </section>
 
-  
-
   <!-- 舊過渡頁（已移至倒數第二）-->
   <section>
     <div class="end-card">
@@ -1218,6 +1216,309 @@
     </section>
 
   </section>
+
+  <!-- 即時留言板 -->
+  <section>
+    <div style="padding:16px 44px 10px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column; background:linear-gradient(160deg,#0a1628 0%,#0d1117 60%);">
+      <div class="label" style="margin-bottom:2px; color:#4285F4;">💬 即時互動</div>
+      <h2 class="section-title" style="font-size:1.3em; margin-bottom:8px;">📢 <span style="color:#4285F4;">即時訊息</span>留言板</h2>
+      <p style="font-size:0.62em; color:#8b949e; margin-bottom:10px; flex-shrink:0;">🔴 Firebase 即時同步 — 你傳送的訊息會立刻出現在所有人的畫面上</p>
+
+      <div style="display:grid; grid-template-columns:1fr 320px; gap:12px; flex:1; min-height:0; overflow:hidden;">
+
+        <!-- 左：訊息列表 -->
+        <div style="display:flex; flex-direction:column; gap:0; min-height:0; overflow:hidden;">
+          <div id="msg-list" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:7px; padding-right:4px; scrollbar-width:thin; scrollbar-color:#30363d transparent;">
+            <div style="text-align:center; color:#30363d; font-size:0.6em; padding:20px;">等待訊息中…</div>
+          </div>
+        </div>
+
+        <!-- 右：輸入區 -->
+        <div style="display:flex; flex-direction:column; gap:8px; flex-shrink:0;">
+          <!-- 暱稱 -->
+          <div>
+            <div style="font-size:0.58em; color:#8b949e; margin-bottom:4px; font-family:'JetBrains Mono',monospace;">👤 你的暱稱</div>
+            <input id="chat-name" type="text" placeholder="輸入暱稱…" maxlength="10"
+              style="width:100%; box-sizing:border-box; background:#161b22; border:1px solid #30363d; border-radius:7px; padding:7px 10px; color:#e6edf3; font-size:0.65em; outline:none; font-family:'Noto Sans TC',sans-serif;"
+              onfocus="this.style.borderColor='#4285F4'" onblur="this.style.borderColor='#30363d'">
+          </div>
+
+          <!-- 訊息輸入 -->
+          <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
+            <div style="font-size:0.58em; color:#8b949e; font-family:'JetBrains Mono',monospace;">✏️ 訊息內容</div>
+            <textarea id="chat-msg" placeholder="輸入訊息…" maxlength="100" rows="4"
+              style="flex:1; resize:none; background:#161b22; border:1px solid #30363d; border-radius:7px; padding:8px 10px; color:#e6edf3; font-size:0.65em; outline:none; font-family:'Noto Sans TC',sans-serif; line-height:1.5;"
+              onfocus="this.style.borderColor='#4285F4'" onblur="this.style.borderColor='#30363d'"
+              onkeydown="if(event.ctrlKey&&event.key==='Enter')sendMsg()"></textarea>
+          </div>
+
+          <!-- 送出按鈕 -->
+          <button onclick="sendMsg()" id="chat-send-btn"
+            style="width:100%; background:#4285F4; border:none; border-radius:8px; padding:10px; color:#fff; font-size:0.68em; font-weight:700; cursor:pointer; font-family:'Noto Sans TC',sans-serif; transition:background .2s;"
+            onmouseover="this.style.background='#2a6dd9'" onmouseout="this.style.background='#4285F4'">
+            🚀 送出訊息
+          </button>
+
+          <!-- 清除按鈕（老師用） -->
+          <button onclick="clearMsgs()" 
+            style="width:100%; background:transparent; border:1px solid #30363d; border-radius:8px; padding:6px; color:#8b949e; font-size:0.58em; cursor:pointer; font-family:'Noto Sans TC',sans-serif; transition:all .2s;"
+            onmouseover="this.style.borderColor='#EA4335'; this.style.color='#EA4335'" 
+            onmouseout="this.style.borderColor='#30363d'; this.style.color='#8b949e'">
+            🗑️ 清除所有訊息（老師用）
+          </button>
+
+          <div id="chat-status" style="font-size:0.54em; color:#8b949e; text-align:center; font-family:'JetBrains Mono',monospace;">📡 連線中…</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- 進度統計 -->
+  <section>
+    <div style="padding:12px 44px 8px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column; background:linear-gradient(160deg,#0a1628 0%,#0d1117 60%);">
+      <div class="label" style="margin-bottom:1px; color:#4285F4;">📊 即時互動</div>
+      <h2 class="section-title" style="font-size:1.2em; margin-bottom:4px;">🔢 <span style="color:#4285F4;">階段進度統計</span></h2>
+      <p style="font-size:0.58em; color:#8b949e; margin-bottom:6px; flex-shrink:0;">完成哪個階段就按對應數字，老師可即時看到各階段的完成人數</p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; flex:1; min-height:0; overflow:hidden;">
+
+        <!-- 左欄：數字按鈕 -->
+        <div style="display:flex; flex-direction:column; gap:4px; min-height:0;">
+          <div style="font-size:0.56em; color:#8b949e; text-align:center; margin-bottom:2px;">完成第幾階段就按數字幾（可重複按，累積計算）</div>
+          <div id="prog-btns" style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; flex:1; min-height:0;">
+            <button onclick="progVote(1)" id="pbtn-1" style="background:#1a2a4a; border:2px solid #30363d; border-radius:10px; color:#e6edf3; font-size:1.5em; font-weight:900; cursor:pointer; transition:all .2s; padding:0;" onmouseover="if(!progVoted)this.style.borderColor='#4285F4'" onmouseout="if(!progVoted)this.style.borderColor='#30363d'">1</button>
+            <button onclick="progVote(2)" id="pbtn-2" style="background:#1a2a4a; border:2px solid #30363d; border-radius:10px; color:#e6edf3; font-size:1.5em; font-weight:900; cursor:pointer; transition:all .2s; padding:0;" onmouseover="if(!progVoted)this.style.borderColor='#4285F4'" onmouseout="if(!progVoted)this.style.borderColor='#30363d'">2</button>
+            <button onclick="progVote(3)" id="pbtn-3" style="background:#1a2a4a; border:2px solid #30363d; border-radius:10px; color:#e6edf3; font-size:1.5em; font-weight:900; cursor:pointer; transition:all .2s; padding:0;" onmouseover="if(!progVoted)this.style.borderColor='#4285F4'" onmouseout="if(!progVoted)this.style.borderColor='#30363d'">3</button>
+            <button onclick="progVote(4)" id="pbtn-4" style="background:#1a2a4a; border:2px solid #30363d; border-radius:10px; color:#e6edf3; font-size:1.5em; font-weight:900; cursor:pointer; transition:all .2s; padding:0;" onmouseover="if(!progVoted)this.style.borderColor='#4285F4'" onmouseout="if(!progVoted)this.style.borderColor='#30363d'">4</button>
+            <button onclick="progVote(5)" id="pbtn-5" style="background:#1a2a4a; border:2px solid #30363d; border-radius:10px; color:#e6edf3; font-size:1.5em; font-weight:900; cursor:pointer; transition:all .2s; padding:0;" onmouseover="if(!progVoted)this.style.borderColor='#4285F4'" onmouseout="if(!progVoted)this.style.borderColor='#30363d'">5</button>
+            <button onclick="progVote(6)" id="pbtn-6" style="background:#1a2a4a; border:2px solid #30363d; border-radius:10px; color:#e6edf3; font-size:1.5em; font-weight:900; cursor:pointer; transition:all .2s; padding:0;" onmouseover="if(!progVoted)this.style.borderColor='#4285F4'" onmouseout="if(!progVoted)this.style.borderColor='#30363d'">6</button>
+            <button onclick="progVote(7)" id="pbtn-7" style="background:#1a2a4a; border:2px solid #30363d; border-radius:10px; color:#e6edf3; font-size:1.5em; font-weight:900; cursor:pointer; transition:all .2s; padding:0;" onmouseover="if(!progVoted)this.style.borderColor='#4285F4'" onmouseout="if(!progVoted)this.style.borderColor='#30363d'">7</button>
+            <button onclick="progVote(8)" id="pbtn-8" style="background:#1a2a4a; border:2px solid #30363d; border-radius:10px; color:#e6edf3; font-size:1.5em; font-weight:900; cursor:pointer; transition:all .2s; padding:0;" onmouseover="if(!progVoted)this.style.borderColor='#4285F4'" onmouseout="if(!progVoted)this.style.borderColor='#30363d'">8</button>
+            <button onclick="progVote(9)" id="pbtn-9" style="background:#1a2a4a; border:2px solid #30363d; border-radius:10px; color:#e6edf3; font-size:1.5em; font-weight:900; cursor:pointer; transition:all .2s; padding:0;" onmouseover="if(!progVoted)this.style.borderColor='#4285F4'" onmouseout="if(!progVoted)this.style.borderColor='#30363d'">9</button>
+          </div>
+        </div>
+
+        <!-- 右欄：即時長條圖 -->
+        <div style="display:flex; flex-direction:column; gap:0; min-height:0; overflow:hidden;">
+          <div style="font-size:0.56em; color:#8b949e; margin-bottom:4px; flex-shrink:0;">📈 即時票數分佈</div>
+          <div id="prog-chart" style="display:flex; flex-direction:column; gap:0; flex:1; justify-content:space-around; overflow:hidden;">
+            <!-- 由JS動態生成 -->
+          </div>
+        </div>
+
+      </div>
+
+      <div style="margin-top:6px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+        <div id="prog-status" style="font-size:0.56em; color:#8b949e; font-family:'JetBrains Mono',monospace;">📡 連線中…</div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <div id="prog-total" style="font-size:0.56em; color:#8b949e;">總計 0 人</div>
+          <button onclick="progClear()" style="background:transparent; border:1px solid #30363d; border-radius:6px; padding:3px 8px; color:#8b949e; font-size:0.52em; cursor:pointer; font-family:'Noto Sans TC',sans-serif;" onmouseover="this.style.borderColor='#EA4335';this.style.color='#EA4335'" onmouseout="this.style.borderColor='#30363d';this.style.color='#8b949e'">🗑️ 重置（老師用）</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 課後測驗 -->
+  <section>
+
+    <!-- 子頁 1：Q1 -->
+    <section>
+      <div style="padding:16px 44px 10px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:2px;">課後測驗 1/5</div>
+        <h2 class="section-title" style="font-size:1.2em; margin-bottom:10px;">❓ GAS 的全名是什麼？</h2>
+        <div id="q1-opts" style="display:flex; flex-direction:column; gap:8px; flex:1;">
+          <div class="qopt" data-q="1" data-v="A" onclick="quizVote(1,'A',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">A</div>
+            <div style="font-size:0.75em;color:var(--text);">Google Application Script</div>
+            <div class="q-bar-wrap" data-q="1" data-v="A" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-red);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="1" data-v="A" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+          <div class="qopt" data-q="1" data-v="B" onclick="quizVote(1,'B',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">B</div>
+            <div style="font-size:0.75em;color:var(--text);">Google Apps Script</div>
+            <div class="q-bar-wrap" data-q="1" data-v="B" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-green);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="1" data-v="B" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+          <div class="qopt" data-q="1" data-v="C" onclick="quizVote(1,'C',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">C</div>
+            <div style="font-size:0.75em;color:var(--text);">Global Automation System</div>
+            <div class="q-bar-wrap" data-q="1" data-v="C" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-red);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="1" data-v="C" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+          <div class="qopt" data-q="1" data-v="D" onclick="quizVote(1,'D',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">D</div>
+            <div style="font-size:0.75em;color:var(--text);">Google Auto Scheduler</div>
+            <div class="q-bar-wrap" data-q="1" data-v="D" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-red);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="1" data-v="D" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+        </div>
+        <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+          <div id="q1-status" style="font-size:0.58em;color:var(--muted);font-family:'JetBrains Mono',monospace;">📡 連線中…</div>
+          <div id="q1-total" style="font-size:0.58em;color:var(--muted);">總計 0 票</div>
+        </div>
+        <div style="margin-top:4px;text-align:center;font-size:0.56em;color:var(--muted);flex-shrink:0;">⬇ 下一題</div>
+      </div>
+    </section>
+
+    <!-- 子頁 2：Q2 -->
+    <section>
+      <div style="padding:16px 44px 10px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:2px;">課後測驗 2/5</div>
+        <h2 class="section-title" style="font-size:1.2em; margin-bottom:10px;">❓ GAS 的後端程式檔案副檔名是？</h2>
+        <div style="display:flex; flex-direction:column; gap:8px; flex:1;">
+          <div class="qopt" data-q="2" data-v="A" onclick="quizVote(2,'A',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">A</div>
+            <div style="font-size:0.75em;color:var(--text);">.js</div>
+            <div class="q-bar-wrap" data-q="2" data-v="A" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-red);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="2" data-v="A" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+          <div class="qopt" data-q="2" data-v="B" onclick="quizVote(2,'B',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">B</div>
+            <div style="font-size:0.75em;color:var(--text);">.py</div>
+            <div class="q-bar-wrap" data-q="2" data-v="B" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-red);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="2" data-v="B" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+          <div class="qopt" data-q="2" data-v="C" onclick="quizVote(2,'C',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">C</div>
+            <div style="font-size:0.75em;color:var(--text);">.gs</div>
+            <div class="q-bar-wrap" data-q="2" data-v="C" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-green);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="2" data-v="C" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+          <div class="qopt" data-q="2" data-v="D" onclick="quizVote(2,'D',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">D</div>
+            <div style="font-size:0.75em;color:var(--text);">.html</div>
+            <div class="q-bar-wrap" data-q="2" data-v="D" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-red);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="2" data-v="D" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+        </div>
+        <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+          <div id="q2-status" style="font-size:0.58em;color:var(--muted);font-family:'JetBrains Mono',monospace;">📡 連線中…</div>
+          <div id="q2-total" style="font-size:0.58em;color:var(--muted);">總計 0 票</div>
+        </div>
+        <div style="margin-top:4px;text-align:center;font-size:0.56em;color:var(--muted);flex-shrink:0;">⬇ 下一題</div>
+      </div>
+    </section>
+
+    <!-- 子頁 3：Q3 -->
+    <section>
+      <div style="padding:16px 44px 10px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:2px;">課後測驗 3/5</div>
+        <h2 class="section-title" style="font-size:1.2em; margin-bottom:10px;">❓ 哪個函式可以在試算表最後新增一行資料？</h2>
+        <div style="display:flex; flex-direction:column; gap:8px; flex:1;">
+          <div class="qopt" data-q="3" data-v="A" onclick="quizVote(3,'A',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">A</div>
+            <div style="font-size:0.75em;color:var(--text);font-family:'JetBrains Mono',monospace;">sheet.addRow()</div>
+            <div class="q-bar-wrap" data-q="3" data-v="A" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-red);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="3" data-v="A" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+          <div class="qopt" data-q="3" data-v="B" onclick="quizVote(3,'B',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">B</div>
+            <div style="font-size:0.75em;color:var(--text);font-family:'JetBrains Mono',monospace;">sheet.appendRow()</div>
+            <div class="q-bar-wrap" data-q="3" data-v="B" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-green);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="3" data-v="B" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+          <div class="qopt" data-q="3" data-v="C" onclick="quizVote(3,'C',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">C</div>
+            <div style="font-size:0.75em;color:var(--text);font-family:'JetBrains Mono',monospace;">sheet.insertRow()</div>
+            <div class="q-bar-wrap" data-q="3" data-v="C" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-red);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="3" data-v="C" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+          <div class="qopt" data-q="3" data-v="D" onclick="quizVote(3,'D',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">D</div>
+            <div style="font-size:0.75em;color:var(--text);font-family:'JetBrains Mono',monospace;">sheet.pushRow()</div>
+            <div class="q-bar-wrap" data-q="3" data-v="D" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-red);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="3" data-v="D" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+        </div>
+        <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+          <div id="q3-status" style="font-size:0.58em;color:var(--muted);font-family:'JetBrains Mono',monospace;">📡 連線中…</div>
+          <div id="q3-total" style="font-size:0.58em;color:var(--muted);">總計 0 票</div>
+        </div>
+        <div style="margin-top:4px;text-align:center;font-size:0.56em;color:var(--muted);flex-shrink:0;">⬇ 下一題</div>
+      </div>
+    </section>
+
+    <!-- 子頁 4：Q4 -->
+    <section>
+      <div style="padding:16px 44px 10px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:2px;">課後測驗 4/5</div>
+        <h2 class="section-title" style="font-size:1.2em; margin-bottom:10px;">❓ GAS 前端呼叫後端函式要用哪個方法？</h2>
+        <div style="display:flex; flex-direction:column; gap:8px; flex:1;">
+          <div class="qopt" data-q="4" data-v="A" onclick="quizVote(4,'A',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">A</div>
+            <div style="font-size:0.75em;color:var(--text);font-family:'JetBrains Mono',monospace;">fetch()</div>
+            <div class="q-bar-wrap" data-q="4" data-v="A" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-red);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="4" data-v="A" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+          <div class="qopt" data-q="4" data-v="B" onclick="quizVote(4,'B',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">B</div>
+            <div style="font-size:0.75em;color:var(--text);font-family:'JetBrains Mono',monospace;">XMLHttpRequest()</div>
+            <div class="q-bar-wrap" data-q="4" data-v="B" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-red);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="4" data-v="B" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+          <div class="qopt" data-q="4" data-v="C" onclick="quizVote(4,'C',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">C</div>
+            <div style="font-size:0.75em;color:var(--text);font-family:'JetBrains Mono',monospace;">google.script.run</div>
+            <div class="q-bar-wrap" data-q="4" data-v="C" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-green);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="4" data-v="C" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+          <div class="qopt" data-q="4" data-v="D" onclick="quizVote(4,'D',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">D</div>
+            <div style="font-size:0.75em;color:var(--text);font-family:'JetBrains Mono',monospace;">UrlFetchApp.fetch()</div>
+            <div class="q-bar-wrap" data-q="4" data-v="D" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-red);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="4" data-v="D" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+        </div>
+        <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+          <div id="q4-status" style="font-size:0.58em;color:var(--muted);font-family:'JetBrains Mono',monospace;">📡 連線中…</div>
+          <div id="q4-total" style="font-size:0.58em;color:var(--muted);">總計 0 票</div>
+        </div>
+        <div style="margin-top:4px;text-align:center;font-size:0.56em;color:var(--muted);flex-shrink:0;">⬇ 最後一題</div>
+      </div>
+    </section>
+
+    <!-- 子頁 5：Q5 -->
+    <section>
+      <div style="padding:16px 44px 10px; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+        <div class="label" style="margin-bottom:2px;">課後測驗 5/5</div>
+        <h2 class="section-title" style="font-size:1.2em; margin-bottom:10px;">❓ 開啟試算表時自動執行的 GAS 觸發器函式是？</h2>
+        <div style="display:flex; flex-direction:column; gap:8px; flex:1;">
+          <div class="qopt" data-q="5" data-v="A" onclick="quizVote(5,'A',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">A</div>
+            <div style="font-size:0.75em;color:var(--text);font-family:'JetBrains Mono',monospace;">onStart()</div>
+            <div class="q-bar-wrap" data-q="5" data-v="A" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-red);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="5" data-v="A" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+          <div class="qopt" data-q="5" data-v="B" onclick="quizVote(5,'B',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">B</div>
+            <div style="font-size:0.75em;color:var(--text);font-family:'JetBrains Mono',monospace;">onOpen()</div>
+            <div class="q-bar-wrap" data-q="5" data-v="B" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-green);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="5" data-v="B" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+          <div class="qopt" data-q="5" data-v="C" onclick="quizVote(5,'C',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">C</div>
+            <div style="font-size:0.75em;color:var(--text);font-family:'JetBrains Mono',monospace;">onLoad()</div>
+            <div class="q-bar-wrap" data-q="5" data-v="C" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-red);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="5" data-v="C" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+          <div class="qopt" data-q="5" data-v="D" onclick="quizVote(5,'D',this)" style="cursor:pointer;background:var(--card);border:2px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;transition:all .2s;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.8em;color:var(--gas-yellow);font-weight:700;flex-shrink:0;">D</div>
+            <div style="font-size:0.75em;color:var(--text);font-family:'JetBrains Mono',monospace;">doGet()</div>
+            <div class="q-bar-wrap" data-q="5" data-v="D" style="display:none;flex:1;background:var(--border);border-radius:4px;height:6px;margin-left:auto;max-width:120px;"><div class="q-bar" style="height:100%;width:0%;background:var(--gas-red);border-radius:4px;transition:width .6s;"></div></div>
+            <div class="q-cnt" data-q="5" data-v="D" style="display:none;font-size:0.6em;color:var(--muted);flex-shrink:0;min-width:40px;text-align:right;"></div>
+          </div>
+        </div>
+        <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+          <div id="q5-status" style="font-size:0.58em;color:var(--muted);font-family:'JetBrains Mono',monospace;">📡 連線中…</div>
+          <div id="q5-total" style="font-size:0.58em;color:var(--muted);">總計 0 票</div>
+        </div>
+        <div style="margin-top:4px;text-align:center;font-size:0.56em;color:var(--muted);flex-shrink:0;">⬆ 返回 / ➡ 繼續</div>
+      </div>
+    </section>
+
+  </section>
+
   <!-- 真正的結尾 -->
   <section>
     <div style="padding:0; height:700px; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; background:radial-gradient(ellipse at 50% 40%, #0d2a1a 0%, #0d1117 70%);">
@@ -1267,7 +1568,6 @@
       </div>
     </div>
   </section>
-  
 
 </div>
 </div>
@@ -1460,6 +1760,390 @@
     document.getElementById("survey-status").textContent = "⚠️ Firebase 連線失敗";
     console.error(e);
   });
+</script>
+
+<!-- 即時留言板：動態載入 Firebase SDK + 密碼保護清除 -->
+<script>
+(function() {
+  const TEACHER_PWD = 'gses2025';  // ← 老師密碼，可自行修改
+  const CHAT_CONFIG = {
+    apiKey: "AIzaSyBwooMJ0vsEkQTFJ7HDRg8i4ex0nEPa2Tk",
+    authDomain: "web-login-dd626.firebaseapp.com",
+    projectId: "web-login-dd626",
+    storageBucket: "web-login-dd626.firebasestorage.app",
+    messagingSenderId: "128529685419",
+    appId: "1:128529685419:web:7dc95d7fd209bd877a90ee"
+  };
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function setStatus(msg) {
+    const el = document.getElementById('chat-status');
+    if (el) el.textContent = msg;
+  }
+  function renderDocs(docs) {
+    const list = document.getElementById('msg-list');
+    if (!list) return;
+    list.innerHTML = '';
+    if (!docs.length) {
+      list.innerHTML = '<div style="text-align:center;color:#30363d;font-size:0.6em;padding:20px;">還沒有訊息，來說點什麼吧！</div>';
+      return;
+    }
+    docs.forEach(d => {
+      const time = d.ts ? new Date(d.ts.toMillis()).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}) : '';
+      const div = document.createElement('div');
+      div.style.cssText = 'background:#161b22;border:1px solid #21262d;border-radius:8px;padding:8px 12px;flex-shrink:0;';
+      div.innerHTML =
+        '<div style="display:flex;justify-content:space-between;margin-bottom:3px;">' +
+        '<span style="font-size:0.58em;font-weight:700;color:#4285F4;font-family:JetBrains Mono,monospace;">' + esc(d.name) + '</span>' +
+        '<span style="font-size:0.52em;color:#30363d;">' + time + '</span>' +
+        '</div>' +
+        '<div style="font-size:0.62em;color:#e6edf3;line-height:1.5;word-break:break-all;">' + esc(d.text) + '</div>';
+      list.appendChild(div);
+    });
+    list.scrollTop = list.scrollHeight;
+  }
+
+  function initChat() {
+    let chatApp;
+    try { chatApp = firebase.app('gas-chat'); }
+    catch(e) { chatApp = firebase.initializeApp(CHAT_CONFIG, 'gas-chat'); }
+
+    const db = chatApp.firestore();
+    const COL = db.collection('live_chat');
+
+    setStatus('🔴 即時同步中');
+
+    // onSnapshot 即時監聽
+    COL.orderBy('ts','asc').limit(50)
+      .onSnapshot(snap => {
+        const docs = [];
+        snap.forEach(doc => docs.push(doc.data()));
+        renderDocs(docs);
+      }, err => {
+        // orderBy 需要索引時 fallback 到不排序
+        COL.limit(50).onSnapshot(snap => {
+          const docs = [];
+          snap.forEach(doc => docs.push(doc.data()));
+          docs.sort((a,b) => {
+            const ta = a.ts ? a.ts.toMillis() : 0;
+            const tb = b.ts ? b.ts.toMillis() : 0;
+            return ta - tb;
+          });
+          renderDocs(docs);
+        }, e2 => setStatus('⚠️ 連線失敗：' + e2.message));
+      });
+
+    // 送出訊息
+    window.sendMsg = function() {
+      const nameEl = document.getElementById('chat-name');
+      const msgEl  = document.getElementById('chat-msg');
+      const btn    = document.getElementById('chat-send-btn');
+      if (!nameEl || !msgEl) return;
+      const name = nameEl.value.trim() || '匿名';
+      const text = msgEl.value.trim();
+      if (!text) { msgEl.focus(); return; }
+      btn.disabled = true; btn.textContent = '傳送中…';
+      COL.add({ name, text, ts: firebase.firestore.FieldValue.serverTimestamp() })
+        .then(() => { msgEl.value = ''; btn.disabled = false; btn.textContent = '🚀 送出訊息'; })
+        .catch(e => { alert('傳送失敗：' + e.message); btn.disabled = false; btn.textContent = '🚀 送出訊息'; });
+    };
+
+    // 清除（密碼保護）
+    window.clearMsgs = function() {
+      const pwd = prompt('請輸入老師密碼：');
+      if (pwd === null) return;
+      if (pwd !== TEACHER_PWD) { alert('❌ 密碼錯誤！'); return; }
+      COL.get().then(snap => {
+        const batch = db.batch();
+        snap.forEach(doc => batch.delete(doc.ref));
+        return batch.commit();
+      }).catch(e => alert('清除失敗：' + e.message));
+    };
+  }
+
+  // 動態載入 Firebase compat SDK，載完再初始化
+  function loadScript(src, cb) {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = cb;
+    s.onerror = () => setStatus('⚠️ SDK 載入失敗');
+    document.head.appendChild(s);
+  }
+
+  // 若 firebase 已存在（問卷已載入）直接用；否則動態載入
+  function startWhenReady() {
+    if (typeof firebase !== 'undefined' && firebase.firestore) {
+      initChat();
+    } else if (typeof firebase !== 'undefined') {
+      loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js', initChat);
+    } else {
+      loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', function() {
+        loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js', initChat);
+      });
+    }
+  }
+
+  if (document.readyState === 'complete') {
+    startWhenReady();
+  } else {
+    window.addEventListener('load', startWhenReady);
+  }
+})();
+</script>
+
+<!-- 課後測驗 Firebase 邏輯 -->
+<script>
+  var QUIZ_ANSWERS = { 1:'B', 2:'C', 3:'B', 4:'C', 5:'B' };
+  var quizVoted = {};
+  var quizDB = null;
+
+  function quizSetStatus(q, msg) {
+    var el = document.getElementById('q'+q+'-status');
+    if (el) el.textContent = msg;
+  }
+  function quizSetTotal(q, n) {
+    var el = document.getElementById('q'+q+'-total');
+    if (el) el.textContent = '總計 ' + n + ' 票';
+  }
+  function renderQuiz(q, data) {
+    var opts = ['A','B','C','D'];
+    var counts = {};
+    opts.forEach(function(v){ counts[v] = data['v'+v] || 0; });
+    var total = opts.reduce(function(s,v){ return s + counts[v]; }, 0);
+    quizSetTotal(q, total);
+    // 只有已作答才顯示進度條
+    if (!quizVoted[q]) return;
+    opts.forEach(function(v) {
+      var pct = total > 0 ? Math.round(counts[v]/total*100) : 0;
+      var bar = document.querySelector('.q-bar-wrap[data-q="'+q+'"][data-v="'+v+'"] .q-bar');
+      var wrap = document.querySelector('.q-bar-wrap[data-q="'+q+'"][data-v="'+v+'"]');
+      var cnt = document.querySelector('.q-cnt[data-q="'+q+'"][data-v="'+v+'"]');
+      if (wrap) wrap.style.display = 'flex';
+      if (bar) bar.style.width = pct + '%';
+      if (cnt) { cnt.style.display = 'block'; cnt.textContent = counts[v] + '票 ' + pct + '%'; }
+    });
+  }
+
+  // 全域函式，讓 onclick 可以直接呼叫
+  function quizVote(q, v, el) {
+    if (quizVoted[q]) return;
+    quizVoted[q] = v;
+
+    // 立即視覺回饋
+    document.querySelectorAll('.qopt[data-q="'+q+'"]').forEach(function(opt) {
+      opt.style.cursor = 'default';
+      var ov = opt.dataset.v;
+      if (ov === QUIZ_ANSWERS[q]) {
+        opt.style.borderColor = '#34A853';
+        opt.style.background = '#0d1a0a';
+      } else if (ov === v && v !== QUIZ_ANSWERS[q]) {
+        opt.style.borderColor = '#EA4335';
+        opt.style.background = '#1a0d0d';
+      } else {
+        opt.style.opacity = '0.5';
+      }
+    });
+
+    // 寫入 Firebase
+    if (quizDB) {
+      var docRef = quizDB.collection('quiz_votes').doc('q'+q);
+      docRef.get().then(function(snap) {
+        var d = snap.exists ? snap.data() : {vA:0,vB:0,vC:0,vD:0};
+        d['v'+v] = (d['v'+v]||0) + 1;
+        return docRef.set(d);
+      }).catch(function(e){ console.error('quiz write:', e); });
+    }
+  }
+
+  function initQuizFirebase() {
+    var cfg = {
+      apiKey:"AIzaSyBwooMJ0vsEkQTFJ7HDRg8i4ex0nEPa2Tk",
+      authDomain:"web-login-dd626.firebaseapp.com",
+      projectId:"web-login-dd626",
+      storageBucket:"web-login-dd626.firebasestorage.app",
+      messagingSenderId:"128529685419",
+      appId:"1:128529685419:web:7dc95d7fd209bd877a90ee"
+    };
+    var app;
+    try { app = firebase.app('gas-quiz'); }
+    catch(e) {
+      try { app = firebase.app('gas-chat'); }
+      catch(e2) { app = firebase.initializeApp(cfg, 'gas-quiz'); }
+    }
+    quizDB = app.firestore();
+
+    // 監聽五題即時票數
+    for (var q = 1; q <= 5; q++) {
+      (function(q){
+        quizDB.collection('quiz_votes').doc('q'+q).onSnapshot(function(snap) {
+          quizSetStatus(q, '🔴 即時同步中');
+          renderQuiz(q, snap.exists ? snap.data() : {vA:0,vB:0,vC:0,vD:0});
+        }, function(err){ quizSetStatus(q, '⚠️ ' + err.message); });
+      })(q);
+    }
+  }
+
+  function startQuizWhenReady() {
+    if (typeof firebase !== 'undefined' && firebase.firestore) {
+      initQuizFirebase();
+    } else if (typeof firebase !== 'undefined') {
+      var s = document.createElement('script');
+      s.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js';
+      s.onload = initQuizFirebase;
+      document.head.appendChild(s);
+    } else {
+      var s1 = document.createElement('script');
+      s1.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
+      s1.onload = function() {
+        var s2 = document.createElement('script');
+        s2.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js';
+        s2.onload = initQuizFirebase;
+        document.head.appendChild(s2);
+      };
+      document.head.appendChild(s1);
+    }
+  }
+
+  if (document.readyState === 'complete') startQuizWhenReady();
+  else window.addEventListener('load', startQuizWhenReady);
+</script>
+
+<!-- 進度統計 Firebase 邏輯 -->
+<script>
+  var progVoted = false;
+  var progDB = null;
+  var PROG_DOC_ID = 'progress_votes';
+  var PROG_COL = 'live_stats';
+  var TEACHER_PWD_PROG = 'gses2025';
+
+  // 初始化長條圖
+  function initProgChart() {
+    var chart = document.getElementById('prog-chart');
+    if (!chart) return;
+    chart.innerHTML = '';
+    for (var i = 1; i <= 9; i++) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex; align-items:center; gap:8px;';
+      row.innerHTML =
+        '<div style="font-family:JetBrains Mono,monospace;font-size:0.68em;font-weight:700;color:#4285F4;width:14px;text-align:center;flex-shrink:0;">' + i + '</div>' +
+        '<div style="flex:1;background:#21262d;border-radius:3px;height:10px;overflow:hidden;">' +
+          '<div id="pbar-'+i+'" style="height:100%;width:0%;background:linear-gradient(90deg,#4285F4,#34A853);border-radius:3px;transition:width .5s;"></div>' +
+        '</div>' +
+        '<div id="pcnt-'+i+'" style="font-size:0.56em;color:#8b949e;width:52px;text-align:right;flex-shrink:0;">0人 0%</div>';
+      chart.appendChild(row);
+    }
+  }
+
+  function renderProg(data) {
+    var total = 0;
+    for (var i = 1; i <= 9; i++) total += (data['n'+i]||0);
+    var el = document.getElementById('prog-total');
+    if (el) el.textContent = '總計 ' + total + ' 人';
+    for (var i = 1; i <= 9; i++) {
+      var cnt = data['n'+i]||0;
+      var pct = total > 0 ? Math.round(cnt/total*100) : 0;
+      var bar = document.getElementById('pbar-'+i);
+      var cntEl = document.getElementById('pcnt-'+i);
+      if (bar) bar.style.width = pct + '%';
+      if (cntEl) cntEl.textContent = cnt + '人 ' + pct + '%';
+    }
+  }
+
+  var progClickedBtns = {}; // 記錄每個數字是否已按過
+
+  function progVote(n) {
+    // 每個數字只能按一次
+    if (progClickedBtns[n]) return;
+    progClickedBtns[n] = true;
+
+    // 按鈕視覺：鎖定該數字，變藍色
+    var btn = document.getElementById('pbtn-'+n);
+    if (btn) {
+      btn.style.background = '#1a3a6a';
+      btn.style.borderColor = '#4285F4';
+      btn.style.color = '#4285F4';
+      btn.style.transform = 'scale(1.08)';
+      btn.style.cursor = 'default';
+    }
+
+    if (!progDB) return;
+    var docRef = progDB.collection(PROG_COL).doc(PROG_DOC_ID);
+    docRef.get().then(function(snap) {
+      var d = snap.exists ? snap.data() : {};
+      d['n'+n] = (d['n'+n]||0) + 1;
+      return docRef.set(d);
+    }).catch(function(e){ console.error('prog write:', e); });
+  }
+
+  function progClear() {
+    var pwd = prompt('請輸入老師密碼：');
+    if (pwd === null) return;
+    if (pwd !== TEACHER_PWD_PROG) { alert('❌ 密碼錯誤！'); return; }
+    if (!progDB) return;
+    var empty = {};
+    for (var i = 1; i <= 9; i++) empty['n'+i] = 0;
+    progDB.collection(PROG_COL).doc(PROG_DOC_ID).set(empty)
+      .then(function(){ progClickedBtns={}; for(var i=1;i<=9;i++){var b=document.getElementById('pbtn-'+i);if(b){b.style.cursor='pointer';b.style.opacity='1';b.style.background='#1a2a4a';b.style.borderColor='#30363d';b.style.color='#e6edf3';b.style.transform='';}} })
+      .catch(function(e){ alert('重置失敗：'+e.message); });
+  }
+
+  function initProgFirebase() {
+    var cfg = {
+      apiKey:"AIzaSyBwooMJ0vsEkQTFJ7HDRg8i4ex0nEPa2Tk",
+      authDomain:"web-login-dd626.firebaseapp.com",
+      projectId:"web-login-dd626",
+      storageBucket:"web-login-dd626.firebasestorage.app",
+      messagingSenderId:"128529685419",
+      appId:"1:128529685419:web:7dc95d7fd209bd877a90ee"
+    };
+    try { progDB = firebase.app('gas-chat').firestore(); }
+    catch(e) {
+      try { progDB = firebase.app('gas-quiz').firestore(); }
+      catch(e2) {
+        var app;
+        try { app = firebase.app('gas-prog'); }
+        catch(e3) { app = firebase.initializeApp(cfg,'gas-prog'); }
+        progDB = app.firestore();
+      }
+    }
+
+    initProgChart();
+
+    var statusEl = document.getElementById('prog-status');
+    if (statusEl) statusEl.textContent = '🔴 即時同步中';
+
+    progDB.collection(PROG_COL).doc(PROG_DOC_ID).onSnapshot(function(snap) {
+      renderProg(snap.exists ? snap.data() : {});
+    }, function(err){
+      if (statusEl) statusEl.textContent = '⚠️ ' + err.message;
+    });
+  }
+
+  function startProgWhenReady() {
+    if (typeof firebase !== 'undefined' && firebase.firestore) {
+      initProgFirebase();
+    } else if (typeof firebase !== 'undefined') {
+      var s = document.createElement('script');
+      s.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js';
+      s.onload = initProgFirebase;
+      document.head.appendChild(s);
+    } else {
+      var s1 = document.createElement('script');
+      s1.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
+      s1.onload = function() {
+        var s2 = document.createElement('script');
+        s2.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js';
+        s2.onload = initProgFirebase;
+        document.head.appendChild(s2);
+      };
+      document.head.appendChild(s1);
+    }
+  }
+
+  if (document.readyState === 'complete') startProgWhenReady();
+  else window.addEventListener('load', startProgWhenReady);
 </script>
 </body>
 </html>
