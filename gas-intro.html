@@ -243,6 +243,7 @@
         <span></span><span></span><span></span><span></span>
       </div>
     </div>
+  <aside class="notes">封面：開場自我介紹 + 說明今天的主題是 GAS 入門。預計停留 1-2 分鐘，營造輕鬆氣氛。</aside>
   </section>
 
 
@@ -305,6 +306,7 @@
         <div id="survey-total" style="font-size:0.62em; color:var(--muted);">總計 0 票</div>
       </div>
     </div>
+  <aside class="notes">課前調查：請學員實際點選一個選項，順便測試 Firebase 是否連線正常。可藉此了解全班程度，調整後續講解深淺。停留 2-3 分鐘。</aside>
   </section>
 
   <!-- 什麼是 Script -->
@@ -329,6 +331,7 @@
         </div>
       </div>
     </div>
+  <aside class="notes">核心概念：用「劇本」比喻是這頁的重點，務必讓學員理解 GAS 本質上是自動化指令集，不是新軟體要安裝。可舉生活化例子。</aside>
   </section>
 
   <!-- Google 服務角色 -->
@@ -372,6 +375,7 @@
         ✨ GAS 最強大的地方：讓這些服務「互相講話」
       </div>
     </div>
+  <aside class="notes">六大服務角色：快速念過即可，重點放在最後一句「讓服務互相講話」，這是 GAS 最大價值。可舉一個跨服務範例（表單→日曆→雲端硬碟）。</aside>
   </section>
 
   <!-- Google Chat / LINE 垂直分頁 -->
@@ -419,7 +423,8 @@
         </div>
         <div style="margin-top:8px; text-align:center; font-size:0.62em; color:var(--muted);">⬇ 向下繼續</div>
       </div>
-    </section>
+    <aside class="notes">Chat/LINE 總覽：先讓學員看到兩個工具並列比較，再往下深入細節。提醒這是子頁面，要用上下鍵切換。</aside>
+  </section>
 
     <!-- 子頁 2：Google Chat 詳細 -->
     <section>
@@ -450,7 +455,8 @@
         </div>
         <div style="margin-top:6px; text-align:center; font-size:0.6em; color:var(--muted); flex-shrink:0;">⬇ 繼續看 LINE Bot</div>
       </div>
-    </section>
+    <aside class="notes">Google Chat 細節：強調 Webhook 設定是最關鍵步驟，學校內部用 Google Chat 最方便（不需要外部 API 申請）。</aside>
+  </section>
 
     <!-- 子頁 3：LINE Bot 詳細 -->
     <section>
@@ -482,6 +488,7 @@
         <div style="margin-top:6px; text-align:center; font-size:0.6em; color:var(--muted); flex-shrink:0;">⬆ 向上返回 / ➡ 下一主題</div>
       </div>
     </section>
+  <aside class="notes">LINE Bot 細節：LINE 需要額外申請 Messaging API，比 Google Chat 多一道手續，但觸及率更高（家長幾乎都用 LINE）。</aside>
   </section>
 
   <!-- 三大核心功能 -->
@@ -513,6 +520,7 @@
         </div>
       </div>
     </div>
+  <aside class="notes">三大功能：自動化、整合、擴充。建議搭配真實案例口述：每天通知、表單自動建檔、自訂函數。停留 3-4 分鐘。</aside>
   </section>
 
   <!-- 為什麼受歡迎 -->
@@ -543,6 +551,7 @@
         </div>
       </div>
     </div>
+  <aside class="notes">為什麼受歡迎：四個優點快速念過，這頁是動機建立，讓學員產生「我也想學」的興趣，不用深入講解。</aside>
   </section>
 
   <!-- 架構說明 -->
@@ -580,6 +589,7 @@
         doGet() 裡寫的名稱就是頁面入口，大小寫有差異要注意。
       </div>
     </div>
+  <aside class="notes">架構圖：這是整堂課最重要的一頁！前端/後端/資料庫/通知四個方塊務必讓學員理解彼此關係。可以畫圖再講一次。停留 5 分鐘以上。</aside>
   </section>
 
   <!-- 重點整理 -->
@@ -610,6 +620,7 @@
         </div>
       </div>
     </div>
+  <aside class="notes">重點整理：複習前面所有概念，可以用提問方式讓學員回答，加深印象。</aside>
   </section>
 
   <!-- 快捷鍵與程式撰寫 -->
@@ -668,6 +679,7 @@
 
       </div>
     </div>
+  <aside class="notes">快捷鍵與註解：實用技巧，提醒學員等等要動手寫程式時會用到，尤其 Shift+Enter 跟 Gemini 對話很實用。</aside>
   </section>
 
   <!-- 名詞定義 -->
@@ -734,6 +746,7 @@
         </div>
       </div>
     </div>
+  <aside class="notes">ID與讀取方式：這頁資訊量大，建議實際打開一個 Google Sheets，當場示範如何從網址複製 ID，加深印象。</aside>
   </section>
 
   <!-- Google Sheets 操作 -->
@@ -764,7 +777,8 @@
         </div>
         <div style="margin-top:5px; text-align:center; font-size:0.56em; color:var(--muted); flex-shrink:0;">⬇ 繼續看寫入資料</div>
       </div>
-    </section>
+    <aside class="notes">讀取資料：三種讀取方式由淺入深，appendRow 留到下一頁才會出現，這頁先讓學員熟悉 getRange/getValues 的基本概念。</aside>
+  </section>
 
     <!-- 子頁 2：寫入資料 -->
     <section>
@@ -791,7 +805,8 @@
         </div>
         <div style="margin-top:5px; text-align:center; font-size:0.58em; color:var(--muted); flex-shrink:0;">⬇ 繼續看實用技巧</div>
       </div>
-    </section>
+    <aside class="notes">寫入資料：appendRow 是最常用、最簡單的寫入方式，務必強調這個 ⭐ 標記的函式，之後第一支程式會直接用到。</aside>
+  </section>
 
     <!-- 子頁 3：實用技巧 -->
     <section>
@@ -831,6 +846,7 @@
       </div>
     </section>
 
+  <aside class="notes">實用技巧：效能提醒這段很重要，學員常犯的錯誤就是在迴圈裡重複呼叫 API，務必強調一次讀取的重要性。</aside>
   </section>
 
   <!-- 舊過渡頁（已移至倒數第二）-->
@@ -921,7 +937,8 @@
         </div>
         <div style="margin-top:6px; text-align:center; font-size:0.58em; color:var(--muted); flex-shrink:0;">⬇ 看程式碼</div>
       </div>
-    </section>
+    <aside class="notes">第一支程式任務說明：這是學員第一次真正動手寫程式的開始，務必放慢速度，確認大家理解「遮蔽姓名」和「工具列」兩個任務目標。可以先示範範例試算表給大家看效果。停留 5 分鐘。</aside>
+  </section>
 
     <!-- 子頁 2：程式碼 -->
     <section>
@@ -995,6 +1012,7 @@
       </div>
     </section>
 
+  <aside class="notes">第一支程式程式碼：逐行帶學員看 maskNames() 和 onOpen()，這是整堂課最重要的實作環節，建議讓大家實際在自己的試算表跑一次。可暫停讓學員操作，預留 10-15 分鐘。</aside>
   </section>
 
   <!-- 實做：試卷上傳通知 -->
@@ -1069,7 +1087,8 @@
         </div>
         <div style="margin-top:6px; text-align:center; font-size:0.58em; color:var(--muted); flex-shrink:0;">⬇ 看前端程式碼</div>
       </div>
-    </section>
+    <aside class="notes">第二支程式架構：這是進階範例，說明 GAS 也能做出完整的網頁應用，前後端同一個網址部署。可視時間決定是否深入講解，或留給程度較好的學員自行研究。</aside>
+  </section>
 
     <!-- 子頁 2：index.html 前端 -->
     <section>
@@ -1135,7 +1154,8 @@
         </div>
         <div style="margin-top:5px; text-align:center; font-size:0.56em; color:var(--muted); flex-shrink:0;">⬇ 看 Code.gs 後端</div>
       </div>
-    </section>
+    <aside class="notes">前端程式碼：google.script.run 是 GAS 獨有的前後端溝通方式，跟一般網頁用 fetch 不同，務必強調這個差異。</aside>
+  </section>
 
     <!-- 子頁 3：Code.gs 後端 -->
     <section>
@@ -1215,6 +1235,7 @@
       </div>
     </section>
 
+  <aside class="notes">後端程式碼：doGet 回傳頁面、saveData 存資料、sendChat 發通知，三個函式串起完整流程，可請學員回想跟第一支程式的差異。</aside>
   </section>
 
   <!-- 即時留言板 -->
@@ -1272,6 +1293,7 @@
 
       </div>
     </div>
+    <aside class="notes">即時留言板：可以請學員打字留言測試 Firebase 即時同步效果，這是很好的互動破冰環節，也能順便驗證 Firebase 規則是否設定正確。</aside>
   </section>
 
   <!-- 進度統計 -->
@@ -1317,6 +1339,7 @@
         </div>
       </div>
     </div>
+  <aside class="notes">進度統計：上課中可隨時切到這頁，請學員按下對應階段數字，老師能立即掌握全班進度，決定是否要放慢或加快教學節奏。</aside>
   </section>
 
   <!-- 課後測驗 -->
@@ -1515,6 +1538,7 @@
         </div>
         <div style="margin-top:4px;text-align:center;font-size:0.56em;color:var(--muted);flex-shrink:0;">⬆ 返回 / ➡ 繼續</div>
       </div>
+      <aside class="notes">課後測驗 Q5：五題測驗結束，可以快速複習一下大家錯最多的題目，加深印象，準備進入結尾總結。</aside>
     </section>
 
   </section>
@@ -1567,11 +1591,13 @@
         Vincent Wang ⚡ Powered By Claude
       </div>
     </div>
+    <aside class="notes">結尾：感謝大家參與，鼓勵學員點選更多範例連結繼續自學，可以預告下次課程內容或開放現場提問。</aside>
   </section>
 
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/plugin/notes/notes.min.js"></script>
 <script>
   // ── 音效（Web Audio API，無需外部檔案）──
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -1639,6 +1665,7 @@
     width: 1200,
     height: 700,
     margin: 0.04,
+    plugins: [ RevealNotes ],
   });
 
   // 第一次互動後解鎖 AudioContext
