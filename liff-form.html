@@ -91,7 +91,7 @@
       document.getElementById('result').textContent = '送出中...';
       callGAS('submitForm', { idToken: idToken, content: content })
         .then(function (res) {
-          document.getElementById('result').textContent = res.ok ? '✅ 送出成功' : '❌ 送出失敗：' + (res.reason || '');
+         document.getElementById('result').textContent = res.ok ? '✅ 送出成功' : '❌ 送出失敗：' + (res.reason || '') + ' / ' + (res.message || '');
           if (res.ok) document.getElementById('formInput').value = '';
         })
         .catch(handleError);
