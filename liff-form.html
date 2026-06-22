@@ -53,6 +53,15 @@
 
     liff.init({ liffId: LIFF_ID })
       .then(function () {
+        // ↓↓↓ 加在這裡 ↓↓↓
+        const context = liff.getContext();
+        if (context && context.type === 'group') {
+          alert('Group ID: ' + context.groupId);
+        } else {
+          alert('目前不是在群組裡開啟的，type = ' + (context ? context.type : 'unknown'));
+        }
+        // ↑↑↑ 加到這裡為止 ↑↑↑
+    
         if (!liff.isLoggedIn()) { liff.login(); return; }
         return liff.getIDToken();
       })
