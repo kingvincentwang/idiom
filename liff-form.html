@@ -21,10 +21,10 @@
 <body class="bg-gray-100 min-h-screen text-gray-800 font-sans">
 
     <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
-        <h1 class="text-xl font-bold text-center">🏆 榮譽榜名單提報</h1>
+        <h1 class="text-xl font-bold text-center">🏆 班級榮譽榜名單提報</h1>
     </header>
 
-    <main class="p-4 max-w-md mx-auto">
+    <main class="p-4 max-w-md mx-auto pb-10">
         <div id="loadingScreen" class="flex flex-col items-center justify-center py-10">
             <div class="loader ease-linear rounded-full border-4 border-gray-200 h-12 w-12 mb-4"></div>
             <p class="text-gray-500 font-medium">正在初始化系統...</p>
@@ -38,44 +38,53 @@
             </div>
         </div>
 
-        <form id="surveyForm" class="hidden bg-white rounded-xl shadow-sm p-5 space-y-5">
+        <form id="surveyForm" class="hidden bg-white rounded-xl shadow-sm p-5 space-y-6">
+
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">請選擇提報獎項 <span class="text-red-500">*</span></label>
-                <div class="grid grid-cols-2 gap-3">
-                    <label class="cursor-pointer">
-                        <input type="radio" name="awardType" value="前五名" class="peer sr-only" checked>
-                        <div class="text-center p-3 rounded-lg border-2 border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 font-medium transition-all">
-                            🥇 前五名
-                        </div>
-                    </label>
-                    <label class="cursor-pointer">
-                        <input type="radio" name="awardType" value="進步獎" class="peer sr-only">
-                        <div class="text-center p-3 rounded-lg border-2 border-gray-200 peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:text-green-700 font-medium transition-all">
-                            📈 進步獎
-                        </div>
-                    </label>
+                <label for="classNameInput" class="block text-sm font-semibold text-gray-700 mb-2">班級 <span class="text-red-500">*</span></label>
+                <input type="text" id="classNameInput" placeholder="例如：三年一班" required
+                    class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+
+            <div>
+                <p class="text-sm font-semibold text-gray-700 mb-2">🥇 前五名</p>
+                <div class="space-y-2">
+                    <input type="text" class="top5-input w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="第 1 名 姓名">
+                    <input type="text" class="top5-input w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="第 2 名 姓名">
+                    <input type="text" class="top5-input w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="第 3 名 姓名">
+                    <input type="text" class="top5-input w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="第 4 名 姓名">
+                    <input type="text" class="top5-input w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="第 5 名 姓名">
                 </div>
             </div>
 
-            <div id="rankContainer" class="transition-all duration-300">
-                <label for="rankSelect" class="block text-sm font-semibold text-gray-700 mb-2">名次 <span class="text-red-500">*</span></label>
-                <select id="rankSelect" class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required>
-                    <option value="" disabled selected>請選擇名次</option>
-                    <option value="第1名">第 1 名</option>
-                    <option value="第2名">第 2 名</option>
-                    <option value="第3名">第 3 名</option>
-                    <option value="第4名">第 4 名</option>
-                    <option value="第5名">第 5 名</option>
-                </select>
+            <div>
+                <p class="text-sm font-semibold text-gray-700 mb-2">🔁 前五名備取</p>
+                <div class="space-y-2">
+                    <input type="text" class="top5backup-input w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="備取 1 姓名">
+                    <input type="text" class="top5backup-input w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="備取 2 姓名">
+                    <input type="text" class="top5backup-input w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="備取 3 姓名">
+                </div>
             </div>
 
             <div>
-                <label for="studentName" class="block text-sm font-semibold text-gray-700 mb-2">學生姓名 <span class="text-red-500">*</span></label>
-                <input type="text" id="studentName" placeholder="請輸入學生真實姓名" required class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <p class="text-sm font-semibold text-gray-700 mb-2">📈 進步獎</p>
+                <div class="space-y-2">
+                    <input type="text" class="improved-input w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" placeholder="進步獎 1 姓名">
+                    <input type="text" class="improved-input w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" placeholder="進步獎 2 姓名">
+                    <input type="text" class="improved-input w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" placeholder="進步獎 3 姓名">
+                </div>
             </div>
 
-            <button type="submit" id="submitBtn" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-200 flex justify-center items-center">
-                確認送出提報
+            <div>
+                <p class="text-sm font-semibold text-gray-700 mb-2">🔁 進步獎備取</p>
+                <div class="space-y-2">
+                    <input type="text" class="improvedbackup-input w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" placeholder="備取 1 姓名">
+                    <input type="text" class="improvedbackup-input w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" placeholder="備取 2 姓名">
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-200 flex justify-center items-center">
+                確認送出全班名單
             </button>
         </form>
 
@@ -84,12 +93,12 @@
                 <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             </div>
             <h2 class="text-2xl font-bold text-gray-800 mb-2">提報成功！</h2>
-            <p class="text-gray-500 mb-6">資料已成功寫入資料庫。</p>
+            <p class="text-gray-500 mb-6">全班名單已成功寫入資料庫。</p>
             <button id="closeAppBtn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition duration-200">
                 關閉視窗
             </button>
             <button id="submitAnotherBtn" class="w-full mt-3 text-blue-600 font-medium py-2">
-                繼續提報下一位
+                提報另一個班級
             </button>
         </div>
     </main>
@@ -98,8 +107,8 @@
         // ==========================================
         // ⚠️ 請填寫您的設定 ⚠️
         // ==========================================
-        const MY_LIFF_ID = "2010467805-6wrsAm45"; // 替換為您的 LIFF ID
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw8uiwTBlHOG6Mp_YKgewxHLCHvv2Sz6BpbL6M6nzJ7O-oFM6IUdBtJE6OgIrR6Dwiq/exec"; // 替換為您部署後的 GAS 網頁應用程式 URL
+        const MY_LIFF_ID = "2009635542-RKIIQluE";
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwhJlc1-8Q9Jo_B_oxuSuOLSQdIq9U1qHcDqil-EUAxXJe-Jg4mXta9Fub3_AiFJuD33w/exec";
         // ==========================================
 
         const loadingScreen = document.getElementById('loadingScreen');
@@ -108,11 +117,8 @@
         const successScreen = document.getElementById('successScreen');
         const userNameEl = document.getElementById('userName');
         const userPictureEl = document.getElementById('userPicture');
-        const rankContainer = document.getElementById('rankContainer');
-        const awardTypeRadios = document.getElementsByName('awardType');
-        const rankSelect = document.getElementById('rankSelect');
-        const studentNameInput = document.getElementById('studentName');
         const submitBtn = document.getElementById('submitBtn');
+        const classNameInput = document.getElementById('classNameInput');
 
         let currentUserProfile = null;
 
@@ -125,16 +131,16 @@
                 }
 
                 await liff.init({ liffId: MY_LIFF_ID });
-                
+
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     currentUserProfile = profile;
-                    
+
                     userNameEl.textContent = profile.displayName;
                     if (profile.pictureUrl) {
                         userPictureEl.src = profile.pictureUrl;
                     }
-                    
+
                     loadingScreen.classList.add('hidden');
                     profileSection.classList.remove('hidden');
                     surveyForm.classList.remove('hidden');
@@ -155,37 +161,27 @@
             surveyForm.classList.remove('hidden');
         }
 
-        awardTypeRadios.forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                if (e.target.value === '進步獎') {
-                    rankContainer.classList.add('hidden');
-                    rankSelect.removeAttribute('required');
-                    rankSelect.value = ""; 
-                } else {
-                    rankContainer.classList.remove('hidden');
-                    rankSelect.setAttribute('required', 'true');
-                }
-            });
-        });
+        function collectInputs(selector) {
+            return Array.from(document.querySelectorAll(selector)).map(el => el.value.trim());
+        }
 
         surveyForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const selectedAward = document.querySelector('input[name="awardType"]:checked').value;
-            const rank = rankSelect.value;
-            const studentName = studentNameInput.value.trim();
-
-            if (selectedAward === '前五名' && !rank) {
-                alert('請選擇名次！');
+            const className = classNameInput.value.trim();
+            if (!className) {
+                alert('請填寫班級！');
                 return;
             }
 
             const payload = {
                 submitterName: currentUserProfile.displayName,
                 submitterId: currentUserProfile.userId,
-                awardType: selectedAward,
-                rankOrNote: rank || "無",
-                studentName: studentName
+                className: className,
+                top5: collectInputs('.top5-input'),
+                top5Backup: collectInputs('.top5backup-input'),
+                improved: collectInputs('.improved-input'),
+                improvedBackup: collectInputs('.improvedbackup-input')
             };
 
             const originalBtnText = submitBtn.innerHTML;
@@ -232,8 +228,7 @@
         });
 
         document.getElementById('submitAnotherBtn').addEventListener('click', () => {
-            studentNameInput.value = "";
-            rankSelect.value = "";
+            surveyForm.reset();
             successScreen.classList.add('hidden');
             profileSection.classList.remove('hidden');
             surveyForm.classList.remove('hidden');
