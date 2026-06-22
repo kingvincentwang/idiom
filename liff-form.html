@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LIFF 表單系統</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background:#0f1729; color:#fff; margin:0; padding:24px; text-align:center; }
+    .card { max-width:380px; margin:60px auto; padding:32px 24px; background:rgba(255,255,255,0.06); border-radius:16px; backdrop-filter:blur(8px); }
+    .avatar { width:72px; height:72px; border-radius:50%; margin-bottom:12px; }
+    .btn { display:inline-block; margin-top:16px; padding:12px 24px; background:#06C755; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer; }
+    textarea { width:100%; box-sizing:border-box; border-radius:8px; border:none; padding:12px; margin-top:16px; font-size:14px; }
+    #loading { margin-top:80px; opacity:0.7; }
+    #result { margin-top:12px; font-size:14px; opacity:0.8; }
+  </style>
+</head>
+<body>
+  <div id="loading">載入中...</div>
+
+  <div id="blocked" class="card" style="display:none;">
+    <p>⚠️ 此系統僅限官方帳號好友使用</p>
+    <p>請先將我們加為好友後再重新進入本頁</p>
+    <a class="btn" id="addFriendBtn" href="#" target="_blank">加入好友</a>
+  </div>
+
+  <div id="app" class="card" style="display:none;">
+    <img class="avatar" id="avatar" src="">
+    <p>歡迎，<span id="name"></span></p>
+    <textarea id="formInput" rows="4" placeholder="請輸入要填寫的內容"></textarea>
+    <button class="btn" id="submitBtn">送出</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const LIFF_ID = '請貼上你的 LIFF ID';
+    const GAS_URL = '請貼上你的 GAS 網址（.../exec）';
+    let idToken = null;
+
+    function show(id) {
+      ['loading','blocked','app'].forEach(function(x){
+        document.getElementById(x).style.display = (x === id) ? 'block' : 'none';
+      });
+    }
+
+    function callGAS(action, payload) {
+      return fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // 避開 CORS preflight
+        body: JSON.stringify(Object.assign({ action: action }, payload))
+      }).then(function (r) { return r.json(); });
+    }
+
+    liff.init({ liffId: LIFF_ID })
+      .then(function () {
+        if (!liff.isLoggedIn()) { liff.login(); return; }
+        return liff.getIDToken();
+      })
+      .then(function (token) {
+        if (!token) return;
+        idToken = token;
+        return callGAS('checkAccess', { idToken: idToken });
+      })
+      .then(function (res) { if (res) handleResult(res); })
+      .catch(handleError);
+
+    function handleResult(res) {
+      if (!res.ok) { handleError(res); return; }
+      if (!res.isFriend) {
+        document.getElementById('addFriendBtn').href = res.addFriendUrl;
+        show('blocked');
+        return;
+      }
+      document.getElementById('name').textContent = res.profile.displayName;
+      document.getElementById('avatar').src = res.profile.pictureUrl;
+      show('app');
+    }
+
+    document.getElementById('submitBtn').addEventListener('click', function () {
+      const content = document.getElementById('formInput').value.trim();
+      if (!content) return;
+      document.getElementById('result').textContent = '送出中...';
+      callGAS('submitForm', { idToken: idToken, content: content })
+        .then(function (res) {
+          document.getElementById('result').textContent = res.ok ? '✅ 送出成功' : '❌ 送出失敗：' + (res.reason || '');
+          if (res.ok) document.getElementById('formInput').value = '';
+        })
+        .catch(handleError);
+    });
+
+    function handleError(err) {
+      document.getElementById('loading').textContent = '發生錯誤，請重新整理或聯絡管理員';
+      console.error(err);
+    }
+  </script>
+</body>
+</html>
