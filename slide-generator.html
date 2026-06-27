@@ -1,0 +1,1816 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reveal.js 簡報產生器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  :root {
+    --gas-yellow: #F9AB00;
+    --gas-blue: #4285F4;
+    --gas-green: #34A853;
+    --gas-red: #EA4335;
+    --dark: #0d1117;
+    --mid: #161b22;
+    --card: #21262d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --border: #30363d;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--dark); color: var(--text);
+    font-family: 'Noto Sans TC', sans-serif;
+    overflow: hidden;
+  }
+
+  #app {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    height: 100vh;
+  }
+
+  /* ===== 左側面板 ===== */
+  #panel {
+    background: var(--mid);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #panel-header {
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  #panel-header h1 {
+    margin: 0 0 4px;
+    font-size: 1.1em;
+    font-weight: 900;
+  }
+  #panel-header h1 .accent { color: var(--gas-yellow); }
+  #panel-header p {
+    margin: 0;
+    font-size: 0.72em;
+    color: var(--muted);
+  }
+
+  #mode-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .mode-tab {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 8px;
+    color: var(--muted);
+    font-size: 0.72em;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .mode-tab.active {
+    background: #1a2a4a;
+    border-color: var(--gas-blue);
+    color: var(--gas-blue);
+  }
+  .mode-tab:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+
+  #panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 18px;
+  }
+  #panel-body::-webkit-scrollbar { width: 8px; }
+  #panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  #panel-footer {
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn {
+    padding: 9px 14px;
+    border-radius: 8px;
+    font-size: 0.78em;
+    font-weight: 700;
+    transition: all .15s;
+  }
+  .btn-primary {
+    background: var(--gas-blue);
+    color: #fff;
+    flex: 1;
+  }
+  .btn-primary:hover { background: #2a6dd9; }
+  .btn-secondary {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--muted); }
+
+  /* ===== 表單元件 ===== */
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block;
+    font-size: 0.7em;
+    color: var(--gas-yellow);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 5px;
+  }
+  .field input[type="text"],
+  .field textarea,
+  .field select {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-size: 0.82em;
+    font-family: inherit;
+    outline: none;
+    resize: vertical;
+  }
+  .field input[type="text"]:focus,
+  .field textarea:focus,
+  .field select:focus { border-color: var(--gas-blue); }
+  .field textarea { min-height: 70px; line-height: 1.5; }
+  .field-hint {
+    font-size: 0.62em;
+    color: var(--muted);
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+
+  .layout-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .layout-opt {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    padding: 8px 4px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .layout-opt.active { border-color: var(--gas-yellow); background: #21250d; }
+  .layout-opt:hover:not(.active) { border-color: var(--muted); }
+  .layout-opt .ico { font-size: 1.3em; }
+  .layout-opt .lbl { font-size: 0.56em; color: var(--muted); margin-top: 3px; }
+  .layout-opt.active .lbl { color: var(--gas-yellow); }
+
+  /* 區塊重複編輯（卡片式內容） */
+  #blocks-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .block-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    position: relative;
+  }
+  .block-item .block-num {
+    font-size: 0.6em;
+    color: var(--gas-blue);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .block-item .remove-btn {
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.9em;
+    padding: 0 4px;
+  }
+  .block-item .remove-btn:hover { color: var(--gas-red); }
+  .block-item input, .block-item textarea {
+    width: 100%;
+    background: var(--mid);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    color: var(--text);
+    font-size: 0.78em;
+    font-family: inherit;
+    outline: none;
+    margin-bottom: 5px;
+  }
+  .block-item input:focus, .block-item textarea:focus { border-color: var(--gas-blue); }
+  .add-block-btn {
+    width: 100%;
+    background: var(--card);
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    color: var(--muted);
+    font-size: 0.75em;
+    font-weight: 700;
+  }
+  .add-block-btn:hover { border-color: var(--gas-blue); color: var(--gas-blue); }
+
+  /* 文字轉換模式 */
+  #text-input {
+    width: 100%;
+    height: 320px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 0.78em;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.6;
+    outline: none;
+    resize: none;
+  }
+  #text-input:focus { border-color: var(--gas-blue); }
+
+  .format-help {
+    background: #001a2a;
+    border: 1px solid var(--gas-blue);
+    border-radius: 7px;
+    padding: 8px 12px;
+    font-size: 0.64em;
+    color: var(--gas-blue);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+  .format-help code {
+    background: rgba(66,133,244,0.15);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* 卡片清單區（投影片佇列） */
+  #queue-section { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px; }
+  #queue-list { display: flex; flex-direction: column; gap: 5px; max-height: 180px; overflow-y: auto; }
+  .queue-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.7em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .queue-item:hover { border-color: var(--gas-blue); }
+  .queue-item.active { border-color: var(--gas-yellow); background: #21250d; }
+  .queue-item .qnum {
+    color: var(--gas-yellow);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .queue-item .qtitle { flex: 1; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .queue-item .qmove-up,
+  .queue-item .qmove-down {
+    color: var(--muted);
+    flex-shrink: 0;
+    font-size: 0.85em;
+    line-height: 1;
+    padding: 2px 3px;
+    border-radius: 3px;
+  }
+  .queue-item .qmove-up:hover,
+  .queue-item .qmove-down:hover { color: var(--gas-blue); background: rgba(66,133,244,0.15); }
+  .queue-item .qmove-disabled { opacity: 0.2; cursor: default; pointer-events: none; }
+  .queue-item .qdel { color: var(--muted); flex-shrink: 0; margin-left: 2px; }
+  .queue-item .qdel:hover { color: var(--gas-red); }
+
+  /* ===== 右側預覽 ===== */
+  #preview-area {
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #preview-toolbar {
+    background: var(--mid);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  #preview-toolbar .ptitle {
+    font-size: 0.75em;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  #preview-toolbar .ptitle strong { color: var(--gas-yellow); }
+  #preview-frame-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 20px;
+    position: relative;
+  }
+  #preview-iframe {
+    width: 1200px;
+    height: 700px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--dark);
+    transform-origin: center center;
+    flex-shrink: 0;
+  }
+
+  /* #preview-anim-wrap 包住 iframe，用來播放換頁特效的模擬動畫。
+     iframe 自己的 transform 留給 scalePreview() 做縮放用，
+     動畫效果的 transform/opacity 都加在這層 wrapper 上，避免互相覆蓋。
+     這裡的 transform-origin 設在 wrapper 上、且 wrapper 本身不縮放，
+     所以動畫的 scale/rotate 是疊加在「已經被縮放過」的 iframe 外層，
+     視覺上仍是合理的相對效果，不會因為 iframe 本身也在縮放而互相干擾。 */
+  #preview-anim-wrap { display: contents; }
+  #preview-anim-wrap.transition-preview-fade #preview-iframe { animation: tpFade 0.5s ease; }
+  #preview-anim-wrap.transition-preview-slide #preview-iframe { animation: tpSlide 0.45s cubic-bezier(.4,0,.2,1); }
+  #preview-anim-wrap.transition-preview-zoom #preview-iframe { animation: tpZoom 0.5s ease; }
+  #preview-anim-wrap.transition-preview-convex #preview-iframe { animation: tpConvex 0.6s ease; transform-style: preserve-3d; }
+  #preview-anim-wrap.transition-preview-concave #preview-iframe { animation: tpConcave 0.6s ease; transform-style: preserve-3d; }
+
+  @keyframes tpFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  /* slide：從右側橫向滑入，呼應 Reveal.js 'slide' 特效的橫移方向 */
+  @keyframes tpSlide {
+    from { opacity: 0; transform: translateX(80px) scale(var(--tp-scale, 1)); }
+    to   { opacity: 1; transform: translateX(0) scale(var(--tp-scale, 1)); }
+  }
+  /* zoom：從縮小放大到正常尺寸，明顯區別於單純淡入 */
+  @keyframes tpZoom {
+    from { opacity: 0; transform: scale(calc(var(--tp-scale, 1) * 0.7)); }
+    to   { opacity: 1; transform: scale(var(--tp-scale, 1)); }
+  }
+  /* convex：模擬往外凸出翻轉，用 rotateY + 輕微位移表現立體感 */
+  @keyframes tpConvex {
+    from { opacity: 0; transform: perspective(1200px) rotateY(35deg) scale(var(--tp-scale, 1)); }
+    to   { opacity: 1; transform: perspective(1200px) rotateY(0deg) scale(var(--tp-scale, 1)); }
+  }
+  /* concave：方向與 convex 相反，模擬往內凹陷翻轉 */
+  @keyframes tpConcave {
+    from { opacity: 0; transform: perspective(1200px) rotateY(-35deg) scale(var(--tp-scale, 1)); }
+    to   { opacity: 1; transform: perspective(1200px) rotateY(0deg) scale(var(--tp-scale, 1)); }
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--muted);
+    gap: 10px;
+  }
+  .empty-state .ico { font-size: 3em; opacity: 0.3; }
+  .empty-state p { font-size: 0.85em; margin: 0; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="panel">
+    <div id="panel-header">
+      <h1>📽️ <span class="accent">Reveal.js</span> 簡報產生器</h1>
+      <p>建立投影片內容，即時預覽，下載成獨立 HTML 簡報檔</p>
+    </div>
+
+    <div id="mode-tabs">
+      <button class="mode-tab active" data-mode="form" onclick="switchMode('form')">📝 表單填寫</button>
+      <button class="mode-tab" data-mode="text" onclick="switchMode('text')">📄 文字轉換</button>
+    </div>
+
+    <div id="panel-body">
+      <!-- 由 JS 動態渲染表單或文字輸入區 -->
+    </div>
+
+    <div id="queue-section">
+      <div style="font-size:0.7em; color:var(--gas-green); font-family:'JetBrains Mono',monospace; margin-bottom:8px; padding-left:18px;">
+        📚 投影片佇列（<span id="queue-count">0</span>）
+      </div>
+      <div id="queue-list" style="padding:0 18px;"></div>
+    </div>
+
+    <div id="panel-footer">
+      <button class="btn btn-secondary" onclick="clearAll()">🗑️ 全部清除</button>
+      <button class="btn btn-primary" onclick="downloadHtml()">⬇️ 下載 HTML</button>
+    </div>
+  </div>
+
+  <div id="preview-area">
+    <div id="preview-toolbar">
+      <div class="ptitle">即時預覽 — 共 <strong id="toolbar-count">0</strong> 張投影片</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <label style="font-size:0.7em; color:var(--muted); font-family:'JetBrains Mono',monospace;">換頁特效</label>
+        <select id="transition-select" onchange="changeTransition(this.value)"
+          style="background:var(--card); border:1px solid var(--border); border-radius:6px; padding:6px 8px; color:var(--text); font-size:0.72em; font-family:inherit; cursor:pointer;">
+          <option value="none">無動畫</option>
+          <option value="fade">淡入淡出</option>
+          <option value="slide" selected>滑動（預設）</option>
+          <option value="convex">3D 凸面翻轉</option>
+          <option value="concave">3D 凹面翻轉</option>
+          <option value="zoom">縮放</option>
+        </select>
+        <button class="btn btn-secondary" style="font-size:0.7em; padding:6px 12px;" onclick="prevSlide()">← 上一張</button>
+        <button class="btn btn-secondary" style="font-size:0.7em; padding:6px 12px;" onclick="nextSlide()">下一張 →</button>
+      </div>
+    </div>
+    <div id="preview-frame-wrap">
+      <div class="empty-state" id="empty-state">
+        <div class="ico">📽️</div>
+        <p>還沒有投影片，開始新增第一張吧！</p>
+      </div>
+      <div id="preview-anim-wrap">
+        <iframe id="preview-iframe" style="display:none;"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================
+// Reveal.js 簡報產生器 — 核心邏輯
+// ============================================
+
+let slides = [];       // 投影片佇列，每個元素是 {layout, title, label, blocks, raw}
+let currentIndex = -1; // 目前預覽/編輯中的投影片索引
+let currentMode = 'form';
+let currentTransition = 'slide'; // 換頁特效：none/fade/slide/convex/concave/zoom，套用到預覽與最終下載輸出
+
+// ---------- 版型定義 ----------
+const LAYOUTS = {
+  title: { name: '標題頁', icon: '🎬' },
+  bullets: { name: '條列重點', icon: '📋' },
+  cards: { name: '卡片並排', icon: '🗂️' },
+  steps: { name: '步驟流程', icon: '🪜' },
+  twocol: { name: '左右兩欄', icon: '⬛⬛' },
+  quote: { name: '重點強調', icon: '💡' },
+  image: { name: '圖片頁', icon: '🖼️' },
+  survey: { name: 'Firebase 問卷', icon: '📊' },
+};
+
+const COLORS = ['var(--gas-yellow)', 'var(--gas-blue)', 'var(--gas-green)', 'var(--gas-red)'];
+
+// ============================================
+// 模式切換
+// ============================================
+function switchMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.mode === mode);
+  });
+  renderPanelBody();
+}
+
+function renderPanelBody() {
+  const body = document.getElementById('panel-body');
+  if (currentMode === 'form') {
+    body.innerHTML = formModeHtml();
+    bindFormEvents();
+  } else {
+    body.innerHTML = textModeHtml();
+  }
+}
+
+// ============================================
+// 表單模式
+// ============================================
+function formModeHtml() {
+  const editing = currentIndex >= 0 ? slides[currentIndex] : null;
+  const layout = editing ? editing.layout : 'bullets';
+
+  return `
+    <div class="field">
+      <label>🎨 版型</label>
+      <div class="layout-grid">
+        ${Object.entries(LAYOUTS).map(([key, l]) => `
+          <div class="layout-opt ${layout === key ? 'active' : ''}" data-layout="${key}" onclick="selectLayout('${key}')">
+            <div class="ico">${l.icon}</div>
+            <div class="lbl">${l.name}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="field">
+      <label>🏷️ 分類標籤（選填）</label>
+      <input type="text" id="f-label" placeholder="例如：概念導入、實做練習" value="${editing ? esc(editing.label || '') : ''}">
+    </div>
+
+    <div class="field">
+      <label>📌 投影片標題</label>
+      <input type="text" id="f-title" placeholder="例如：什麼是 GAS？" value="${editing ? esc(editing.title || '') : ''}">
+    </div>
+
+    <div id="layout-fields"></div>
+
+    <div class="field" id="attach-image-field">
+      <label>🖼️ 附加圖片（選填，所有版型都可以加一張圖）</label>
+      <input type="file" id="f-attach-image" accept="image/*" onchange="handleAttachImage(event)"
+        style="width:100%; background:var(--card); border:1px solid var(--border); border-radius:7px; padding:8px 10px; color:var(--text); font-size:0.75em; font-family:inherit;">
+      <div id="attach-image-preview" style="margin-top:6px;"></div>
+      <div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+        <label style="font-size:0.7em; color:var(--muted); white-space:nowrap; margin-bottom:0;">圖片位置</label>
+        <select id="f-attach-image-pos"
+          style="flex:1; background:var(--card); border:1px solid var(--border); border-radius:6px; padding:6px 8px; color:var(--text); font-size:0.75em; font-family:inherit; cursor:pointer;">
+          <option value="top" ${editing && editing.attachedImagePos === 'top' ? 'selected' : ''}>⬆️ 上方（內容在下）</option>
+          <option value="bottom" ${editing && editing.attachedImagePos === 'bottom' ? 'selected' : ''}>⬇️ 下方（內容在上）</option>
+          <option value="left" ${editing && editing.attachedImagePos === 'left' ? 'selected' : ''}>⬅️ 左邊（內容在右）</option>
+          <option value="right" ${editing && editing.attachedImagePos === 'right' ? 'selected' : ''}>➡️ 右邊（內容在左）</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-top:14px;">
+      <button class="btn btn-primary" style="flex:1;" onclick="saveSlide()">${editing ? '💾 更新這張投影片' : '➕ 新增到佇列'}</button>
+      ${editing ? '<button class="btn btn-secondary" onclick="newSlide()">✖️ 取消編輯</button>' : ''}
+    </div>
+  `;
+}
+
+function selectLayout(key) {
+  document.querySelectorAll('.layout-opt').forEach(el => {
+    el.classList.toggle('active', el.dataset.layout === key);
+  });
+  renderLayoutFields(key);
+  toggleAttachImageField(key);
+}
+
+// 「圖片頁」版型本身已內建專屬的主圖上傳欄位，「Firebase 問卷」版型的版面
+// 已經被四個問卷選項佔滿、沒有合理的位置再塞一張圖，這兩種版型都隱藏
+// 通用附加圖片欄位，避免使用者選了圖片、實際上卻沒有版面能顯示它
+// （這正是先前 title 版型出現「選了圖片但畫面沒反應」無聲失敗的同類問題，
+// title 版型已修正為可以顯示，但 image/survey 這兩種維持不提供此欄位，
+// 而不是讓它們也都要在已經很滿的版面裡硬塞圖片進去）。
+const NO_ATTACH_IMAGE_LAYOUTS = ['image', 'survey'];
+
+function toggleAttachImageField(layout) {
+  const field = document.getElementById('attach-image-field');
+  if (field) field.style.display = NO_ATTACH_IMAGE_LAYOUTS.includes(layout) ? 'none' : '';
+}
+
+function renderLayoutFields(layout, data) {
+  const container = document.getElementById('layout-fields');
+  if (!container) return;
+  data = data || {};
+
+  if (layout === 'title') {
+    container.innerHTML = `
+      <div class="field">
+        <label>📝 副標題說明</label>
+        <textarea id="f-sub" placeholder="一句話描述這個主題">${esc(data.sub || '')}</textarea>
+      </div>
+    `;
+  } else if (layout === 'bullets') {
+    container.innerHTML = `
+      <div class="field">
+        <label>📋 條列項目（每行一項，用 | 分隔粗體詞，例如：核心概念|這是說明文字）</label>
+        <textarea id="f-bullets" style="min-height:150px;" placeholder="重點一|說明文字
+重點二|說明文字">${esc((data.bullets || []).map(b => b.title + '|' + b.desc).join('\n'))}</textarea>
+      </div>
+    `;
+  } else if (layout === 'cards' || layout === 'steps' || layout === 'twocol') {
+    renderBlocksEditor(container, layout, data.blocks || []);
+  } else if (layout === 'quote') {
+    container.innerHTML = `
+      <div class="field">
+        <label>💬 強調文字</label>
+        <textarea id="f-quote" style="min-height:80px;">${esc(data.quote || '')}</textarea>
+      </div>
+      <div class="field">
+        <label>📝 補充說明（選填）</label>
+        <textarea id="f-quotesub">${esc(data.quotesub || '')}</textarea>
+      </div>
+    `;
+  } else if (layout === 'survey') {
+    renderSurveyFields(container, data);
+  } else if (layout === 'image') {
+    renderImageLayoutFields(container, data);
+  }
+}
+
+let currentImageLayoutImage = null; // 「圖片頁」版型專用的主圖（與通用附加圖片欄位分開儲存）
+
+function renderImageLayoutFields(container, data) {
+  currentImageLayoutImage = data.imageSrc || null;
+  container.innerHTML = `
+    <div class="field">
+      <label>🖼️ 主圖片</label>
+      <input type="file" id="f-image-main" accept="image/*" onchange="handleImageLayoutUpload(event)"
+        style="width:100%; background:var(--card); border:1px solid var(--border); border-radius:7px; padding:8px 10px; color:var(--text); font-size:0.75em; font-family:inherit;">
+      <div id="image-main-preview" style="margin-top:6px;"></div>
+    </div>
+    <div class="field">
+      <label>📝 圖片說明文字（選填，顯示在圖片下方）</label>
+      <textarea id="f-image-caption" style="min-height:60px;" placeholder="一句話說明這張圖">${esc(data.caption || '')}</textarea>
+    </div>
+  `;
+  renderImageLayoutPreview();
+}
+
+function renderImageLayoutPreview() {
+  const el = document.getElementById('image-main-preview');
+  if (!el) return;
+  if (currentImageLayoutImage) {
+    el.innerHTML = `
+      <div style="position:relative; display:inline-block;">
+        <img src="${currentImageLayoutImage}" style="max-width:100%; max-height:140px; border-radius:6px; border:1px solid var(--border); display:block;">
+        <button onclick="removeImageLayoutImage()" type="button"
+          style="position:absolute; top:-8px; right:-8px; background:var(--gas-red); color:#fff; border-radius:50%; width:20px; height:20px; font-size:0.7em; line-height:1; padding:0; cursor:pointer;">✕</button>
+      </div>`;
+  } else {
+    el.innerHTML = '<div style="font-size:0.62em; color:var(--muted);">尚未選擇圖片</div>';
+  }
+}
+
+function handleImageLayoutUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { alert('請選擇圖片檔案'); return; }
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    currentImageLayoutImage = e.target.result;
+    renderImageLayoutPreview();
+  };
+  reader.onerror = function () {
+    alert('圖片讀取失敗');
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImageLayoutImage() {
+  currentImageLayoutImage = null;
+  const input = document.getElementById('f-image-main');
+  if (input) input.value = '';
+  renderImageLayoutPreview();
+}
+
+function renderSurveyFields(container, data) {
+  data = data || {};
+  const opts = (data.options && data.options.length === 4) ? data.options : [
+    { icon: '😶', text: '' },
+    { icon: '👀', text: '' },
+    { icon: '🛠️', text: '' },
+    { icon: '🚀', text: '' },
+  ];
+  const cfg = data.firebaseConfig || {};
+
+  container.innerHTML = `
+    <div class="field">
+      <label>🆔 問卷代號（用於區分多份問卷的資料，英數字即可，例如 survey1）</label>
+      <input type="text" id="f-surveyid" placeholder="survey1" value="${esc(data.surveyId || '')}">
+      <div class="field-hint">⚠️ 同一份簡報如有多張問卷，代號務必不同，否則票數會互相覆蓋</div>
+    </div>
+
+    <div class="field">
+      <label>🔥 Firebase 設定（從 Firebase Console → 專案設定 → 你的應用程式 取得）</label>
+      <input type="text" id="f-fb-apikey" placeholder="apiKey" value="${esc(cfg.apiKey || '')}" style="margin-bottom:5px;">
+      <input type="text" id="f-fb-authdomain" placeholder="authDomain，例如 xxx.firebaseapp.com" value="${esc(cfg.authDomain || '')}" style="margin-bottom:5px;">
+      <input type="text" id="f-fb-projectid" placeholder="projectId" value="${esc(cfg.projectId || '')}" style="margin-bottom:5px;">
+      <input type="text" id="f-fb-storagebucket" placeholder="storageBucket（選填）" value="${esc(cfg.storageBucket || '')}" style="margin-bottom:5px;">
+      <input type="text" id="f-fb-sendid" placeholder="messagingSenderId（選填）" value="${esc(cfg.messagingSenderId || '')}" style="margin-bottom:5px;">
+      <input type="text" id="f-fb-appid" placeholder="appId" value="${esc(cfg.appId || '')}">
+      <div class="field-hint">需在 Firestore 規則加入：<br><code style="font-family:'JetBrains Mono',monospace;color:var(--gas-blue)">match /slidegen_survey/{doc} { allow read, write: if true; }</code></div>
+    </div>
+
+    <div class="field">
+      <label>📋 四個選項（圖示 emoji + 文字）</label>
+      <div id="survey-opts-list">
+        ${opts.map((o, i) => `
+          <div style="display:flex; gap:6px; margin-bottom:6px;">
+            <input type="text" class="sv-icon" placeholder="😶" value="${esc(o.icon)}" style="width:48px; flex-shrink:0; text-align:center;">
+            <input type="text" class="sv-text" placeholder="選項 ${i + 1} 文字" value="${esc(o.text)}" style="flex:1;">
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderBlocksEditor(container, layout, blocks) {
+  if (!blocks.length) blocks = [{ icon: '📌', title: '', desc: '' }];
+  const label = layout === 'cards' ? '卡片' : layout === 'steps' ? '步驟' : '欄位';
+
+  container.innerHTML = `
+    <div class="field">
+      <label>🗂️ ${label}內容</label>
+      <div id="blocks-list">
+        ${blocks.map((b, i) => blockItemHtml(i, b, label)).join('')}
+      </div>
+      <button class="add-block-btn" onclick="addBlock()">+ 新增${label}</button>
+    </div>
+  `;
+}
+
+function blockItemHtml(i, b, label) {
+  return `
+    <div class="block-item" data-idx="${i}">
+      <div class="block-num">
+        <span>${label} ${i + 1}</span>
+        <button class="remove-btn" onclick="removeBlock(${i})">✕</button>
+      </div>
+      <input type="text" class="b-icon" placeholder="emoji 圖示，例如 🎯" value="${esc(b.icon || '')}">
+      <input type="text" class="b-title" placeholder="標題" value="${esc(b.title || '')}">
+      <textarea class="b-desc" placeholder="說明文字" style="min-height:50px;">${esc(b.desc || '')}</textarea>
+    </div>
+  `;
+}
+
+function getCurrentBlocks() {
+  const items = document.querySelectorAll('.block-item');
+  return Array.from(items).map(item => ({
+    icon: item.querySelector('.b-icon').value.trim(),
+    title: item.querySelector('.b-title').value.trim(),
+    desc: item.querySelector('.b-desc').value.trim(),
+  }));
+}
+
+function addBlock() {
+  const blocks = getCurrentBlocks();
+  blocks.push({ icon: '📌', title: '', desc: '' });
+  const layout = document.querySelector('.layout-opt.active').dataset.layout;
+  renderBlocksEditor(document.getElementById('layout-fields'), layout, blocks);
+}
+
+function removeBlock(i) {
+  const blocks = getCurrentBlocks();
+  blocks.splice(i, 1);
+  const layout = document.querySelector('.layout-opt.active').dataset.layout;
+  renderBlocksEditor(document.getElementById('layout-fields'), layout, blocks);
+}
+
+let currentAttachedImage = null; // 表單編輯中暫存的附加圖片 base64（與 layout-fields 內的圖片頁專用圖片分開管理）
+
+function bindFormEvents() {
+  const editing = currentIndex >= 0 ? slides[currentIndex] : null;
+  const layout = editing ? editing.layout : 'bullets';
+  renderLayoutFields(layout, editing || {});
+  toggleAttachImageField(layout);
+
+  // 對於不支援通用附加圖片的版型（image/survey），即使資料裡仍殘留舊的
+  // attachedImage（例如修正前儲存的舊投影片），也不載入到 currentAttachedImage，
+  // 避免它以「看不見、但記憶體裡還留著」的曖昧狀態存在，造成編輯時的混淆。
+  currentAttachedImage = (editing && !NO_ATTACH_IMAGE_LAYOUTS.includes(layout))
+    ? (editing.attachedImage || null)
+    : null;
+  renderAttachImagePreview();
+}
+
+function renderAttachImagePreview() {
+  const el = document.getElementById('attach-image-preview');
+  if (!el) return;
+  if (currentAttachedImage) {
+    el.innerHTML = `
+      <div style="position:relative; display:inline-block;">
+        <img src="${currentAttachedImage}" style="max-width:100%; max-height:120px; border-radius:6px; border:1px solid var(--border); display:block;">
+        <button onclick="removeAttachImage()" type="button"
+          style="position:absolute; top:-8px; right:-8px; background:var(--gas-red); color:#fff; border-radius:50%; width:20px; height:20px; font-size:0.7em; line-height:1; padding:0; cursor:pointer;">✕</button>
+      </div>`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+function handleAttachImage(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { alert('請選擇圖片檔案'); return; }
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    currentAttachedImage = e.target.result; // base64 data URL
+    renderAttachImagePreview();
+  };
+  reader.onerror = function () {
+    alert('圖片讀取失敗');
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeAttachImage() {
+  currentAttachedImage = null;
+  const input = document.getElementById('f-attach-image');
+  if (input) input.value = '';
+  renderAttachImagePreview();
+}
+
+function saveSlide() {
+  const layout = document.querySelector('.layout-opt.active').dataset.layout;
+  const title = document.getElementById('f-title').value.trim();
+  const label = document.getElementById('f-label').value.trim();
+
+  if (!title) { alert('請輸入投影片標題'); return; }
+
+  const slideData = { layout, title, label };
+
+  if (layout === 'title') {
+    slideData.sub = document.getElementById('f-sub').value.trim();
+  } else if (layout === 'bullets') {
+    const raw = document.getElementById('f-bullets').value.trim();
+    slideData.bullets = raw.split('\n').filter(Boolean).map(line => {
+      const [t, d] = line.split('|');
+      return { title: (t || '').trim(), desc: (d || '').trim() };
+    });
+  } else if (layout === 'cards' || layout === 'steps' || layout === 'twocol') {
+    slideData.blocks = getCurrentBlocks().filter(b => b.title || b.desc);
+  } else if (layout === 'quote') {
+    slideData.quote = document.getElementById('f-quote').value.trim();
+    slideData.quotesub = document.getElementById('f-quotesub').value.trim();
+  } else if (layout === 'survey') {
+    const surveyId = document.getElementById('f-surveyid').value.trim();
+    const apiKey = document.getElementById('f-fb-apikey').value.trim();
+    const projectId = document.getElementById('f-fb-projectid').value.trim();
+    const appId = document.getElementById('f-fb-appid').value.trim();
+
+    if (!surveyId) { alert('請輸入問卷代號'); return; }
+    if (!apiKey || !projectId || !appId) { alert('請至少填入 apiKey、projectId、appId 三項 Firebase 設定'); return; }
+
+    // 檢查問卷代號是否與其他「survey」投影片重複（編輯中的自己除外）
+    // 用 sanitize 後的 id 比對，因為不同的原始輸入可能在過濾特殊字元後變成相同的 id
+    // （例如「survey 1」與「survey1」皆會變成 survey1），若只比較原始字串會漏掉這種碰撞
+    const sanitizedNew = jsStrEsc(surveyId);
+    const dup = slides.some((s, i) => i !== currentIndex && s.layout === 'survey' && jsStrEsc(s.surveyId) === sanitizedNew);
+    if (dup) { alert('⚠️ 問卷代號「' + surveyId + '」已被其他問卷投影片使用，請換一個代號'); return; }
+
+    slideData.surveyId = surveyId;
+    slideData.firebaseConfig = {
+      apiKey: apiKey,
+      authDomain: document.getElementById('f-fb-authdomain').value.trim(),
+      projectId: projectId,
+      storageBucket: document.getElementById('f-fb-storagebucket').value.trim(),
+      messagingSenderId: document.getElementById('f-fb-sendid').value.trim(),
+      appId: appId,
+    };
+    const iconEls = document.querySelectorAll('.sv-icon');
+    const textEls = document.querySelectorAll('.sv-text');
+    slideData.options = Array.from(iconEls).map((el, i) => ({
+      icon: el.value.trim() || '🔘',
+      text: textEls[i].value.trim() || ('選項 ' + (i + 1)),
+    }));
+  } else if (layout === 'image') {
+    if (!currentImageLayoutImage) { alert('請選擇一張圖片'); return; }
+    slideData.imageSrc = currentImageLayoutImage;
+    slideData.caption = document.getElementById('f-image-caption').value.trim();
+  }
+
+  // 通用附加圖片：用跟 toggleAttachImageField() 同一份 NO_ATTACH_IMAGE_LAYOUTS
+  // 白名單判斷，確保「表單上看不看得到這個欄位」與「資料儲存時是否寫入這個欄位」
+  // 兩處邏輯永遠一致——如果各自維護一份判斷條件，未來修改其中一處很容易忘了
+  // 同步另一處，導致表單隱藏了欄位、但舊資料或某種繞過途徑仍把值存進去，
+  // 變成「存了卻沒有對應渲染路徑」的無聲失敗（這正是 title 版型那次的根因）。
+  if (!NO_ATTACH_IMAGE_LAYOUTS.includes(layout) && currentAttachedImage) {
+    slideData.attachedImage = currentAttachedImage;
+    const posEl = document.getElementById('f-attach-image-pos');
+    slideData.attachedImagePos = posEl ? posEl.value : 'top';
+  }
+
+  if (currentIndex >= 0) {
+    slides[currentIndex] = slideData;
+  } else {
+    slides.push(slideData);
+    currentIndex = slides.length - 1;
+  }
+
+  newSlide();
+  renderQueue();
+  renderPreview();
+}
+
+function newSlide() {
+  currentIndex = -1;
+  renderPanelBody();
+}
+// ============================================
+// 文字轉換模式
+// ============================================
+function textModeHtml() {
+  return `
+    <div class="format-help">
+      💡 <strong>格式說明</strong><br>
+      用 <code>---</code> 分隔每張投影片<br>
+      第一行 <code># 標題</code>　第二行可選 <code>@標籤</code><br>
+      接下來每行一個重點，用 <code>|</code> 分隔標題與說明<br>
+      也支援貼上 Markdown 大綱（# 開頭當標題，- 開頭當條列）
+    </div>
+
+    <div class="field">
+      <label>📄 從 PDF 匯入文字（會自動抽取文字內容到下方輸入框）</label>
+      <input type="file" id="pdf-file-input" accept="application/pdf" onchange="handlePdfUpload(event)"
+        style="width:100%; background:var(--card); border:1px solid var(--border); border-radius:7px; padding:8px 10px; color:var(--text); font-size:0.75em; font-family:inherit;">
+      <div id="pdf-upload-status" style="font-size:0.62em; color:var(--muted); margin-top:5px;"></div>
+    </div>
+
+    <textarea id="text-input" placeholder="# 什麼是 GAS？
+@概念導入
+核心定義|GAS 是 Google 提供的免費自動化工具
+劇本比喻|把 Google 服務當演員，GAS 就是劇本
+
+---
+
+# 三大核心功能
+@核心功能
+自動化|每天自動執行重複工作
+整合|串接不同 Google 服務
+擴充|自訂函數擴充原有功能"></textarea>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button class="btn btn-primary" style="flex:1;" onclick="convertText()">🔄 轉換成投影片</button>
+    </div>
+  `;
+}
+
+// ============================================
+// PDF 匯入（動態載入 pdf.js，抽取文字後填入文字框）
+// ============================================
+let pdfJsLoaded = false;
+let pdfJsLoading = null;
+
+function loadPdfJs() {
+  if (pdfJsLoaded) return Promise.resolve();
+  if (pdfJsLoading) return pdfJsLoading;
+
+  pdfJsLoading = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    script.onload = () => {
+      try {
+        // cdnjs 版 pdf.js 會掛在 window.pdfjsLib
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        pdfJsLoaded = true;
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    };
+    script.onerror = () => reject(new Error('PDF.js 函式庫載入失敗，請確認網路連線'));
+    document.head.appendChild(script);
+  });
+
+  return pdfJsLoading;
+}
+
+function setPdfStatus(msg) {
+  const el = document.getElementById('pdf-upload-status');
+  if (el) el.textContent = msg;
+}
+
+function handlePdfUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  if (file.type !== 'application/pdf') {
+    setPdfStatus('⚠️ 請選擇 PDF 檔案');
+    return;
+  }
+
+  setPdfStatus('📥 載入 PDF 解析工具中…');
+
+  loadPdfJs()
+    .then(() => {
+      setPdfStatus('📄 正在讀取「' + file.name + '」…');
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const typedArray = new Uint8Array(e.target.result);
+        extractPdfText(typedArray, file.name);
+      };
+      reader.onerror = function () {
+        setPdfStatus('⚠️ 檔案讀取失敗');
+      };
+      reader.readAsArrayBuffer(file);
+    })
+    .catch((err) => {
+      setPdfStatus('⚠️ ' + err.message);
+      console.error(err);
+    });
+}
+
+// 把單頁的原始 PDF 文字（pdf.js 抽出來是一長串、句子間用空白接起，
+// 沒有任何 #/@/| 標記）轉成符合 convertText() 既有解析語法的 chunk 文字，
+// 這樣使用者不需要手動重新排版，PDF 內容就能直接被既有的 parseChunk() 吃下去。
+//
+// 標題擷取策略，依優先順序找斷點（找到第一個落在合理長度內的就採用）：
+//   1. 句末標點（。！？.!?；;）— 語意最完整的斷點，優先採用避免把下一句也吞進標題
+//   2. 次要標點（，、,）— 找不到句號時，逗號通常也標記一個語意完整的短語
+//   3. 空白（僅西文有效）— 避免從單字中間硬切
+//   4. 都找不到合適斷點 → 固定字數切斷（中文字數上限刻意比西文短，
+//      因為中文資訊密度較高，20 字的中文標題讀起來已經像一整句話而非標題）
+// 不論哪種情況，被切掉的後半段文字都完整保留進條列，不會遺失內容，
+// 即使標題判斷不夠精準，使用者仍能在文字框內看到完整原文自行調整。
+function pageTextToChunk(rawText, pageNum) {
+  const CJK_MAX = 15;
+  const LATIN_MAX = 30;
+  const text = rawText.replace(/\s+/g, ' ').trim();
+  if (!text) return ''; // 空白頁（例如純圖片頁、章節分隔頁）直接略過，不產生空白投影片
+
+  const sampleLen = Math.min(text.length, 40);
+  const cjkRatio = (text.slice(0, sampleLen).match(/[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/g) || []).length / sampleLen;
+  const maxLen = cjkRatio > 0.3 ? CJK_MAX : LATIN_MAX;
+
+  let title, restText;
+  if (text.length <= maxLen) {
+    title = text;
+    restText = '';
+  } else {
+    // 搜尋範圍要涵蓋句號斷點的容許上限（maxLen*2），否則句號落在
+    // searchLen 之外時 head 裡根本看不到，等於白設了寬容範圍
+    const searchLen = maxLen * 2;
+    const head = text.slice(0, searchLen);
+    const minAcceptable = Math.floor(maxLen * 0.3);
+    let cut = -1;
+
+    // 優先順序 1：句末標點。容許範圍放寬到 maxLen 的 2 倍，
+    // 因為「一句完整的話」即使略長於字數上限，也比硬切斷詞語更可讀；
+    // 但仍設絕對上限（2倍），避免遇到整頁都沒有句號的長文字時鬆過頭
+    const sentenceEndMatch = [...head.matchAll(/[。！？.!?；;]/g)];
+    if (sentenceEndMatch.length) {
+      const firstEnd = sentenceEndMatch[0].index + 1;
+      if (firstEnd >= minAcceptable && firstEnd <= maxLen * 2) cut = firstEnd;
+    }
+
+    // 優先順序 2：次要標點（僅在句號斷點找不到、且落在 maxLen 範圍內時才用）
+    if (cut === -1) {
+      const punctHead = text.slice(0, maxLen);
+      const punctMatch = punctHead.match(/[，、,]/g);
+      if (punctMatch) {
+        const lastPunctIdx = punctHead.lastIndexOf(punctMatch[punctMatch.length - 1]);
+        if (lastPunctIdx >= minAcceptable) cut = lastPunctIdx + 1;
+      }
+    }
+
+    // 優先順序 3：西文空白斷點
+    if (cut === -1 && cjkRatio <= 0.3) {
+      const spaceHead = text.slice(0, maxLen);
+      const lastSpace = spaceHead.lastIndexOf(' ');
+      if (lastSpace >= minAcceptable) cut = lastSpace;
+    }
+
+    // 優先順序 4：固定字數
+    if (cut === -1) cut = maxLen;
+
+    title = text.slice(0, cut).trim();
+    restText = text.slice(cut).trim();
+  }
+  if (!title) title = '第 ' + pageNum + ' 頁';
+
+  // 其餘內容用中英文常見句末符號斷句，做為條列重點的候選行
+  const sentences = restText
+    ? restText.split(/(?<=[。！？.!?；;])\s*/).map(s => s.trim()).filter(Boolean)
+    : [];
+
+  const bulletLines = sentences.map(s => s.replace(/\|/g, '／')); // 避免句子裡剛好出現 | 干擾欄位分隔語法
+
+  return '# ' + title + '\n@PDF匯入 · 第' + pageNum + '頁\n' + bulletLines.join('\n');
+}
+
+function extractPdfText(typedArray, fileName) {
+  window.pdfjsLib.getDocument({ data: typedArray }).promise
+    .then((pdf) => {
+      const numPages = pdf.numPages;
+      setPdfStatus('🔎 解析中…共 ' + numPages + ' 頁');
+
+      const pageTextPromises = [];
+      for (let i = 1; i <= numPages; i++) {
+        pageTextPromises.push(
+          pdf.getPage(i).then((page) =>
+            page.getTextContent().then((textContent) => {
+              // 同一頁內的文字片段以空白接起，盡量還原斷行語意
+              return textContent.items.map((item) => item.str).join(' ');
+            })
+          )
+        );
+      }
+
+      return Promise.all(pageTextPromises);
+    })
+    .then((pagesText) => {
+      const combined = pagesText
+        .map((t, i) => pageTextToChunk(t, i + 1))
+        .filter(Boolean)
+        .join('\n\n---\n\n');
+
+      const textarea = document.getElementById('text-input');
+      if (textarea) {
+        // 若輸入框已有內容，附加在後面而非覆蓋，避免誤刪使用者手動輸入的內容
+        const existing = textarea.value.trim();
+        const sep = existing ? '\n\n---\n\n' : '';
+        textarea.value = existing ? existing + sep + combined : combined;
+      }
+      setPdfStatus('✅ 已從「' + fileName + '」抽取 ' + pagesText.length + ' 頁，已轉成對應格式，請檢查後按「轉換成投影片」');
+    })
+    .catch((err) => {
+      setPdfStatus('⚠️ PDF 解析失敗：' + err.message);
+      console.error(err);
+    });
+}
+
+function convertText() {
+  const raw = document.getElementById('text-input').value.trim();
+  if (!raw) { alert('請先貼上文字內容'); return; }
+
+  const chunks = raw.split(/\n-{3,}\n/).map(c => c.trim()).filter(Boolean);
+  const newSlides = chunks.map(parseChunk);
+
+  slides = slides.concat(newSlides);
+  renderQueue();
+  renderPreview();
+  document.getElementById('text-input').value = '';
+}
+
+function parseChunk(chunk) {
+  const lines = chunk.split('\n').map(l => l.trim()).filter(Boolean);
+  let title = '', label = '';
+  const bullets = [];
+
+  for (const line of lines) {
+    if (line.startsWith('# ')) {
+      title = line.slice(2).trim();
+    } else if (line.startsWith('@')) {
+      label = line.slice(1).trim();
+    } else if (line.startsWith('- ') || line.startsWith('* ')) {
+      const content = line.slice(2).trim();
+      const [t, d] = content.split('|');
+      bullets.push({ title: (t || '').trim(), desc: (d || '').trim() });
+    } else if (line.includes('|')) {
+      const [t, d] = line.split('|');
+      bullets.push({ title: (t || '').trim(), desc: (d || '').trim() });
+    } else if (!title) {
+      title = line;
+    } else {
+      bullets.push({ title: line, desc: '' });
+    }
+  }
+
+  if (!title) title = '未命名投影片';
+
+  return { layout: 'bullets', title, label, bullets };
+}
+
+// ============================================
+// 佇列管理
+// ============================================
+function renderQueue() {
+  const list = document.getElementById('queue-list');
+  document.getElementById('queue-count').textContent = slides.length;
+  document.getElementById('toolbar-count').textContent = slides.length;
+
+  if (!slides.length) {
+    list.innerHTML = '<div style="font-size:0.65em; color:var(--muted); padding:6px 0;">尚無投影片</div>';
+    return;
+  }
+
+  list.innerHTML = slides.map((s, i) => `
+    <div class="queue-item ${i === currentIndex ? 'active' : ''}" onclick="selectSlide(${i})">
+      <span class="qnum">${String(i + 1).padStart(2, '0')}</span>
+      <span class="qtitle">${esc(s.title)}</span>
+      <span class="qmove-up ${i === 0 ? 'qmove-disabled' : ''}" onclick="event.stopPropagation(); moveSlide(${i}, -1)" title="往上移">▲</span>
+      <span class="qmove-down ${i === slides.length - 1 ? 'qmove-disabled' : ''}" onclick="event.stopPropagation(); moveSlide(${i}, 1)" title="往下移">▼</span>
+      <span class="qdel" onclick="event.stopPropagation(); deleteSlide(${i})">✕</span>
+    </div>
+  `).join('');
+}
+
+// 交換投影片在佇列中的位置（dir: -1 往上移一位，+1 往下移一位）。
+// 邊界（第一張往上 / 最後一張往下）已在按鈕上用 qmove-disabled 標示並擋下點擊，
+// 這裡仍做防呆檢查，避免未來呼叫端忘了檢查邊界而跑出陣列範圍。
+function moveSlide(i, dir) {
+  const target = i + dir;
+  if (target < 0 || target >= slides.length) return;
+  const tmp = slides[i];
+  slides[i] = slides[target];
+  slides[target] = tmp;
+
+  // 若移動的是目前正在編輯/預覽中的投影片，索引要跟著移動，
+  // 否則編輯面板會錯位指向「現在排到原位置」的另一張投影片
+  if (currentIndex === i) currentIndex = target;
+  else if (currentIndex === target) currentIndex = i;
+
+  renderQueue();
+  renderPreviewAt(target);
+}
+
+function selectSlide(i) {
+  currentIndex = i;
+  // switchMode('form') 會觸發 renderPanelBody() → formModeHtml()，
+  // 而 formModeHtml() 內部已經用 currentIndex 對應的投影片資料，
+  // 正確標記出該版型卡片的 active 樣式、並透過 bindFormEvents() 把所有欄位
+  // （標題、條列項目、卡片內容等）填回原本儲存的內容，不需要再額外處理。
+  //
+  // 過去這裡多了一段 setTimeout 呼叫 selectLayout(key) 想「補強」選中狀態，
+  // 但 selectLayout() 內部的 renderLayoutFields(key) 沒有帶入資料，
+  // 等同於把剛填好的欄位內容整個清空覆蓋——這正是「編輯舊投影片時標題還在、
+  // 但條列內容消失」的根因，已確認移除後不影響卡片選中狀態的正確顯示。
+  switchMode('form');
+  renderQueue();
+  renderPreviewAt(i);
+}
+
+function deleteSlide(i) {
+  slides.splice(i, 1);
+  if (currentIndex === i) currentIndex = -1;
+  else if (currentIndex > i) currentIndex--;
+  renderQueue();
+  renderPreview();
+  if (currentMode === 'form') renderPanelBody();
+}
+
+function clearAll() {
+  if (!slides.length) return;
+  if (!confirm('確定要清除全部投影片嗎？')) return;
+  slides = [];
+  currentIndex = -1;
+  renderQueue();
+  renderPreview();
+  renderPanelBody();
+}
+
+// ============================================
+// 預覽渲染
+// ============================================
+let previewIndex = 0;
+
+function renderPreview() {
+  if (!slides.length) {
+    document.getElementById('empty-state').style.display = 'flex';
+    document.getElementById('preview-iframe').style.display = 'none';
+    return;
+  }
+  previewIndex = Math.min(previewIndex, slides.length - 1);
+  renderPreviewAt(previewIndex);
+}
+
+function renderPreviewAt(i) {
+  if (i < 0 || i >= slides.length) return;
+  previewIndex = i;
+  document.getElementById('empty-state').style.display = 'none';
+  const iframe = document.getElementById('preview-iframe');
+  iframe.style.display = 'block';
+  const slideHtml = renderSlideContent(slides[i]);
+  iframe.srcdoc = wrapPreviewHtml(slideHtml);
+  scalePreview();
+}
+
+// 讓固定 1200x700 的預覽縮放以符合容器可用空間，避免被裁切
+function scalePreview() {
+  const wrap = document.getElementById('preview-frame-wrap');
+  const iframe = document.getElementById('preview-iframe');
+  if (!wrap || !iframe || iframe.style.display === 'none') return;
+
+  const PADDING = 40; // 對應 wrap 的左右上下 padding 總和緩衝
+  const availW = wrap.clientWidth - PADDING;
+  const availH = wrap.clientHeight - PADDING;
+  const scale = Math.min(availW / 1200, availH / 700, 1);
+
+  iframe.style.transform = 'scale(' + scale + ')';
+
+  // 同步寫入 CSS 變數 --tp-scale，讓換頁特效動畫（tpZoom/tpConvex/tpConcave
+  // 等 keyframes 裡用到 scale(var(--tp-scale,1))）能跟這裡算出的真實縮放比例
+  // 對齊。若不同步，動畫的 scale 會固定用 CSS 裡宣告的 fallback 值 1，
+  // 跟這裡動態算出的縮放比例不一致，播放動畫時畫面會在「正確縮放」與
+  // 「動畫預設的 1 倍大小」之間瞬間跳動，視覺上很明顯的閃爍/跳格。
+  const animWrap = document.getElementById('preview-anim-wrap');
+  if (animWrap) animWrap.style.setProperty('--tp-scale', scale);
+}
+
+window.addEventListener('resize', scalePreview);
+
+function prevSlide() {
+  if (!slides.length) return;
+  previewIndex = (previewIndex - 1 + slides.length) % slides.length;
+  renderPreviewAt(previewIndex);
+  playTransitionPreview();
+}
+function nextSlide() {
+  if (!slides.length) return;
+  previewIndex = (previewIndex + 1) % slides.length;
+  renderPreviewAt(previewIndex);
+  playTransitionPreview();
+}
+
+// 換頁特效下拉選單的 onchange 處理：只是記錄選擇並讓使用者在預覽裡
+// 立即感受一次切換動畫，真正套用到「每次換頁」是在下載輸出的 Reveal.js
+// 設定裡（buildFullHtml 的 transition 參數），那裡才是 Reveal.js 引擎本身
+// 提供的正式換頁特效。這裡的即時預覽只用簡單 CSS 動畫模擬風格效果，
+// 因為預覽 iframe 每次都是重新整個重繪一張靜態頁面，並非真正跑在
+// Reveal.js 的多頁切換引擎裡，沒有「上一頁/下一頁」的真實過渡可套用。
+const VALID_TRANSITIONS = ['none', 'fade', 'slide', 'convex', 'concave', 'zoom'];
+
+function changeTransition(value) {
+  // 下拉選單的 value 來自固定寫死的 <option>，理論上不會出現非預期值，
+  // 但仍做白名單檢查再賦值，避免這個字串未來被以任何方式（例如直接呼叫
+  // changeTransition() 而非透過選單）注入非預期內容後，原封不動寫進
+  // buildFullHtml() 輸出的 Reveal.initialize({ transition: '...' }) 字串裡。
+  if (!VALID_TRANSITIONS.includes(value)) return;
+  currentTransition = value;
+  playTransitionPreview();
+}
+
+function playTransitionPreview() {
+  // 動畫套用在外層 #preview-anim-wrap，不是 iframe 本身：iframe 自己的
+  // style.transform 已經被 scalePreview() 用來做縮放（fit 容器大小），
+  // 若動畫也用 transform 加在 iframe 上會跟縮放互相覆蓋、其中一個會失效。
+  // 包一層 wrapper，縮放維持在 iframe，動畫效果加在 wrapper，兩者互不干擾。
+  const wrap = document.getElementById('preview-anim-wrap');
+  const iframe = document.getElementById('preview-iframe');
+  if (!wrap || !iframe || iframe.style.display === 'none') return;
+
+  wrap.classList.remove(
+    'transition-preview-fade', 'transition-preview-slide',
+    'transition-preview-zoom', 'transition-preview-convex', 'transition-preview-concave'
+  );
+  if (currentTransition === 'none') return;
+
+  // 用 requestAnimationFrame 確保 class 移除已經被瀏覽器套用一次重繪，
+  // 否則同名 class 移除又馬上加回去，瀏覽器可能會合併成同一個 reflow、
+  // 動畫不會重新播放。部分精簡瀏覽器環境可能沒有這個 API，加 fallback
+  // 用 setTimeout(0) 也能達到類似效果（讓出一次事件迴圈再執行）。
+  const scheduleFrame = window.requestAnimationFrame || function (cb) { setTimeout(cb, 0); };
+  scheduleFrame(() => {
+    wrap.classList.add('transition-preview-' + currentTransition);
+  });
+}
+
+function wrapPreviewHtml(innerHtml) {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>${PREVIEW_CSS}</style>
+  </head><body><div class="slide-wrap">${innerHtml}</div></body></html>`;
+}
+
+// ============================================
+// 投影片內容渲染（依版型產生 HTML）
+// ============================================
+function renderSlideContent(s) {
+  const labelHtml = s.label ? `<div class="label">${esc(s.label)}</div>` : '';
+  const titleHtml = `<h2 class="section-title">${esc(s.title)}</h2>`;
+
+  let bodyHtml = '';
+  switch (s.layout) {
+    case 'title': {
+      // title 版型原本用 return 直接跳出整個函式，導致完全略過後面
+      // 統一處理 attachedImage 的共用邏輯——這正是「標題頁選了附加圖片，
+      // 資料確實存進去了，但畫面上完全沒顯示」的根因：圖片被存了卻沒有
+      // 對應的渲染路徑畫出來，屬於無聲失敗，使用者完全看不出哪裡錯了。
+      // 修正為在 case 內自行處理 attachedImage，並支援上下左右四個位置。
+      if (!s.attachedImage) {
+        return `
+          <div class="cover">
+            <h1 class="cover-title">${esc(s.title)}</h1>
+            ${s.sub ? `<p class="cover-subtitle">${esc(s.sub)}</p>` : ''}
+          </div>`;
+      }
+
+      const pos = s.attachedImagePos || 'top';
+      const imgTag = `<img src="${esc(s.attachedImage)}" class="attached-image-img" alt="">`;
+      const textBlock = `<h1 class="cover-title">${esc(s.title)}</h1>${s.sub ? `<p class="cover-subtitle">${esc(s.sub)}</p>` : ''}`;
+
+      if (pos === 'left' || pos === 'right') {
+        const imgCol = `<div class="attached-image-col">${imgTag}</div>`;
+        const textCol = `<div class="attached-image-bodycol" style="text-align:center;">${textBlock}</div>`;
+        const sideHtml = pos === 'left' ? `${imgCol}${textCol}` : `${textCol}${imgCol}`;
+        // .cover 本身沒有 padding（純文字置中時不需要留白），但左右並排版面
+        // 一旦撐到 100% 寬，圖片欄會直接頂到投影片最外側邊緣——這裡額外加上
+        // 左右 padding，不去動 .cover 本身，避免影響其他沒有附加圖片的標題頁。
+        return `<div class="cover"><div class="attached-image-sidewrap" style="width:100%; align-items:center; padding:0 50px; box-sizing:border-box;">${sideHtml}</div></div>`;
+      }
+
+      const imageBlockHtml = `<div class="attached-image-wrap" style="margin:${pos === 'bottom' ? '24px 0 0' : '0 0 24px'};">${imgTag}</div>`;
+      const stackedHtml = pos === 'bottom' ? `${textBlock}${imageBlockHtml}` : `${imageBlockHtml}${textBlock}`;
+      return `<div class="cover">${stackedHtml}</div>`;
+    }
+
+    case 'bullets':
+      bodyHtml = `<div class="key-list">${(s.bullets || []).map((b, i) => `
+        <div class="key-item">
+          <div class="key-num">${i + 1}</div>
+          <div class="key-text"><strong>${esc(b.title)}</strong>${b.desc ? '　' + esc(b.desc) : ''}</div>
+        </div>`).join('')}</div>`;
+      break;
+
+    case 'cards':
+      bodyHtml = `<div class="card-grid">${(s.blocks || []).map((b, i) => `
+        <div class="info-card" style="border-color:${COLORS[i % 4]}">
+          <div class="card-icon">${esc(b.icon || '📌')}</div>
+          <div class="card-title" style="color:${COLORS[i % 4]}">${esc(b.title)}</div>
+          <div class="card-desc">${esc(b.desc)}</div>
+        </div>`).join('')}</div>`;
+      break;
+
+    case 'steps':
+      bodyHtml = `<div class="steps-list">${(s.blocks || []).map((b, i) => `
+        <div class="step-item" style="border-left-color:${COLORS[i % 4]}">
+          <div class="step-icon">${esc(b.icon || '📌')}</div>
+          <div>
+            <div class="step-title" style="color:${COLORS[i % 4]}">Step ${i + 1} — ${esc(b.title)}</div>
+            <div class="step-desc">${esc(b.desc)}</div>
+          </div>
+        </div>`).join('')}</div>`;
+      break;
+
+    case 'twocol':
+      const half = Math.ceil((s.blocks || []).length / 2);
+      const left = (s.blocks || []).slice(0, half);
+      const right = (s.blocks || []).slice(half);
+      const colHtml = (arr) => arr.map((b, i) => `
+        <div class="twocol-item">
+          <div class="twocol-title">${esc(b.icon || '📌')} ${esc(b.title)}</div>
+          <div class="twocol-desc">${esc(b.desc)}</div>
+        </div>`).join('');
+      bodyHtml = `<div class="twocol-wrap"><div class="twocol-col">${colHtml(left)}</div><div class="twocol-col">${colHtml(right)}</div></div>`;
+      break;
+
+    case 'quote':
+      bodyHtml = `
+        <div class="quote-box">
+          <div class="quote-text">${esc(s.quote)}</div>
+          ${s.quotesub ? `<div class="quote-sub">${esc(s.quotesub)}</div>` : ''}
+        </div>`;
+      break;
+
+    case 'survey':
+      return renderSurveySlide(s);
+
+    case 'image':
+      return `
+        <div class="slide-inner">
+          ${labelHtml}
+          ${titleHtml}
+          <div class="image-page-wrap">
+            <img src="${esc(s.imageSrc)}" class="image-page-img" alt="${esc(s.title)}">
+            ${s.caption ? `<div class="image-page-caption">${esc(s.caption)}</div>` : ''}
+          </div>
+        </div>`;
+  }
+
+  // 通用附加圖片：title/survey/image 三種版型各自有專屬版面，不適用；
+  // 其餘版型若使用者選了附加圖片，依 attachedImagePos 決定排版方式：
+  //   top/bottom：圖片與內容上下疊加，沿用原本 slide-inner 的垂直排列即可
+  //   left/right：圖片與內容變成左右兩欄並排，需要額外包一層 flex 容器，
+  //               並把 bodyHtml 一起放進這層容器，而不是接在後面
+  if (s.attachedImage) {
+    const pos = s.attachedImagePos || 'top';
+    const imgTag = `<img src="${esc(s.attachedImage)}" class="attached-image-img" alt="">`;
+
+    if (pos === 'left' || pos === 'right') {
+      const imgCol = `<div class="attached-image-col">${imgTag}</div>`;
+      const bodyCol = `<div class="attached-image-bodycol">${bodyHtml}</div>`;
+      const sideBySideHtml = pos === 'left'
+        ? `<div class="attached-image-sidewrap">${imgCol}${bodyCol}</div>`
+        : `<div class="attached-image-sidewrap">${bodyCol}${imgCol}</div>`;
+      return `<div class="slide-inner">${labelHtml}${titleHtml}${sideBySideHtml}</div>`;
+    }
+
+    const imageBlockHtml = `<div class="attached-image-wrap"><img src="${esc(s.attachedImage)}" class="attached-image-img" alt=""></div>`;
+    const stackedHtml = pos === 'bottom'
+      ? `${bodyHtml}${imageBlockHtml}`
+      : `${imageBlockHtml}${bodyHtml}`;
+    return `<div class="slide-inner">${labelHtml}${titleHtml}${stackedHtml}</div>`;
+  }
+
+  return `<div class="slide-inner">${labelHtml}${titleHtml}${bodyHtml}</div>`;
+}
+
+function renderSurveySlide(s) {
+  const sid = jsStrEsc(s.surveyId || 'survey');
+  const labelHtml = s.label ? `<div class="label">${esc(s.label)}</div>` : '<div class="label">課前調查</div>';
+  const titleHtml = `<h2 class="section-title">${esc(s.title)}</h2>`;
+  const opts = s.options || [];
+  const optColors = ['var(--gas-red)', 'var(--gas-yellow)', 'var(--gas-blue)', 'var(--gas-green)'];
+
+  const optsHtml = opts.map((o, i) => `
+    <div class="sv-opt" data-sid="${sid}" data-val="${i}" onclick="window.__surveyVote_${sid}(${i})"
+         style="cursor:pointer; background:var(--card); border:2px solid var(--border); border-radius:10px; padding:10px 16px; display:flex; align-items:center; gap:12px; transition:all .2s; flex:1;">
+      <div style="font-size:1.6em; flex-shrink:0;">${esc(o.icon)}</div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:0.8em; font-weight:700; color:var(--text);">${esc(o.text)}</div>
+        <div class="sv-bar-wrap-${sid}" data-val="${i}" style="margin-top:4px; background:var(--border); border-radius:4px; height:5px; display:none;">
+          <div class="sv-bar-${sid}" data-val="${i}" style="height:100%; width:0%; background:${optColors[i % 4]}; border-radius:4px; transition:width .6s;"></div>
+        </div>
+        <div class="sv-count-${sid}" data-val="${i}" style="font-size:0.62em; color:var(--muted); margin-top:2px; display:none;">0 票</div>
+      </div>
+    </div>`).join('');
+
+  return `
+    <div class="slide-inner" style="padding:16px 44px 10px;">
+      ${labelHtml}
+      ${titleHtml}
+      <div style="flex:1; display:flex; flex-direction:column; gap:7px; min-height:0;">
+        ${optsHtml}
+      </div>
+      <div style="margin-top:6px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+        <div id="sv-status-${sid}" style="font-size:0.62em; color:var(--muted); font-family:'JetBrains Mono',monospace;">📡 連接中…</div>
+        <div id="sv-total-${sid}" style="font-size:0.62em; color:var(--muted);">總計 0 票</div>
+      </div>
+    </div>`;
+}
+
+// 將 surveyId 過濾成只含英數字/dash/underscore，
+// 同時用於：HTML data-sid 屬性、CSS class 名稱、JS 函式名稱、Firestore 文件路徑。
+// 三處渲染（slide HTML / script 生成）共用此函式，確保彼此能正確對應，
+// 避免使用者輸入空白或特殊符號時，HTML 端與 JS 端的識別碼不一致而失效。
+function jsStrEsc(s) {
+  return String(s || '').replace(/[^a-zA-Z0-9_-]/g, '') || 'survey';
+}
+
+// 預覽用 CSS（與最終輸出共用同一份樣式字串，見 buildFullHtml）
+const PREVIEW_CSS = getSharedCss();
+
+function getSharedCss() {
+  return `
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+  :root {
+    --gas-yellow: #F9AB00; --gas-blue: #4285F4; --gas-green: #34A853; --gas-red: #EA4335;
+    --dark: #0d1117; --mid: #161b22; --card: #21262d; --text: #e6edf3; --muted: #8b949e; --border: #30363d;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--dark); font-family:'Noto Sans TC',sans-serif; }
+  .slide-wrap { width:1200px; height:700px; background:var(--dark); color:var(--text); overflow:hidden; position:relative; }
+  .slide-inner { padding:36px 50px; height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; }
+  .label { font-family:'JetBrains Mono',monospace; font-size:0.7em; color:var(--gas-yellow); letter-spacing:0.2em; text-transform:uppercase; margin-bottom:14px; }
+  .section-title { font-size:2em; font-weight:900; color:var(--text); margin:0 0 28px; line-height:1.2; }
+
+  .cover { display:flex; flex-direction:column; align-items:center; justify-content:center; height:700px; text-align:center;
+    background: radial-gradient(ellipse at 60% 30%, #1a2a4a 0%, var(--dark) 70%); position:relative; overflow:hidden; }
+  .cover-title { font-size:2.6em; font-weight:900; color:var(--text); margin:0; line-height:1.2; }
+  .cover-subtitle { font-size:1em; color:var(--muted); margin-top:14px; font-weight:400; }
+
+  .key-list { display:flex; flex-direction:column; gap:14px; }
+  .key-item { display:flex; gap:14px; align-items:flex-start; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 20px; }
+  .key-num { background:var(--gas-yellow); color:#000; font-weight:900; font-size:1em; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .key-text { font-size:1em; color:var(--text); line-height:1.6; }
+  .key-text strong { color:var(--gas-yellow); }
+
+  .card-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:16px; }
+  .info-card { background:var(--card); border:2px solid var(--border); border-radius:12px; padding:18px 20px; }
+  .card-icon { font-size:1.8em; margin-bottom:8px; }
+  .card-title { font-size:1.05em; font-weight:900; margin-bottom:8px; }
+  .card-desc { font-size:0.82em; color:var(--muted); line-height:1.55; }
+
+  .steps-list { display:flex; flex-direction:column; gap:12px; }
+  .step-item { display:flex; gap:14px; align-items:flex-start; background:var(--card); border-left:5px solid; border-radius:0 10px 10px 0; padding:14px 20px; }
+  .step-icon { font-size:1.6em; flex-shrink:0; }
+  .step-title { font-size:1em; font-weight:700; margin-bottom:4px; }
+  .step-desc { font-size:0.8em; color:var(--muted); line-height:1.5; }
+
+  .twocol-wrap { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  .twocol-col { display:flex; flex-direction:column; gap:12px; }
+  .twocol-item { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 18px; }
+  .twocol-title { font-size:0.95em; font-weight:700; color:var(--gas-blue); margin-bottom:6px; }
+  .twocol-desc { font-size:0.8em; color:var(--muted); line-height:1.5; }
+
+  .quote-box { background:var(--card); border:2px solid var(--gas-yellow); border-radius:16px; padding:40px 50px; text-align:center; }
+  .quote-text { font-size:1.5em; font-weight:700; color:var(--text); line-height:1.6; }
+  .quote-sub { font-size:0.9em; color:var(--muted); margin-top:16px; line-height:1.6; }
+
+  .image-page-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; gap:16px; min-height:0; }
+  .image-page-img { max-width:100%; max-height:440px; object-fit:contain; border-radius:10px; border:1px solid var(--border); }
+  .image-page-caption { font-size:0.9em; color:var(--muted); text-align:center; line-height:1.5; }
+
+  .attached-image-wrap { display:flex; justify-content:center; margin-bottom:20px; flex-shrink:0; }
+  .attached-image-img { max-width:100%; max-height:220px; object-fit:contain; border-radius:8px; border:1px solid var(--border); }
+
+  /* 圖片位置設為「左邊」或「右邊」時的左右兩欄版面：
+     圖片欄固定較窄比例、內容欄佔剩餘空間，垂直置中對齊讓圖片與文字視覺平衡 */
+  .attached-image-sidewrap { display:flex; gap:24px; align-items:center; flex:1; min-height:0; }
+  .attached-image-col { flex:0 0 38%; display:flex; align-items:center; justify-content:center; }
+  .attached-image-col .attached-image-img { max-height:380px; }
+  .attached-image-bodycol { flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; min-height:0; }
+  `;
+}
+
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ============================================
+// 下載完整 Reveal.js HTML
+// ============================================
+function buildFullHtml() {
+  const slidesHtml = slides.map(s => `  <section>\n    ${renderSlideContent(s)}\n  </section>`).join('\n\n');
+  // 注意：以下範本字串內的 script 標籤用拼接寫法產生，
+  // 避免內嵌進本工具自身的 script 區塊時，被瀏覽器的 HTML parser
+  // 誤判為提前結束的閉合標籤，導致本工具的程式碼被截斷失效。
+  const SOPEN = '<' + 'script';
+  const SCLOSE = '<' + '/script>';
+
+  const surveySlides = slides.filter(s => s.layout === 'survey');
+  const surveyScript = surveySlides.length ? buildSurveyScript(surveySlides, SOPEN, SCLOSE) : '';
+
+  return `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>簡報</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css">
+<style>
+${getSharedCss()}
+.reveal .slides section { background:var(--dark); color:var(--text); }
+.reveal h1,.reveal h2,.reveal h3,.reveal p { text-transform:none; margin:0; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+${slidesHtml}
+</div>
+</div>
+${SOPEN} src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js">${SCLOSE}
+${SOPEN}>
+  Reveal.initialize({
+    hash: true,
+    transition: '${currentTransition}',
+    controls: true,
+    progress: true,
+    slideNumber: 'c/t',
+    center: false,
+    width: 1200,
+    height: 700,
+    margin: 0.04,
+  });
+${SCLOSE}
+${surveyScript}
+</body>
+</html>`;
+}
+
+// 為所有 Firebase 問卷投影片產生對應的初始化＋投票邏輯腳本。
+// 每個問卷用各自的 surveyId 命名 Firebase app（避免互相覆蓋），
+// 且各自綁定獨立的 firebaseConfig（同一份簡報可串接不同 Firebase 專案）。
+// 採用 compat（非 module）SDK，於 GAS HTML Service 等沙盒環境相容性較佳。
+function buildSurveyScript(surveySlides, SOPEN, SCLOSE) {
+  const perSurveyBlocks = surveySlides.map(s => {
+    const sid = jsStrEsc(s.surveyId);
+    const cfg = s.firebaseConfig || {};
+    const numOpts = (s.options || []).length;
+    const cfgJson = JSON.stringify({
+      apiKey: cfg.apiKey || '',
+      authDomain: cfg.authDomain || '',
+      projectId: cfg.projectId || '',
+      storageBucket: cfg.storageBucket || '',
+      messagingSenderId: cfg.messagingSenderId || '',
+      appId: cfg.appId || '',
+    });
+
+    return `
+  (function() {
+    var SID = "${sid}";
+    var NUM_OPTS = ${numOpts};
+    var cfg = ${cfgJson};
+    var voted = false;
+    var db = null;
+
+    function setStatus(msg) {
+      var el = document.getElementById('sv-status-' + SID);
+      if (el) el.textContent = msg;
+    }
+
+    function render(data) {
+      var counts = [];
+      for (var i = 0; i < NUM_OPTS; i++) counts.push(data['v' + i] || 0);
+      var total = counts.reduce(function(a, b) { return a + b; }, 0);
+      var totalEl = document.getElementById('sv-total-' + SID);
+      if (totalEl) totalEl.textContent = '總計 ' + total + ' 票';
+      for (var i = 0; i < NUM_OPTS; i++) {
+        var pct = total > 0 ? Math.round(counts[i] / total * 100) : 0;
+        var bar = document.querySelector('.sv-bar-' + SID + '[data-val="' + i + '"]');
+        var wrap = document.querySelector('.sv-bar-wrap-' + SID + '[data-val="' + i + '"]');
+        var cnt = document.querySelector('.sv-count-' + SID + '[data-val="' + i + '"]');
+        if (wrap) wrap.style.display = 'block';
+        if (bar) bar.style.width = pct + '%';
+        if (cnt) { cnt.style.display = 'block'; cnt.textContent = counts[i] + ' 票（' + pct + '%）'; }
+      }
+    }
+
+    window['__surveyVote_' + SID] = function(val) {
+      if (voted) return;
+      voted = true;
+      document.querySelectorAll('.sv-opt[data-sid="' + SID + '"]').forEach(function(el) {
+        el.style.cursor = 'default';
+        if (parseInt(el.dataset.val, 10) === val) {
+          el.style.background = 'rgba(255,255,255,0.05)';
+          el.style.borderColor = 'var(--gas-blue)';
+        } else {
+          el.style.opacity = '0.5';
+        }
+      });
+      if (!db) return;
+      var docRef = db.collection('slidegen_survey').doc(SID);
+      docRef.get().then(function(snap) {
+        var d = snap.exists ? snap.data() : {};
+        d['v' + val] = (d['v' + val] || 0) + 1;
+        return docRef.set(d);
+      }).catch(function(e) {
+        setStatus('⚠️ 寫入失敗：' + e.message);
+        console.error(e);
+      });
+    };
+
+    function initThisSurvey() {
+      var app;
+      try { app = firebase.app(SID); }
+      catch (e) { app = firebase.initializeApp(cfg, SID); }
+      db = app.firestore();
+      setStatus('🔴 即時同步中');
+      db.collection('slidegen_survey').doc(SID).onSnapshot(function(snap) {
+        render(snap.exists ? snap.data() : {});
+      }, function(err) {
+        setStatus('⚠️ ' + err.message);
+        console.error(err);
+      });
+    }
+
+    window.__slidegenSurveyInits = window.__slidegenSurveyInits || [];
+    window.__slidegenSurveyInits.push(initThisSurvey);
+  })();`;
+  }).join('\n');
+
+  return `
+${SOPEN}>
+  // 動態載入 Firebase compat SDK（沙盒相容性較佳），載完後依序初始化每份問卷
+  (function() {
+    function loadScript(src, cb) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = cb;
+      s.onerror = function() { console.error('Firebase SDK 載入失敗：' + src); };
+      document.head.appendChild(s);
+    }
+    function runAllInits() {
+      (window.__slidegenSurveyInits || []).forEach(function(fn) { fn(); });
+    }
+    function startWhenReady() {
+      if (typeof firebase !== 'undefined' && firebase.firestore) {
+        runAllInits();
+      } else if (typeof firebase !== 'undefined') {
+        loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js', runAllInits);
+      } else {
+        loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', function() {
+          loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js', runAllInits);
+        });
+      }
+    }
+    if (document.readyState === 'complete') startWhenReady();
+    else window.addEventListener('load', startWhenReady);
+  })();
+${perSurveyBlocks}
+${SCLOSE}`;
+}
+
+function downloadHtml() {
+  if (!slides.length) { alert('請先新增至少一張投影片'); return; }
+  const html = buildFullHtml();
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'my-presentation.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ============================================
+// 初始化
+// ============================================
+renderPanelBody();
+renderQueue();
+renderPreview();
+
+</script>
+</body>
+</html>
