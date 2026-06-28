@@ -927,7 +927,7 @@ function textModeHtml() {
     </div>
 
     <div class="field">
-      <label>📄 從 PDF 匯入文字（會自動抽取文字內容到下方輸入框）</label>
+      <label>📄 從 PDF 匯入文字（一般電子 PDF 自動抽取；掃描型 PDF 會詢問是否改用 OCR 辨識）</label>
       <input type="file" id="pdf-file-input" accept="application/pdf" onchange="handlePdfUpload(event)"
         style="width:100%; background:var(--card); border:1px solid var(--border); border-radius:7px; padding:8px 10px; color:var(--text); font-size:0.75em; font-family:inherit;">
       <div id="pdf-upload-status" style="font-size:0.62em; color:var(--muted); margin-top:5px;"></div>
@@ -985,6 +985,74 @@ function loadPdfJs() {
 function setPdfStatus(msg) {
   const el = document.getElementById('pdf-upload-status');
   if (el) el.textContent = msg;
+}
+
+// ============================================
+// Tesseract.js OCR（用於掃描型／圖片型 PDF，pdf.js 抽不到文字層時的備援方案）
+// ============================================
+let tesseractLoaded = false;
+let tesseractLoading = null;
+
+function loadTesseractJs() {
+  if (tesseractLoaded) return Promise.resolve();
+  if (tesseractLoading) return tesseractLoading;
+
+  tesseractLoading = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    script.onload = () => {
+      tesseractLoaded = true;
+      resolve();
+    };
+    script.onerror = () => reject(new Error('OCR 函式庫（Tesseract.js）載入失敗，請確認網路連線'));
+    document.head.appendChild(script);
+  });
+
+  return tesseractLoading;
+}
+
+// 把 pdf.js 的單一頁面物件渲染成 canvas，回傳給 Tesseract 辨識用。
+// scale 影響辨識準確度：太低解析度文字會模糊辨識不出來，但也不能無限拉高
+// （記憶體與運算時間會線性增加），2.0 是準確度與效能間合理的折衷值。
+function renderPdfPageToCanvas(page) {
+  const scale = 2.0;
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  const ctx = canvas.getContext('2d');
+  return page.render({ canvasContext: ctx, viewport }).promise.then(() => canvas);
+}
+
+// 對一份 PDF 的所有頁面依序跑 OCR（刻意不平行處理多頁——Tesseract 的 wasm
+// worker 同時處理太多頁會耗用大量記憶體，依序處理雖然較慢但更穩定，
+// 且能即時回報「第幾頁／共幾頁」的進度，讓使用者知道工具還在運作、不是當機）。
+function ocrAllPages(pdf, numPages) {
+  const worker = { instance: null };
+
+  return loadTesseractJs()
+    .then(() => Tesseract.createWorker('chi_tra+eng'))
+    .then((w) => {
+      worker.instance = w;
+      let chain = Promise.resolve([]);
+      for (let i = 1; i <= numPages; i++) {
+        chain = chain.then((results) => {
+          setPdfStatus('🔍 OCR 辨識中…第 ' + i + ' / ' + numPages + ' 頁（圖片型 PDF 辨識較慢，請耐心等候）');
+          return pdf.getPage(i)
+            .then(renderPdfPageToCanvas)
+            .then((canvas) => worker.instance.recognize(canvas))
+            .then((result) => {
+              results.push(result.data.text || '');
+              return results;
+            });
+        });
+      }
+      return chain;
+    })
+    .finally(() => {
+      // 不論成功或失敗都要釋放 worker，否則記憶體不會被回收
+      if (worker.instance) worker.instance.terminate();
+    });
 }
 
 function handlePdfUpload(event) {
@@ -1096,6 +1164,12 @@ function pageTextToChunk(rawText, pageNum) {
 }
 
 function extractPdfText(typedArray, fileName) {
+  // typedArray 在第一次傳給 pdf.js 後，其底層 ArrayBuffer 會被「轉移」
+  // 而無法重複讀取（detached），若之後 OCR 流程需要重新用同一份 PDF
+  // 資料再呼叫一次 getDocument()，原始 typedArray 可能已經不能用了。
+  // 保留一份複本，確保兩條路徑（文字抽取 / OCR）各自用獨立的資料。
+  const typedArrayForOcr = typedArray.slice();
+
   window.pdfjsLib.getDocument({ data: typedArray }).promise
     .then((pdf) => {
       const numPages = pdf.numPages;
@@ -1113,25 +1187,83 @@ function extractPdfText(typedArray, fileName) {
         );
       }
 
-      return Promise.all(pageTextPromises);
+      return Promise.all(pageTextPromises).then((pagesText) => ({ pdf, numPages, pagesText }));
     })
-    .then((pagesText) => {
-      const combined = pagesText
-        .map((t, i) => pageTextToChunk(t, i + 1))
-        .filter(Boolean)
-        .join('\n\n---\n\n');
+    .then(({ pdf, numPages, pagesText }) => {
+      const combined = buildCombinedChunks(pagesText);
 
-      const textarea = document.getElementById('text-input');
-      if (textarea) {
-        // 若輸入框已有內容，附加在後面而非覆蓋，避免誤刪使用者手動輸入的內容
-        const existing = textarea.value.trim();
-        const sep = existing ? '\n\n---\n\n' : '';
-        textarea.value = existing ? existing + sep + combined : combined;
+      // 重要：pdf.js 的 getTextContent() 只能抽取「文字層」裡的內容。
+      // 掃描檔／拍照型 PDF（例如手機拍的講義、影印機掃描的文件）整頁
+      // 本質上只是一張圖片，沒有任何文字層可言，getTextContent() 會對
+      // 每一頁都回傳空陣列——這不是程式出錯，是這份 PDF 沒有文字可抽。
+      // 若不特別偵測，使用者只會看到文字框是空的，卻同時看到下方寫著
+      //「已成功抽取」，兩者矛盾、不知道問題出在哪，所以這裡明確分流，
+      // 偵測到完全沒有文字時詢問是否要改用 OCR 辨識（較慢，需使用者同意）。
+      if (!combined) {
+        const useOcr = confirm(
+          '「' + fileName + '」沒有偵測到任何可選取的文字，這份 PDF 可能是掃描檔或圖片型文件（沒有文字層）。\n\n' +
+          '要改用 OCR 圖像文字辨識嗎？\n' +
+          '⚠️ OCR 辨識速度較慢（每頁數秒到數十秒，視頁數與圖片清晰度而定），且中文辨識準確度有限，辨識後請務必檢查校對。\n\n' +
+          '按「確定」開始 OCR，按「取消」放棄這份 PDF。'
+        );
+        if (!useOcr) {
+          setPdfStatus('⚠️ 「' + fileName + '」沒有文字層，且使用者取消了 OCR 辨識。');
+          return;
+        }
+        runOcrFallback(typedArrayForOcr, fileName);
+        return;
       }
+
+      appendToTextarea(combined);
       setPdfStatus('✅ 已從「' + fileName + '」抽取 ' + pagesText.length + ' 頁，已轉成對應格式，請檢查後按「轉換成投影片」');
     })
     .catch((err) => {
       setPdfStatus('⚠️ PDF 解析失敗：' + err.message);
+      console.error(err);
+    });
+}
+
+// 把每頁原始文字陣列轉成符合 convertText() 解析語法的合併字串，
+// 抽成獨立函式是因為文字抽取路徑與 OCR 路徑都需要這段邏輯，避免重複。
+function buildCombinedChunks(pagesText) {
+  return pagesText
+    .map((t, i) => pageTextToChunk(t, i + 1))
+    .filter(Boolean)
+    .join('\n\n---\n\n');
+}
+
+// 把抽取出的內容寫入文字框，若框內已有內容則附加在後面而非覆蓋，
+// 避免誤刪使用者手動輸入的內容（文字抽取與 OCR 兩條路徑都會用到）。
+function appendToTextarea(combined) {
+  const textarea = document.getElementById('text-input');
+  if (!textarea) return;
+  const existing = textarea.value.trim();
+  const sep = existing ? '\n\n---\n\n' : '';
+  textarea.value = existing ? existing + sep + combined : combined;
+}
+
+// OCR 備援流程：重新用 pdf.js 開啟同一份 PDF 資料（typedArrayForOcr
+// 是呼叫端傳入的複本，避免跟文字抽取路徑共用同一個已被轉移的 ArrayBuffer），
+// 把每一頁渲染成圖片後交給 Tesseract.js 辨識文字。
+function runOcrFallback(typedArrayForOcr, fileName) {
+  setPdfStatus('📥 載入 OCR 辨識工具中…（首次使用需下載語言包，可能需要 10-30 秒）');
+
+  window.pdfjsLib.getDocument({ data: typedArrayForOcr }).promise
+    .then((pdf) => {
+      const numPages = pdf.numPages;
+      return ocrAllPages(pdf, numPages);
+    })
+    .then((pagesText) => {
+      const combined = buildCombinedChunks(pagesText);
+      if (!combined) {
+        setPdfStatus('⚠️ 「' + fileName + '」OCR 辨識完成，但沒有辨識出任何文字，可能圖片太模糊或不含文字內容。');
+        return;
+      }
+      appendToTextarea(combined);
+      setPdfStatus('✅ 已用 OCR 從「' + fileName + '」辨識出 ' + pagesText.length + ' 頁文字，請務必檢查校對辨識結果是否正確，再按「轉換成投影片」');
+    })
+    .catch((err) => {
+      setPdfStatus('⚠️ OCR 辨識失敗：' + err.message);
       console.error(err);
     });
 }
