@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>教務處行政數位網</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts & Font Awesome for Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: radial-gradient(circle at 50% 50%, #0a1931 0%, #050c1a 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* 玻璃擬態質感 Glassmorphism */
+    .glass-card {
+      background: rgba(10, 25, 49, 0.5);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+
+    .glass-card:hover {
+      background: rgba(15, 37, 73, 0.65);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      box-shadow: 0 12px 40px 0 rgba(59, 130, 246, 0.25);
+      transform: translateY(-5px);
+    }
+
+    /* 光暈裝飾效果 */
+    .glow-orb {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(29, 78, 216, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+      filter: blur(40px);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .glow-orb-purple {
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(147, 51, 234, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+      filter: blur(50px);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* 流光字體 */
+    .shimmer-text {
+      background: linear-gradient(to right, #93c5fd 0%, #3b82f6 50%, #60a5fa 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shine 4s linear infinite;
+    }
+
+    @keyframes shine {
+      to {
+        background-position: 200% center;
+      }
+    }
+  </style>
+</head>
+<body class="text-slate-100 relative py-12 px-4 sm:px-6 lg:px-8">
+
+  <!-- 背景裝飾光暈 -->
+  <div class="glow-orb top-10 left-10"></div>
+  <div class="glow-orb-purple bottom-20 right-10"></div>
+  <div class="glow-orb top-1/2 left-1/3"></div>
+
+  <div class="max-w-7xl mx-auto relative z-10">
+    
+    <!-- 頁頭設計 -->
+    <header class="text-center mb-16">
+      <div class="inline-block p-2 px-4 rounded-full bg-blue-950/40 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-widest mb-4">
+        <i class="fa-solid fa-laptop-code mr-1"></i> 行政數位化系統入口
+      </div>
+      <h1 class="text-4xl sm:text-5xl font-black tracking-tight mb-4">
+        <span class="shimmer-text">教務處行政數位網</span>
+      </h1>
+      <p class="text-slate-400 max-w-2xl mx-auto text-sm sm:text-base">
+        整合校內教學與教務行政資源，提供教師、家長及行政同仁即時便利的雲端服務，簡化表單申報流程與數據分析。
+      </p>
+      <div class="mt-6 flex justify-center gap-4">
+        <span class="text-xs bg-slate-800/60 border border-slate-700/50 rounded-full px-3 py-1.5 text-slate-300">
+          <i class="fa-solid fa-clock-rotate-left mr-1 text-blue-400"></i> 即時更新中
+        </span>
+        <span class="text-xs bg-slate-800/60 border border-slate-700/50 rounded-full px-3 py-1.5 text-slate-300">
+          <i class="fa-solid fa-cloud-sun mr-1 text-amber-400"></i> 關西國小專用版
+        </span>
+      </div>
+    </header>
+
+    <!-- 功能圖卡網格 (3欄式) -->
+    <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+      
+      <!-- 卡片 1: 研習時數統計 -->
+      <a href="https://script.google.com/macros/s/AKfycbxO3DxK7g_J7-rb3g868-HHUsqpEHPLLF0-HPJrLPI2iqgXcWe56VhsIjEzT6DkyxUw/exec" target="_blank" class="group block">
+        <div class="glass-card rounded-2xl p-6 h-full flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-bl-full pointer-events-none group-hover:bg-blue-500/10 transition-colors"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xl mb-5 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-chart-pie"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">研習時數統計</h3>
+              <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">網頁查詢</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              可部署為網頁查詢系統。即時檢視校內全體教職員各領域的研習時數累積，方便統計與檢核進修成效。
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/50 flex items-center justify-between text-xs text-blue-400 font-medium">
+            <span>進入查詢系統</span>
+            <i class="fa-solid fa-arrow-right-long transform group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+      </a>
+
+      <!-- 卡片 2: 試卷上傳通知 -->
+      <a href="https://script.google.com/macros/s/AKfycbzEKKhZh0z18sCGSamuxSvbleUAowSQY0SJIY0_1f1cZyM_z8THw8imhqezydA_JREK/exec" target="_blank" class="group block">
+        <div class="glass-card rounded-2xl p-6 h-full flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-bl-full pointer-events-none group-hover:bg-cyan-500/10 transition-colors"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-xl mb-5 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-file-arrow-up"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-bold text-white group-hover:text-cyan-400 transition-colors">試卷上傳通知</h3>
+              <span class="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full border border-cyan-500/30">線上試卷</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              段考與各類評量試卷上傳狀態追蹤，檢視教師繳交進度，確保命題審查流程順暢。
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/50 flex items-center justify-between text-xs text-cyan-400 font-medium">
+            <span>開啟試卷表單</span>
+            <i class="fa-solid fa-arrow-right-long transform group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+      </a>
+
+      <!-- 卡片 3: 校內競賽報名系統 -->
+      <a href="https://script.google.com/macros/s/AKfycbxLXtOslfM09XRS4uY9bULEB5hsDYzcPfvbRGCZOG8mWEGf_6lrO5We2uLUAH151JaTdg/exec" target="_blank" class="group block">
+        <div class="glass-card rounded-2xl p-6 h-full flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-bl-full pointer-events-none group-hover:bg-purple-500/10 transition-colors"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 text-xl mb-5 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-trophy"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-bold text-white group-hover:text-purple-400 transition-colors">校內競賽報名</h3>
+              <span class="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30">Web 報名</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              提供校內各項語文、學科與藝能競賽的線上報名入口，即時彙整名單並利於編組作業。
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/50 flex items-center justify-between text-xs text-purple-400 font-medium">
+            <span>前往報名系統</span>
+            <i class="fa-solid fa-arrow-right-long transform group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+      </a>
+
+      <!-- 卡片 4: 前五名與進步獎 -->
+      <a href="https://script.google.com/macros/s/AKfycbxjXKizzwEIO6QSDlz4UkBwtd7jkmxuX24hmHzkOWpHVnTOwwaiyUjWeao3vwcOyWt-Zw/exec" target="_blank" class="group block">
+        <div class="glass-card rounded-2xl p-6 h-full flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-bl-full pointer-events-none group-hover:bg-indigo-500/10 transition-colors"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xl mb-5 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-award"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-bold text-white group-hover:text-indigo-400 transition-colors">前五名與進步獎</h3>
+              <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">試算表</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              彙整段考及學期成績優異前五名及進步獎名單，方便列印獎狀、統計名額及推播表揚。
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/50 flex items-center justify-between text-xs text-indigo-400 font-medium">
+            <span>檢視得獎名單</span>
+            <i class="fa-solid fa-arrow-right-long transform group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+      </a>
+
+      <!-- 卡片 5: 唐詩宋詞檢核系統 -->
+      <a href="https://script.google.com/macros/s/AKfycbz1f7pE2kUi051EM8MDLfP6tPqDafmy445uGMc0VHuDMJKwtca-7w7N3Trr1QjuwkbJlQ/exec" target="_blank" class="group block">
+        <div class="glass-card rounded-2xl p-6 h-full flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-bl-full pointer-events-none group-hover:bg-rose-500/10 transition-colors"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 text-xl mb-5 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-book-open"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-bold text-white group-hover:text-rose-400 transition-colors">唐詩宋詞檢核系統</h3>
+              <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">程式精鍊</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              學生背誦唐詩宋詞的過關檢核。提示：此處程式碼可練習丟給 Gemini 進行深度解析與效能精鍊。
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/50 flex items-center justify-between text-xs text-rose-400 font-medium">
+            <span>檢視檢核進度</span>
+            <i class="fa-solid fa-arrow-right-long transform group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+      </a>
+
+      <!-- 卡片 6: 教學進度及測驗範圍 -->
+      <a href="https://script.google.com/a/macros/gapp.hcc.edu.tw/s/AKfycbz9y1Qq9kkuUHxY_PY-Q4WtL6jpJ-9TT4OHkrMEDjEYWWU4abH81nrUrFURoN0GKWzj/exec" target="_blank" class="group block">
+        <div class="glass-card rounded-2xl p-6 h-full flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-teal-500/5 rounded-bl-full pointer-events-none group-hover:bg-teal-500/10 transition-colors"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400 text-xl mb-5 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-calendar-check"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-bold text-white group-hover:text-teal-400 transition-colors">教學進度與測驗填寫</h3>
+              <span class="text-[10px] bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full border border-teal-500/30">進度彙整</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              供各領域及各年級教師，於期初或考試前線上填報實際教學進度及各次評量範圍。
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/50 flex items-center justify-between text-xs text-teal-400 font-medium">
+            <span>開始線上填報</span>
+            <i class="fa-solid fa-arrow-right-long transform group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+      </a>
+
+      <!-- 卡片 7: 多人評分系統 -->
+      <a href="https://script.google.com/macros/s/AKfycbzFme4novJ5uv7T5dfIAGnPBcK7XIUoiqpYEZqvZ_NXECwlNfmw2KovBr_Rx9PcmuKx/exec" target="_blank" class="group block">
+        <div class="glass-card rounded-2xl p-6 h-full flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-bl-full pointer-events-none group-hover:bg-amber-500/10 transition-colors"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xl mb-5 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-user-group"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-bold text-white group-hover:text-amber-400 transition-colors">多人評分系統</h3>
+              <span class="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30">雲端共同評分</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              適用多位評審共同對班級競賽、學習檔案或各項甄選進行同時在線評分與加權加總計算。
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/50 flex items-center justify-between text-xs text-amber-400 font-medium">
+            <span>前往評分後台</span>
+            <i class="fa-solid fa-arrow-right-long transform group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+      </a>
+
+      <!-- 卡片 8: 作業抽查回饋表 -->
+      <a href="https://script.google.com/macros/s/AKfycby_DdbWk5zlQ7oHmtBJ1UGo7wVevexc5ilBc3FH0s2DT37y4ZU5E2BPAr3pRNqP5v_ugw/exec" target="_blank" class="group block">
+        <div class="glass-card rounded-2xl p-6 h-full flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-bl-full pointer-events-none group-hover:bg-orange-500/10 transition-colors"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center text-orange-400 text-xl mb-5 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-magnifying-glass-chart"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-bold text-white group-hover:text-orange-400 transition-colors">作業抽查回饋表</h3>
+              <span class="text-[10px] bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full border border-orange-500/30">查閱回饋</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              導師、審查人員及教務處線上填寫作業抽查優缺點與綜合回饋，自動彙整各班狀況。
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/50 flex items-center justify-between text-xs text-orange-400 font-medium">
+            <span>填寫回饋表單</span>
+            <i class="fa-solid fa-arrow-right-long transform group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+      </a>
+
+      <!-- 卡片 9: 作業查閱時間一覽表 -->
+      <a href="https://script.google.com/macros/s/AKfycbyGMnvHenzY-Famj159gfAPwBqotd-zhWWnK_LQQtuDVAHF1SIjldJLljNOFim9Ivy0/exec" target="_blank" class="group block">
+        <div class="glass-card rounded-2xl p-6 h-full flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-sky-500/5 rounded-bl-full pointer-events-none group-hover:bg-sky-500/10 transition-colors"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 text-xl mb-5 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-bold text-white group-hover:text-sky-400 transition-colors">作業查閱時間一覽表</h3>
+              <span class="text-[10px] bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded-full border border-sky-500/30">行事曆</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              即時查詢本學期各科目、年級作業抽查之時間排程一覽表，提醒教師及學生提早準備。
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/50 flex items-center justify-between text-xs text-sky-400 font-medium">
+            <span>查閱抽查排程</span>
+            <i class="fa-solid fa-arrow-right-long transform group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+      </a>
+
+      <!-- 卡片 10: 教師請假課單填寫 -->
+      <a href="https://script.google.com/macros/s/AKfycby_DdbWk5zlQ7oHmtBJ1UGo7wVevexc5ilBc3FH0s2DT37y4ZU5E2BPAr3pRNqP5v_ugw/exec" target="_blank" class="group block">
+        <div class="glass-card rounded-2xl p-6 h-full flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-pink-500/5 rounded-bl-full pointer-events-none group-hover:bg-pink-500/10 transition-colors"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-pink-500/15 border border-pink-500/30 flex items-center justify-center text-pink-400 text-xl mb-5 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-file-signature"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-bold text-white group-hover:text-pink-400 transition-colors">教師請假課務處理</h3>
+              <span class="text-[10px] bg-pink-500/20 text-pink-300 px-2 py-0.5 rounded-full border border-pink-500/30">調代課申請</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              關西國小教師請假(調課)課務處理單。協助請假教師、被託代課教師及教學組迅速核對課務。
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/50 flex items-center justify-between text-xs text-pink-400 font-medium">
+            <span>填寫調課單</span>
+            <i class="fa-solid fa-arrow-right-long transform group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+      </a>
+
+      <!-- 卡片 11: 代課鐘點費結算系統 -->
+      <a href="https://script.google.com/macros/s/AKfycbyJfu9GlwqRbKejpdkThVcdMkDsq6FJdbVaQBwKncz1X8uI1C5M4lrp2YOgO6HdDCsEoA/exec" target="_blank" class="group block">
+        <div class="glass-card rounded-2xl p-6 h-full flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-bl-full pointer-events-none group-hover:bg-emerald-500/10 transition-colors"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-xl mb-5 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-coins"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-bold text-white group-hover:text-emerald-400 transition-colors">代課鐘點費結算</h3>
+              <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">出納結算</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              月底自動匯總代課、超鐘點、社團等各類課務鐘點費，快速核發清冊，降低手動試算錯誤率。
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/50 flex items-center justify-between text-xs text-emerald-400 font-medium">
+            <span>進入結算系統</span>
+            <i class="fa-solid fa-arrow-right-long transform group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+      </a>
+
+      <!-- 卡片 12: 圖書館班級使用登記表 -->
+      <a href="https://script.google.com/a/macros/gses.hcc.edu.tw/s/AKfycbxj9Ruts3qBLkPBoxhr_LhRUQIcGlvvPuMMfPorAOOGXuRucNBl-nIMxEduBPdqiQRS5Q/exec" target="_blank" class="group block">
+        <div class="glass-card rounded-2xl p-6 h-full flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-lime-500/5 rounded-bl-full pointer-events-none group-hover:bg-lime-500/10 transition-colors"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-lime-500/15 border border-lime-500/30 flex items-center justify-center text-lime-400 text-xl mb-5 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-building-columns"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-bold text-white group-hover:text-lime-400 transition-colors">圖書館班級使用登記</h3>
+              <span class="text-[10px] bg-lime-500/20 text-lime-300 px-2 py-0.5 rounded-full border border-lime-500/30">場地登記</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              各班級預約使用圖書館的線上登記系統，即時掌握借用時段與班級資訊，避免場地衝突。
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/50 flex items-center justify-between text-xs text-lime-400 font-medium">
+            <span>前往登記系統</span>
+            <i class="fa-solid fa-arrow-right-long transform group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+      </a>
+      <!-- 卡片 13: 學校投稿系統 -->
+      <a href="https://script.google.com/a/macros/gses.hcc.edu.tw/s/AKfycbxb72BVutsfirdDex2Oh7JHXcF0nGVvt4s-_tNVWU8KTknhCsG7jpNeGkmp2MXog4bH/exec" target="_blank" class="group block">
+        <div class="glass-card rounded-2xl p-6 h-full flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-lime-500/5 rounded-bl-full pointer-events-none group-hover:bg-lime-500/10 transition-colors"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-lime-500/15 border border-lime-500/30 flex items-center justify-center text-lime-400 text-xl mb-5 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-bold text-white group-hover:text-lime-400 transition-colors">學生投稿系統</h3>
+              <span class="text-[10px] bg-lime-500/20 text-lime-300 px-2 py-0.5 rounded-full border border-lime-500/30">投稿系統</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              歡迎學生踴躍投稿，提升寫作能力。
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/50 flex items-center justify-between text-xs text-lime-400 font-medium">
+            <span>前往投稿系統</span>
+            <i class="fa-solid fa-arrow-right-long transform group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+      </a>
+
+      <!-- 卡片 14: 族群弱勢調查表 -->
+      <a href="https://script.google.com/a/macros/gapp.hcc.edu.tw/s/AKfycbxsJUChVehzgbiko8UM03EbiprbAT0y3q0tW9WLPY_RI2u-4Dt7NvCAXJld1Vt2OlP8jA/exec" target="_blank" class="group block">
+        <div class="glass-card rounded-2xl p-6 h-full flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-lime-500/5 rounded-bl-full pointer-events-none group-hover:bg-lime-500/10 transition-colors"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-lime-500/15 border border-lime-500/30 flex items-center justify-center text-lime-400 text-xl mb-5 group-hover:scale-110 transition-transform">
+              <i class="fa-sharp fa-solid fa-handshake"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-bold text-white group-hover:text-lime-400 transition-colors">族群弱勢調查表</h3>
+              <span class="text-[10px] bg-lime-500/20 text-lime-300 px-2 py-0.5 rounded-full border border-lime-500/30">族群弱勢</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              請確認證明文件的有效日期,註冊繳費時記得提出申請,上學期皆須申請
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800/50 flex items-center justify-between text-xs text-lime-400 font-medium">
+            <span>前往族群弱勢</span>
+            <i class="fa-solid fa-arrow-right-long transform group-hover:translate-x-1.5 transition-transform"></i>
+          </div>
+        </div>
+      </a>
+
+    </main>
+
+    <!-- 頁尾宣告與設計 -->
+    <footer class="mt-20 border-t border-slate-800/80 pt-8 text-center text-xs text-slate-500">
+      <p class="mb-2">教務處行政數位網 © 2026 關西國小教務處教學組</p>
+      <p>Powered by Google Apps Script & Tailwind CSS. Designed with <i class="fa-solid fa-heart text-rose-500 animate-pulse"></i> for Education Administration.</p>
+    </footer>
+
+  </div>
+</body>
+</html>
