@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>成語閱讀測驗系統</title>
+<title>成語故事閱讀測驗</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -11,29 +11,25 @@
     min-height: 100vh;
     background: linear-gradient(135deg, #1a2a6c 0%, #2d4a8a 50%, #1a2a6c 100%);
     display: flex; justify-content: center; align-items: flex-start;
-    padding: 24px 12px;
-    color: #fff;
+    padding: 24px 12px; color: #fff;
   }
   .card {
-    width: 100%; max-width: 680px;
+    width: 100%; max-width: 720px;
     background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
     border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 20px;
-    padding: 32px 28px;
+    border-radius: 20px; padding: 32px 28px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.3);
   }
   h1 { font-size: 26px; text-align: center; margin-bottom: 6px; letter-spacing: 2px; }
   .subtitle { text-align: center; color: rgba(255,255,255,0.65); font-size: 14px; margin-bottom: 24px; }
   label { display: block; font-size: 14px; margin: 14px 0 6px; color: rgba(255,255,255,0.85); }
-  input, select {
+  input {
     width: 100%; padding: 12px 14px; border-radius: 10px;
     border: 1px solid rgba(255,255,255,0.25);
     background: rgba(255,255,255,0.12); color: #fff; font-size: 16px; outline: none;
   }
   input::placeholder { color: rgba(255,255,255,0.4); }
-  select option { color: #333; }
   button {
     width: 100%; margin-top: 22px; padding: 14px;
     border: none; border-radius: 12px; cursor: pointer;
@@ -45,28 +41,43 @@
   button:disabled { opacity: .5; cursor: not-allowed; transform: none; }
   .hidden { display: none !important; }
 
+  /* 故事選擇 */
+  .story-card {
+    padding: 16px 18px; margin: 12px 0; border-radius: 14px; cursor: pointer;
+    background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2);
+    transition: background .15s, border-color .15s;
+  }
+  .story-card:hover { background: rgba(255,255,255,0.18); }
+  .story-card.selected { border-color: #ffb347; background: rgba(255,179,71,0.18); }
+  .story-card .st-title { font-size: 18px; font-weight: 700; color: #ffd9a0; letter-spacing: 2px; }
+  .story-card .st-info { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+
   /* 測驗畫面 */
   .progress-bar { height: 8px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; margin-bottom: 18px; }
   .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ffb347, #ff8c42); transition: width .3s; }
-  .q-index { font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 10px; }
   .idiom-tag {
-    display: inline-block; padding: 4px 14px; border-radius: 999px;
+    display: inline-block; padding: 4px 16px; border-radius: 999px;
     background: rgba(255,179,71,0.2); border: 1px solid rgba(255,179,71,0.5);
-    color: #ffd9a0; font-size: 15px; font-weight: 700; letter-spacing: 3px; margin-bottom: 12px;
+    color: #ffd9a0; font-size: 16px; font-weight: 700; letter-spacing: 3px; margin-bottom: 12px;
   }
   .passage {
     background: rgba(0,0,0,0.22); border-left: 4px solid #ffb347;
     padding: 16px 18px; border-radius: 10px; line-height: 1.9;
-    font-size: 16px; margin-bottom: 18px; white-space: pre-wrap;
+    font-size: 16px; margin-bottom: 8px; white-space: pre-wrap;
   }
+  .toggle-passage {
+    width: auto; margin: 0 0 16px; padding: 6px 16px; font-size: 13px; letter-spacing: 1px;
+    background: rgba(255,255,255,0.15); color: #fff;
+  }
+  .q-index { font-size: 13px; color: rgba(255,255,255,0.6); margin: 10px 0; }
   .question-text { font-size: 18px; font-weight: 700; line-height: 1.7; margin-bottom: 16px; }
   .option {
     display: block; width: 100%; text-align: left; margin: 10px 0; padding: 14px 16px;
     border-radius: 12px; border: 1px solid rgba(255,255,255,0.22);
     background: rgba(255,255,255,0.1); color: #fff; font-size: 16px; line-height: 1.6;
-    cursor: pointer; transition: background .15s, transform .1s;
+    cursor: pointer; transition: background .15s; letter-spacing: normal; font-weight: 400;
   }
-  .option:hover { background: rgba(255,255,255,0.2); }
+  .option:hover { background: rgba(255,255,255,0.2); transform: none; box-shadow: none; }
   .option.correct { background: rgba(76,175,80,0.45); border-color: #4caf50; }
   .option.wrong { background: rgba(244,67,54,0.45); border-color: #f44336; }
   .feedback { margin-top: 14px; padding: 14px 16px; border-radius: 10px; font-size: 15px; line-height: 1.8; background: rgba(0,0,0,0.25); }
@@ -88,42 +99,49 @@
 <body>
 <div class="card">
 
-  <!-- 開始畫面 -->
+  <!-- 步驟一:基本資料 -->
   <div id="startScreen">
-    <h1>📖 成語閱讀測驗</h1>
-    <div class="subtitle">關西國小 · 閱讀短文,理解成語</div>
+    <h1>📖 成語故事閱讀測驗</h1>
+    <div class="subtitle">關西國小 · 讀一個故事,回答五個問題</div>
     <label>班級</label>
     <input id="inpClass" placeholder="例:五年甲班">
     <label>座號</label>
     <input id="inpSeat" type="number" placeholder="例:12">
     <label>姓名</label>
     <input id="inpName" placeholder="請輸入姓名">
-    <button id="btnStart">開始測驗</button>
+    <button id="btnToStories">下一步:選擇故事 ➜</button>
   </div>
 
-  <!-- 測驗畫面 -->
+  <!-- 步驟二:選擇故事 -->
+  <div id="storyScreen" class="hidden">
+    <h1>📚 選擇一個故事</h1>
+    <div class="subtitle">點選你要挑戰的成語故事</div>
+    <div id="storyList" class="loading">故事載入中…</div>
+    <button id="btnStartQuiz" disabled>開始測驗</button>
+  </div>
+
+  <!-- 步驟三:測驗 -->
   <div id="quizScreen" class="hidden">
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-    <div class="q-index" id="qIndex"></div>
     <div><span class="idiom-tag" id="idiomTag"></span></div>
     <div class="passage" id="passage"></div>
+    <button class="toggle-passage" id="btnTogglePassage">📖 收起短文</button>
+    <div class="q-index" id="qIndex"></div>
     <div class="question-text" id="questionText"></div>
     <div id="options"></div>
     <div class="feedback hidden" id="feedback"></div>
     <button id="btnNext" class="hidden">下一題 ➜</button>
   </div>
 
-  <!-- 結果畫面 -->
+  <!-- 步驟四:結果 -->
   <div id="resultScreen" class="hidden">
     <h1>🎉 測驗完成</h1>
     <div class="score-big" id="finalScore"></div>
     <div class="score-sub" id="finalSub"></div>
     <div id="reviewList"></div>
     <div class="save-status" id="saveStatus">成績儲存中…</div>
-    <button onclick="location.reload()">再測一次</button>
+    <button onclick="location.reload()">挑戰其他故事</button>
   </div>
-
-  <div id="loadingScreen" class="loading hidden">📚 題目載入中…</div>
 </div>
 
 <script type="module">
@@ -141,8 +159,6 @@ const firebaseConfig = {
   messagingSenderId: "1056203461050",
   appId: "1:1056203461050:web:85aabbd841a77109dccd83"
 };
-
-const QUIZ_SIZE = 10; // 每次抽幾題
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -162,13 +178,15 @@ function beep(freqs, dur) {
       o.start(audioCtx.currentTime + i * dur);
       o.stop(audioCtx.currentTime + (i + 1) * dur);
     });
-  } catch (e) { /* 音效失敗不影響作答 */ }
+  } catch (e) {}
 }
 const soundCorrect = () => beep([523, 659, 784], 0.12);
 const soundWrong = () => beep([220, 165], 0.18);
+const soundFinish = () => beep([523, 659, 784, 1047], 0.15);
 
 // ===== 狀態 =====
-let questions = [];
+let stories = [];
+let selectedStory = null;
 let current = 0;
 let score = 0;
 let details = [];
@@ -178,6 +196,8 @@ let answered = false;
 const $ = id => document.getElementById(id);
 const show = id => $(id).classList.remove("hidden");
 const hide = id => $(id).classList.add("hidden");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, m =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -187,45 +207,76 @@ function shuffle(arr) {
   return arr;
 }
 
-// ===== 開始測驗 =====
-$("btnStart").addEventListener("click", async () => {
+// ===== 步驟一 → 步驟二:載入故事列表 =====
+$("btnToStories").addEventListener("click", async () => {
   const cls = $("inpClass").value.trim();
   const seat = $("inpSeat").value.trim();
   const name = $("inpName").value.trim();
   if (!cls || !seat || !name) { alert("請完整填寫班級、座號、姓名"); return; }
   student = { className: cls, seat, name };
 
-  hide("startScreen"); show("loadingScreen");
+  hide("startScreen"); show("storyScreen");
   try {
-    const q = query(collection(db, "idiom_questions"), where("enabled", "==", true));
+    const q = query(collection(db, "idiom_stories"), where("enabled", "==", true));
     const snap = await getDocs(q);
-    const all = [];
-    snap.forEach(d => all.push({ id: d.id, ...d.data() }));
-    if (all.length === 0) { alert("目前沒有可用的題目,請聯絡老師。"); location.reload(); return; }
-    questions = shuffle(all).slice(0, QUIZ_SIZE);
-    hide("loadingScreen"); show("quizScreen");
-    renderQuestion();
+    stories = [];
+    snap.forEach(d => stories.push({ id: d.id, ...d.data() }));
+    stories.sort((a, b) => (a.title || "").localeCompare(b.title || "", "zh-Hant"));
+
+    if (stories.length === 0) {
+      $("storyList").innerHTML = "<div class='loading'>目前沒有可用的故事,請聯絡老師。</div>";
+      return;
+    }
+    $("storyList").classList.remove("loading");
+    $("storyList").innerHTML = stories.map((s, i) => `
+      <div class="story-card" data-idx="${i}">
+        <div class="st-title">${esc(s.title)}</div>
+        <div class="st-info">共 ${(s.questions || []).length} 題 · 短文約 ${(s.passage || "").length} 字</div>
+      </div>`).join("");
+
+    document.querySelectorAll(".story-card").forEach(card => {
+      card.addEventListener("click", () => {
+        document.querySelectorAll(".story-card").forEach(c => c.classList.remove("selected"));
+        card.classList.add("selected");
+        selectedStory = stories[Number(card.dataset.idx)];
+        $("btnStartQuiz").disabled = false;
+      });
+    });
   } catch (err) {
     console.error(err);
-    alert("題目載入失敗:" + err.message);
-    location.reload();
+    $("storyList").innerHTML = `<div class='loading'>故事載入失敗:${esc(err.message)}</div>`;
   }
+});
+
+// ===== 步驟二 → 步驟三:開始測驗 =====
+$("btnStartQuiz").addEventListener("click", () => {
+  if (!selectedStory) return;
+  current = 0; score = 0; details = [];
+  hide("storyScreen"); show("quizScreen");
+  $("idiomTag").textContent = selectedStory.title;
+  $("passage").textContent = selectedStory.passage || "";
+  renderQuestion();
+});
+
+// 收起/展開短文
+$("btnTogglePassage").addEventListener("click", () => {
+  const p = $("passage");
+  const collapsed = p.classList.toggle("hidden");
+  $("btnTogglePassage").textContent = collapsed ? "📖 展開短文" : "📖 收起短文";
 });
 
 // ===== 顯示題目 =====
 function renderQuestion() {
   answered = false;
-  const q = questions[current];
-  $("progressFill").style.width = (current / questions.length * 100) + "%";
-  $("qIndex").textContent = `第 ${current + 1} 題 / 共 ${questions.length} 題`;
-  $("idiomTag").textContent = q.idiom || "";
-  $("passage").textContent = q.passage || "";
+  const qs = selectedStory.questions;
+  const q = qs[current];
+  $("progressFill").style.width = (current / qs.length * 100) + "%";
+  $("qIndex").textContent = `第 ${current + 1} 題 / 共 ${qs.length} 題`;
   $("questionText").textContent = q.question;
   hide("feedback"); hide("btnNext");
 
   const box = $("options");
   box.innerHTML = "";
-  // 選項打亂,但記住正確答案
   const opts = q.options.map((text, idx) => ({ text, idx }));
   shuffle(opts);
   opts.forEach(opt => {
@@ -237,6 +288,7 @@ function renderQuestion() {
   });
 }
 
+// ===== 作答 + 立即回饋 =====
 function selectAnswer(btn, chosenIdx, q) {
   if (answered) return;
   answered = true;
@@ -244,49 +296,48 @@ function selectAnswer(btn, chosenIdx, q) {
   if (isCorrect) { score++; btn.classList.add("correct"); soundCorrect(); }
   else {
     btn.classList.add("wrong"); soundWrong();
-    // 標出正確選項
     document.querySelectorAll("#options .option").forEach(b => {
       if (b.textContent === q.options[q.answer]) b.classList.add("correct");
     });
   }
-  details.push({ idiom: q.idiom || "", question: q.question, correct: isCorrect });
+  details.push({ question: q.question, correct: isCorrect });
 
   const fb = $("feedback");
   fb.innerHTML = `<div class="fb-title">${isCorrect ? "✅ 答對了!" : "❌ 答錯了"}</div>` +
-    `<div>正確答案:${escapeHtml(q.options[q.answer])}</div>` +
-    (q.explanation ? `<div>💡 ${escapeHtml(q.explanation)}</div>` : "");
+    `<div>正確答案:${esc(q.options[q.answer])}</div>` +
+    (q.explanation ? `<div>💡 ${esc(q.explanation)}</div>` : "");
   show("feedback");
 
-  $("btnNext").textContent = current === questions.length - 1 ? "看成績 🏁" : "下一題 ➜";
+  $("btnNext").textContent = current === selectedStory.questions.length - 1 ? "看成績 🏁" : "下一題 ➜";
   show("btnNext");
 }
 
 $("btnNext").addEventListener("click", () => {
   current++;
-  if (current < questions.length) renderQuestion();
+  if (current < selectedStory.questions.length) renderQuestion();
   else finishQuiz();
 });
 
 // ===== 結束 & 儲存 =====
 async function finishQuiz() {
   hide("quizScreen"); show("resultScreen");
-  $("finalScore").textContent = `${score} / ${questions.length}`;
-  const pct = Math.round(score / questions.length * 100);
-  $("finalSub").textContent = `${student.className} ${student.seat}號 ${student.name} · 答對率 ${pct}%`;
+  soundFinish();
+  const total = selectedStory.questions.length;
+  const pct = Math.round(score / total * 100);
+  $("finalScore").textContent = `${score} / ${total}`;
+  $("finalSub").textContent = `【${selectedStory.title}】 ${student.className} ${student.seat}號 ${student.name} · 答對率 ${pct}%`;
 
-  const list = $("reviewList");
-  list.innerHTML = details.map(d =>
+  $("reviewList").innerHTML = details.map((d, i) =>
     `<div class="review-item ${d.correct ? "ok" : "ng"}">` +
-    `${d.correct ? "✅" : "❌"} 【${escapeHtml(d.idiom)}】${escapeHtml(d.question)}</div>`
+    `${d.correct ? "✅" : "❌"} 第 ${i + 1} 題:${esc(d.question)}</div>`
   ).join("");
 
   try {
     await addDoc(collection(db, "quiz_results"), {
+      storyId: selectedStory.id,
+      storyTitle: selectedStory.title,
       ...student,
-      score,
-      total: questions.length,
-      percent: pct,
-      details,
+      score, total, percent: pct, details,
       createdAt: serverTimestamp()
     });
     $("saveStatus").textContent = "✅ 成績已成功儲存";
@@ -294,11 +345,6 @@ async function finishQuiz() {
     console.error(err);
     $("saveStatus").textContent = "⚠️ 成績儲存失敗:" + err.message;
   }
-}
-
-function escapeHtml(s) {
-  return String(s ?? "").replace(/[&<>"']/g, m =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 }
 </script>
 </body>
