@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>成語閱讀測驗 · 管理後台</title>
+<title>成語故事閱讀測驗 · 管理後台</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -12,7 +12,7 @@
     background: linear-gradient(135deg, #1a2a6c 0%, #2d4a8a 50%, #1a2a6c 100%);
     padding: 24px 12px; color: #fff;
   }
-  .container { max-width: 960px; margin: 0 auto; }
+  .container { max-width: 1000px; margin: 0 auto; }
   .card {
     background: rgba(255,255,255,0.08);
     backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
@@ -22,6 +22,7 @@
   }
   h1 { font-size: 24px; letter-spacing: 2px; }
   h2 { font-size: 18px; margin-bottom: 14px; color: #ffd9a0; }
+  h3 { font-size: 15px; margin: 18px 0 8px; color: #ffd9a0; }
   label { display: block; font-size: 13px; margin: 10px 0 4px; color: rgba(255,255,255,0.8); }
   input, textarea, select {
     width: 100%; padding: 10px 12px; border-radius: 8px;
@@ -56,7 +57,7 @@
     font-size: 14px; line-height: 1.7;
   }
   .q-item .idiom { font-weight: 700; color: #ffd9a0; font-size: 16px; }
-  .q-item .muted { color: rgba(255,255,255,0.6); }
+  .q-item .muted, .muted { color: rgba(255,255,255,0.6); }
   .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; margin-left: 8px; }
   .badge.on { background: rgba(76,175,80,0.4); }
   .badge.off { background: rgba(244,67,54,0.4); }
@@ -68,6 +69,15 @@
     background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px;
     font-size: 12px; overflow-x: auto; margin: 8px 0; line-height: 1.6;
   }
+  .q-block {
+    background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px; padding: 14px 16px; margin: 12px 0;
+  }
+  .story-group {
+    background: rgba(0,0,0,0.18); border-radius: 12px; padding: 16px 18px; margin-bottom: 16px;
+  }
+  .story-group .sg-title { font-size: 17px; font-weight: 700; color: #ffd9a0; letter-spacing: 2px; margin-bottom: 8px; }
+  .story-group .sg-stats { font-size: 13px; color: rgba(255,255,255,0.65); margin-bottom: 10px; }
 </style>
 </head>
 <body>
@@ -87,58 +97,40 @@
   <!-- 主畫面 -->
   <div id="mainScreen" class="hidden">
     <div class="topbar">
-      <h1>📖 成語閱讀測驗 · 管理後台</h1>
+      <h1>📖 成語故事測驗 · 管理後台</h1>
       <button class="secondary" id="btnLogout">登出</button>
     </div>
 
     <div class="tabs">
-      <div class="tab active" data-tab="tabList">📋 題目列表</div>
-      <div class="tab" data-tab="tabAdd">➕ 新增/編輯</div>
+      <div class="tab active" data-tab="tabList">📚 故事列表</div>
+      <div class="tab" data-tab="tabAdd">➕ 新增/編輯故事</div>
       <div class="tab" data-tab="tabImport">📥 批次匯入</div>
       <div class="tab" data-tab="tabResults">📊 成績查詢</div>
     </div>
 
-    <!-- 題目列表 -->
+    <!-- 故事列表 -->
     <div id="tabList" class="card">
-      <h2>題目列表 <span id="qCount" class="muted"></span></h2>
+      <h2>故事列表 <span id="qCount" class="muted"></span></h2>
       <button class="secondary" id="btnReloadQ">🔄 重新載入</button>
-      <div id="qList" style="margin-top:14px;"></div>
+      <div id="storyListBox" style="margin-top:14px;"></div>
     </div>
 
-    <!-- 新增/編輯 -->
+    <!-- 新增/編輯故事 -->
     <div id="tabAdd" class="card hidden">
-      <h2 id="formTitle">新增題目</h2>
+      <h2 id="formTitle">新增故事</h2>
       <input type="hidden" id="editId">
-      <label>成語</label>
-      <input id="fIdiom" placeholder="例:畫蛇添足">
+      <label>故事標題(成語)</label>
+      <input id="fTitle" placeholder="例:守株待兔">
       <label>閱讀短文</label>
-      <textarea id="fPassage" placeholder="與成語相關的閱讀短文…"></textarea>
-      <label>題目</label>
-      <input id="fQuestion" placeholder="例:文中主角的行為最符合哪個道理?">
+      <textarea id="fPassage" style="min-height:120px;" placeholder="成語故事內容…"></textarea>
       <div class="row">
-        <div><label>選項 A</label><input id="fOpt0"></div>
-        <div><label>選項 B</label><input id="fOpt1"></div>
-      </div>
-      <div class="row">
-        <div><label>選項 C</label><input id="fOpt2"></div>
-        <div><label>選項 D</label><input id="fOpt3"></div>
-      </div>
-      <div class="row">
-        <div>
-          <label>正確答案</label>
-          <select id="fAnswer">
-            <option value="0">A</option><option value="1">B</option>
-            <option value="2">C</option><option value="3">D</option>
-          </select>
-        </div>
         <div>
           <label>啟用狀態</label>
           <select id="fEnabled"><option value="true">啟用</option><option value="false">停用</option></select>
         </div>
       </div>
-      <label>答案解析(選填)</label>
-      <textarea id="fExplanation"></textarea>
-      <button id="btnSaveQ">💾 儲存題目</button>
+      <div id="questionBlocks"></div>
+      <button id="btnSaveStory">💾 儲存故事</button>
       <button class="secondary" id="btnResetForm">清空表單</button>
       <div class="msg hidden" id="formMsg"></div>
     </div>
@@ -146,16 +138,20 @@
     <!-- 批次匯入 -->
     <div id="tabImport" class="card">
       <h2>JSON 批次匯入</h2>
-      <div class="muted" style="font-size:13px;">貼上 JSON 陣列,格式如下(answer 為 0~3,對應選項 A~D):</div>
+      <div class="muted" style="font-size:13px;">貼上 JSON 陣列,每個故事含 5 題(answer 為 0~3,對應選項 A~D):</div>
       <pre class="example">[
   {
-    "idiom": "守株待兔",
-    "passage": "宋國有個農夫,一天看見兔子撞死在樹樁上…",
-    "question": "這個故事告訴我們什麼道理?",
-    "options": ["努力才有收穫", "運氣最重要", "要多種樹", "兔子跑得快"],
-    "answer": 0,
-    "explanation": "守株待兔比喻不知變通,妄想不勞而獲。",
-    "enabled": true
+    "title": "守株待兔",
+    "passage": "宋國有個農夫…(故事全文)",
+    "enabled": true,
+    "questions": [
+      {
+        "question": "農夫撿到兔子後做了什麼?",
+        "options": ["繼續耕田", "天天守著樹樁等兔子", "去打獵", "把樹砍掉"],
+        "answer": 1,
+        "explanation": "農夫從此不耕田,守在樹樁旁等兔子。"
+      }
+    ]
   }
 ]</pre>
       <textarea id="importJson" style="min-height:160px;" placeholder="貼上 JSON 陣列…"></textarea>
@@ -163,17 +159,18 @@
       <div class="msg hidden" id="importMsg"></div>
     </div>
 
-    <!-- 成績查詢 -->
+    <!-- 成績查詢:依故事分組 -->
     <div id="tabResults" class="card hidden">
-      <h2>成績查詢</h2>
+      <h2>成績查詢(依故事分組)</h2>
+      <div class="row">
+        <div>
+          <label>篩選故事</label>
+          <select id="filterStory"><option value="">全部故事</option></select>
+        </div>
+      </div>
       <button class="secondary" id="btnReloadR">🔄 重新載入</button>
       <button id="btnExportCsv">⬇️ 匯出 CSV</button>
-      <div style="overflow-x:auto;margin-top:14px;">
-        <table>
-          <thead><tr><th>時間</th><th>班級</th><th>座號</th><th>姓名</th><th>分數</th><th>答對率</th></tr></thead>
-          <tbody id="resultRows"></tbody>
-        </table>
-      </div>
+      <div id="resultGroups" style="margin-top:16px;"></div>
     </div>
   </div>
 </div>
@@ -188,15 +185,17 @@ import {
   query, orderBy, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// ★★★ 請替換成你自己的 Firebase 專案設定(與 index.html 相同)★★★
+// ★★★ 請替換成你自己的 Firebase 專案設定(與 reading-quiz.html 相同)★★★
 const firebaseConfig = {
   apiKey: "AIzaSyAcYIht_1YLJBM-kvglMDo2xS7yAFbyy8U",
   authDomain: "reading-quiz-6c307.firebaseapp.com",
   projectId: "reading-quiz-6c307",
   storageBucket: "reading-quiz-6c307.firebasestorage.app",
   messagingSenderId: "1056203461050",
-  appId: "1:1056203461050:web:85aabbd841a77109dccd83"
+  appId: "1:1056203461050:web:85aabbd841a77109dccd83",
 };
+
+const QUESTIONS_PER_STORY = 5;
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -209,10 +208,11 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, m =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 
 let cachedResults = [];
+let cachedStories = [];
 
 // ===== 登入/登出 =====
 onAuthStateChanged(auth, user => {
-  if (user) { hide("loginScreen"); show("mainScreen"); loadQuestions(); }
+  if (user) { hide("loginScreen"); show("mainScreen"); buildQuestionBlocks(); loadStories(); }
   else { show("loginScreen"); hide("mainScreen"); }
 });
 
@@ -238,103 +238,153 @@ document.querySelectorAll(".tab").forEach(tab => {
   });
 });
 
-// ===== 題目列表 =====
-async function loadQuestions() {
-  $("qList").innerHTML = "載入中…";
+// ===== 動態產生 5 題輸入區塊 =====
+function buildQuestionBlocks() {
+  if ($("questionBlocks").children.length > 0) return;
+  let html = "";
+  for (let i = 0; i < QUESTIONS_PER_STORY; i++) {
+    html += `
+    <div class="q-block">
+      <h3>第 ${i + 1} 題</h3>
+      <label>題目</label>
+      <input id="q${i}_question">
+      <div class="row">
+        <div><label>選項 A</label><input id="q${i}_opt0"></div>
+        <div><label>選項 B</label><input id="q${i}_opt1"></div>
+      </div>
+      <div class="row">
+        <div><label>選項 C</label><input id="q${i}_opt2"></div>
+        <div><label>選項 D</label><input id="q${i}_opt3"></div>
+      </div>
+      <div class="row">
+        <div>
+          <label>正確答案</label>
+          <select id="q${i}_answer">
+            <option value="0">A</option><option value="1">B</option>
+            <option value="2">C</option><option value="3">D</option>
+          </select>
+        </div>
+        <div>
+          <label>答案解析(選填)</label>
+          <input id="q${i}_explanation">
+        </div>
+      </div>
+    </div>`;
+  }
+  $("questionBlocks").innerHTML = html;
+}
+
+// ===== 故事列表 =====
+async function loadStories() {
+  $("storyListBox").innerHTML = "載入中…";
   try {
-    const snap = await getDocs(collection(db, "idiom_questions"));
-    const items = [];
-    snap.forEach(d => items.push({ id: d.id, ...d.data() }));
-    items.sort((a, b) => (a.idiom || "").localeCompare(b.idiom || "", "zh-Hant"));
-    $("qCount").textContent = `(共 ${items.length} 題)`;
-    $("qList").innerHTML = items.length === 0 ? "<div class='muted'>尚無題目</div>" :
-      items.map(q => `
+    const snap = await getDocs(collection(db, "idiom_stories"));
+    cachedStories = [];
+    snap.forEach(d => cachedStories.push({ id: d.id, ...d.data() }));
+    cachedStories.sort((a, b) => (a.title || "").localeCompare(b.title || "", "zh-Hant"));
+    $("qCount").textContent = `(共 ${cachedStories.length} 個故事)`;
+    $("storyListBox").innerHTML = cachedStories.length === 0 ? "<div class='muted'>尚無故事</div>" :
+      cachedStories.map(s => `
         <div class="q-item">
           <div>
-            <span class="idiom">${esc(q.idiom)}</span>
-            <span class="badge ${q.enabled ? "on" : "off"}">${q.enabled ? "啟用" : "停用"}</span>
+            <span class="idiom">${esc(s.title)}</span>
+            <span class="badge ${s.enabled ? "on" : "off"}">${s.enabled ? "啟用" : "停用"}</span>
+            <span class="muted">${(s.questions || []).length} 題 · 短文 ${(s.passage || "").length} 字</span>
           </div>
-          <div>${esc(q.question)}</div>
-          <div class="muted">答案:${["A","B","C","D"][q.answer]}. ${esc((q.options || [])[q.answer] || "")}</div>
-          <button class="secondary" data-edit="${q.id}">✏️ 編輯</button>
-          <button class="secondary" data-toggle="${q.id}" data-enabled="${q.enabled}">${q.enabled ? "⏸ 停用" : "▶️ 啟用"}</button>
-          <button class="danger" data-del="${q.id}">🗑 刪除</button>
+          <div class="muted">${esc((s.passage || "").slice(0, 50))}…</div>
+          <button class="secondary" data-edit="${s.id}">✏️ 編輯</button>
+          <button class="secondary" data-toggle="${s.id}" data-enabled="${s.enabled}">${s.enabled ? "⏸ 停用" : "▶️ 啟用"}</button>
+          <button class="danger" data-del="${s.id}">🗑 刪除</button>
         </div>`).join("");
 
-    $("qList").querySelectorAll("[data-edit]").forEach(b =>
-      b.addEventListener("click", () => fillForm(items.find(q => q.id === b.dataset.edit))));
-    $("qList").querySelectorAll("[data-toggle]").forEach(b =>
+    $("storyListBox").querySelectorAll("[data-edit]").forEach(b =>
+      b.addEventListener("click", () => fillForm(cachedStories.find(s => s.id === b.dataset.edit))));
+    $("storyListBox").querySelectorAll("[data-toggle]").forEach(b =>
       b.addEventListener("click", async () => {
-        await updateDoc(doc(db, "idiom_questions", b.dataset.toggle), { enabled: b.dataset.enabled !== "true" });
-        loadQuestions();
+        await updateDoc(doc(db, "idiom_stories", b.dataset.toggle), { enabled: b.dataset.enabled !== "true" });
+        loadStories();
       }));
-    $("qList").querySelectorAll("[data-del]").forEach(b =>
+    $("storyListBox").querySelectorAll("[data-del]").forEach(b =>
       b.addEventListener("click", async () => {
-        if (!confirm("確定刪除這一題?此動作無法復原。")) return;
-        await deleteDoc(doc(db, "idiom_questions", b.dataset.del));
-        loadQuestions();
+        if (!confirm("確定刪除這個故事?此動作無法復原。")) return;
+        await deleteDoc(doc(db, "idiom_stories", b.dataset.del));
+        loadStories();
       }));
   } catch (err) {
-    $("qList").innerHTML = `<div class="msg err">載入失敗:${esc(err.message)}</div>`;
+    $("storyListBox").innerHTML = `<div class="msg err">載入失敗:${esc(err.message)}</div>`;
   }
 }
-$("btnReloadQ").addEventListener("click", loadQuestions);
+$("btnReloadQ").addEventListener("click", loadStories);
 
 // ===== 新增/編輯 =====
-function fillForm(q) {
+function fillForm(s) {
   document.querySelector('[data-tab="tabAdd"]').click();
-  $("formTitle").textContent = "編輯題目";
-  $("editId").value = q.id;
-  $("fIdiom").value = q.idiom || "";
-  $("fPassage").value = q.passage || "";
-  $("fQuestion").value = q.question || "";
-  (q.options || []).forEach((o, i) => { const el = $("fOpt" + i); if (el) el.value = o; });
-  $("fAnswer").value = String(q.answer ?? 0);
-  $("fEnabled").value = String(q.enabled !== false);
-  $("fExplanation").value = q.explanation || "";
+  $("formTitle").textContent = "編輯故事";
+  $("editId").value = s.id;
+  $("fTitle").value = s.title || "";
+  $("fPassage").value = s.passage || "";
+  $("fEnabled").value = String(s.enabled !== false);
+  for (let i = 0; i < QUESTIONS_PER_STORY; i++) {
+    const q = (s.questions || [])[i] || {};
+    $(`q${i}_question`).value = q.question || "";
+    [0,1,2,3].forEach(j => { $(`q${i}_opt${j}`).value = (q.options || [])[j] || ""; });
+    $(`q${i}_answer`).value = String(q.answer ?? 0);
+    $(`q${i}_explanation`).value = q.explanation || "";
+  }
 }
 
 function resetForm() {
-  $("formTitle").textContent = "新增題目";
+  $("formTitle").textContent = "新增故事";
   $("editId").value = "";
-  ["fIdiom","fPassage","fQuestion","fOpt0","fOpt1","fOpt2","fOpt3","fExplanation"].forEach(id => $(id).value = "");
-  $("fAnswer").value = "0";
-  $("fEnabled").value = "true";
+  $("fTitle").value = ""; $("fPassage").value = ""; $("fEnabled").value = "true";
+  for (let i = 0; i < QUESTIONS_PER_STORY; i++) {
+    $(`q${i}_question`).value = "";
+    [0,1,2,3].forEach(j => $(`q${i}_opt${j}`).value = "");
+    $(`q${i}_answer`).value = "0";
+    $(`q${i}_explanation`).value = "";
+  }
   hide("formMsg");
 }
 $("btnResetForm").addEventListener("click", resetForm);
 
-$("btnSaveQ").addEventListener("click", async () => {
-  const data = {
-    idiom: $("fIdiom").value.trim(),
-    passage: $("fPassage").value.trim(),
-    question: $("fQuestion").value.trim(),
-    options: [$("fOpt0").value.trim(), $("fOpt1").value.trim(), $("fOpt2").value.trim(), $("fOpt3").value.trim()],
-    answer: Number($("fAnswer").value),
-    enabled: $("fEnabled").value === "true",
-    explanation: $("fExplanation").value.trim()
-  };
-  if (!data.idiom || !data.question || data.options.some(o => !o)) {
-    $("formMsg").textContent = "⚠️ 成語、題目與四個選項皆為必填";
-    $("formMsg").className = "msg err"; show("formMsg"); return;
+$("btnSaveStory").addEventListener("click", async () => {
+  const title = $("fTitle").value.trim();
+  const passage = $("fPassage").value.trim();
+  if (!title || !passage) { showFormErr("⚠️ 標題與短文為必填"); return; }
+
+  const questions = [];
+  for (let i = 0; i < QUESTIONS_PER_STORY; i++) {
+    const question = $(`q${i}_question`).value.trim();
+    const options = [0,1,2,3].map(j => $(`q${i}_opt${j}`).value.trim());
+    if (!question || options.some(o => !o)) {
+      showFormErr(`⚠️ 第 ${i + 1} 題的題目與四個選項皆為必填`); return;
+    }
+    questions.push({
+      question, options,
+      answer: Number($(`q${i}_answer`).value),
+      explanation: $(`q${i}_explanation`).value.trim()
+    });
   }
+
+  const data = { title, passage, questions, enabled: $("fEnabled").value === "true" };
   try {
     const editId = $("editId").value;
-    if (editId) {
-      await updateDoc(doc(db, "idiom_questions", editId), data);
-    } else {
-      await addDoc(collection(db, "idiom_questions"), { ...data, createdAt: serverTimestamp() });
-    }
+    if (editId) await updateDoc(doc(db, "idiom_stories", editId), data);
+    else await addDoc(collection(db, "idiom_stories"), { ...data, createdAt: serverTimestamp() });
     $("formMsg").textContent = "✅ 儲存成功";
     $("formMsg").className = "msg"; show("formMsg");
-    resetForm(); loadQuestions();
+    resetForm(); loadStories();
   } catch (err) {
-    $("formMsg").textContent = "儲存失敗:" + err.message;
-    $("formMsg").className = "msg err"; show("formMsg");
+    showFormErr("儲存失敗:" + err.message);
   }
 });
 
-// ===== 批次匯入(writeBatch,每批最多 500 筆)=====
+function showFormErr(msg) {
+  $("formMsg").textContent = msg;
+  $("formMsg").className = "msg err"; show("formMsg");
+}
+
+// ===== 批次匯入 =====
 $("btnImport").addEventListener("click", async () => {
   hide("importMsg");
   let arr;
@@ -345,71 +395,119 @@ $("btnImport").addEventListener("click", async () => {
     $("importMsg").textContent = "JSON 解析失敗:" + err.message;
     $("importMsg").className = "msg err"; show("importMsg"); return;
   }
-  const valid = arr.filter(q => q.idiom && q.question && Array.isArray(q.options) && q.options.length === 4);
+  const valid = arr.filter(s =>
+    s.title && s.passage && Array.isArray(s.questions) && s.questions.length > 0 &&
+    s.questions.every(q => q.question && Array.isArray(q.options) && q.options.length === 4)
+  );
   if (valid.length === 0) {
-    $("importMsg").textContent = "沒有符合格式的題目(需含 idiom / question / options[4])";
+    $("importMsg").textContent = "沒有符合格式的故事(需含 title / passage / questions,每題含 question / options[4])";
     $("importMsg").className = "msg err"; show("importMsg"); return;
   }
   try {
     for (let i = 0; i < valid.length; i += 500) {
       const batch = writeBatch(db);
-      valid.slice(i, i + 500).forEach(q => {
-        const ref = doc(collection(db, "idiom_questions"));
+      valid.slice(i, i + 500).forEach(s => {
+        const ref = doc(collection(db, "idiom_stories"));
         batch.set(ref, {
-          idiom: q.idiom, passage: q.passage || "", question: q.question,
-          options: q.options, answer: Number(q.answer) || 0,
-          explanation: q.explanation || "",
-          enabled: q.enabled !== false,
+          title: s.title,
+          passage: s.passage,
+          questions: s.questions.map(q => ({
+            question: q.question,
+            options: q.options,
+            answer: Number(q.answer) || 0,
+            explanation: q.explanation || ""
+          })),
+          enabled: s.enabled !== false,
           createdAt: serverTimestamp()
         });
       });
       await batch.commit();
     }
-    $("importMsg").textContent = `✅ 成功匯入 ${valid.length} 題` +
+    $("importMsg").textContent = `✅ 成功匯入 ${valid.length} 個故事` +
       (valid.length < arr.length ? `(略過 ${arr.length - valid.length} 筆格式錯誤)` : "");
     $("importMsg").className = "msg"; show("importMsg");
     $("importJson").value = "";
-    loadQuestions();
+    loadStories();
   } catch (err) {
     $("importMsg").textContent = "匯入失敗:" + err.message;
     $("importMsg").className = "msg err"; show("importMsg");
   }
 });
 
-// ===== 成績查詢 =====
+// ===== 成績查詢:依故事分組 =====
 async function loadResults() {
-  $("resultRows").innerHTML = "<tr><td colspan='6'>載入中…</td></tr>";
+  $("resultGroups").innerHTML = "<div class='muted'>載入中…</div>";
   try {
     const q = query(collection(db, "quiz_results"), orderBy("createdAt", "desc"));
     const snap = await getDocs(q);
     cachedResults = [];
     snap.forEach(d => cachedResults.push(d.data()));
-    $("resultRows").innerHTML = cachedResults.length === 0 ?
-      "<tr><td colspan='6'>尚無成績</td></tr>" :
-      cachedResults.map(r => {
-        const t = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString("zh-TW") : "";
-        return `<tr><td>${esc(t)}</td><td>${esc(r.className)}</td><td>${esc(r.seat)}</td>` +
-               `<td>${esc(r.name)}</td><td>${r.score} / ${r.total}</td><td>${r.percent}%</td></tr>`;
-      }).join("");
+    renderResultGroups();
   } catch (err) {
-    $("resultRows").innerHTML = `<tr><td colspan='6'>載入失敗:${esc(err.message)}</td></tr>`;
+    $("resultGroups").innerHTML = `<div class="msg err">載入失敗:${esc(err.message)}</div>`;
   }
 }
 $("btnReloadR").addEventListener("click", loadResults);
+$("filterStory").addEventListener("change", renderResultGroups);
 
+function renderResultGroups() {
+  if (cachedResults.length === 0) {
+    $("resultGroups").innerHTML = "<div class='muted'>尚無成績</div>"; return;
+  }
+  // 依故事分組
+  const groups = {};
+  cachedResults.forEach(r => {
+    const key = r.storyTitle || "(未指定故事)";
+    (groups[key] = groups[key] || []).push(r);
+  });
+
+  // 更新篩選下拉(保留目前選擇)
+  const sel = $("filterStory");
+  const currentFilter = sel.value;
+  const titles = Object.keys(groups).sort((a, b) => a.localeCompare(b, "zh-Hant"));
+  sel.innerHTML = "<option value=''>全部故事</option>" +
+    titles.map(t => `<option value="${esc(t)}" ${t === currentFilter ? "selected" : ""}>${esc(t)}</option>`).join("");
+
+  const shown = currentFilter ? titles.filter(t => t === currentFilter) : titles;
+  $("resultGroups").innerHTML = shown.map(title => {
+    const rows = groups[title];
+    const avg = Math.round(rows.reduce((s, r) => s + (r.percent || 0), 0) / rows.length);
+    return `
+    <div class="story-group">
+      <div class="sg-title">📖 ${esc(title)}</div>
+      <div class="sg-stats">完成人數:${rows.length} 人 · 平均答對率:${avg}%</div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>時間</th><th>班級</th><th>座號</th><th>姓名</th><th>分數</th><th>答對率</th></tr></thead>
+          <tbody>
+            ${rows.map(r => {
+              const t = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString("zh-TW") : "";
+              return `<tr><td>${esc(t)}</td><td>${esc(r.className)}</td><td>${esc(r.seat)}</td>` +
+                     `<td>${esc(r.name)}</td><td>${r.score} / ${r.total}</td><td>${r.percent}%</td></tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// ===== CSV 匯出(含故事欄位)=====
 $("btnExportCsv").addEventListener("click", () => {
   if (cachedResults.length === 0) { alert("沒有成績可匯出"); return; }
-  const rows = [["時間","班級","座號","姓名","分數","總題數","答對率(%)"]];
-  cachedResults.forEach(r => {
+  const filter = $("filterStory").value;
+  const list = filter ? cachedResults.filter(r => (r.storyTitle || "(未指定故事)") === filter) : cachedResults;
+  const rows = [["故事","時間","班級","座號","姓名","分數","總題數","答對率(%)"]];
+  list.forEach(r => {
     const t = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString("zh-TW") : "";
-    rows.push([t, r.className, r.seat, r.name, r.score, r.total, r.percent]);
+    rows.push([r.storyTitle || "", t, r.className, r.seat, r.name, r.score, r.total, r.percent]);
   });
   const csv = "\uFEFF" + rows.map(row =>
     row.map(c => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\r\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "成語測驗成績_" + new Date().toISOString().slice(0, 10) + ".csv";
+  a.download = "成語故事測驗成績_" + new Date().toISOString().slice(0, 10) + ".csv";
   a.click();
   URL.revokeObjectURL(a.href);
 });
