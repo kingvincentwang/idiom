@@ -52,10 +52,23 @@
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.15); text-align: left; vertical-align: top; }
   th { color: #ffd9a0; white-space: nowrap; }
-  .q-item {
-    background: rgba(0,0,0,0.2); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px;
-    font-size: 14px; line-height: 1.7;
+  #storyListBox {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
   }
+  .q-item {
+    background: rgba(0,0,0,0.2); border-radius: 12px; padding: 12px 14px;
+    font-size: 13px; line-height: 1.6;
+    display: flex; flex-direction: column;
+  }
+  .q-item .preview {
+    color: rgba(255,255,255,0.55);
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    margin: 4px 0 6px;
+  }
+  .q-item .actions { margin-top: auto; display: flex; gap: 6px; }
+  .q-item .actions button { flex: 1; margin: 8px 0 0; padding: 6px 0; font-size: 13px; }
   .q-item .idiom { font-weight: 700; color: #ffd9a0; font-size: 16px; }
   .q-item .muted, .muted { color: rgba(255,255,255,0.6); }
   .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; margin-left: 8px; }
@@ -111,7 +124,10 @@
     <!-- 故事列表 -->
     <div id="tabList" class="card">
       <h2>故事列表 <span id="qCount" class="muted"></span></h2>
-      <button class="secondary" id="btnReloadQ">🔄 重新載入</button>
+      <div class="row" style="align-items:flex-end;">
+        <div style="flex:2;"><input id="searchStory" placeholder="🔍 輸入成語名稱快速搜尋…"></div>
+        <div style="flex:0;"><button class="secondary" id="btnReloadQ" style="margin-top:0;white-space:nowrap;">🔄 重新載入</button></div>
+      </div>
       <div id="storyListBox" style="margin-top:14px;"></div>
     </div>
 
@@ -282,21 +298,38 @@ async function loadStories() {
     cachedStories = [];
     snap.forEach(d => cachedStories.push({ id: d.id, ...d.data() }));
     cachedStories.sort((a, b) => (a.title || "").localeCompare(b.title || "", "zh-Hant"));
-    $("qCount").textContent = `(共 ${cachedStories.length} 個故事)`;
-    $("storyListBox").innerHTML = cachedStories.length === 0 ? "<div class='muted'>尚無故事</div>" :
-      cachedStories.map(s => `
-        <div class="q-item">
-          <div>
-            <span class="idiom">${esc(s.title)}</span>
-            <span class="badge ${s.enabled ? "on" : "off"}">${s.enabled ? "啟用" : "停用"}</span>
-            <span class="muted">${(s.questions || []).length} 題 · 短文 ${(s.passage || "").length} 字</span>
-          </div>
-          <div class="muted">${esc((s.passage || "").slice(0, 50))}…</div>
+    renderStoryList();
+  } catch (err) {
+    $("storyListBox").innerHTML = `<div class="msg err">載入失敗:${esc(err.message)}</div>`;
+  }
+}
+$("btnReloadQ").addEventListener("click", loadStories);
+$("searchStory").addEventListener("input", renderStoryList);
+
+function renderStoryList() {
+  const keyword = $("searchStory").value.trim();
+  const list = keyword ? cachedStories.filter(s => (s.title || "").includes(keyword)) : cachedStories;
+  $("qCount").textContent = `(共 ${cachedStories.length} 個故事${keyword ? `,符合 ${list.length} 個` : ""})`;
+  $("storyListBox").innerHTML = list.length === 0 ? "<div class='muted'>沒有符合的故事</div>" :
+    list.map(s => `
+      <div class="q-item">
+        <div>
+          <span class="idiom">${esc(s.title)}</span>
+          <span class="badge ${s.enabled ? "on" : "off"}">${s.enabled ? "啟用" : "停用"}</span>
+        </div>
+        <div class="muted">${(s.questions || []).length} 題 · 短文 ${(s.passage || "").length} 字</div>
+        <div class="preview">${esc((s.passage || "").slice(0, 40))}</div>
+        <div class="actions">
           <button class="secondary" data-edit="${s.id}">✏️ 編輯</button>
           <button class="secondary" data-toggle="${s.id}" data-enabled="${s.enabled}">${s.enabled ? "⏸ 停用" : "▶️ 啟用"}</button>
-          <button class="danger" data-del="${s.id}">🗑 刪除</button>
-        </div>`).join("");
+          <button class="danger" data-del="${s.id}">🗑</button>
+        </div>
+      </div>`).join("");
 
+  attachStoryButtons();
+}
+
+function attachStoryButtons() {
     $("storyListBox").querySelectorAll("[data-edit]").forEach(b =>
       b.addEventListener("click", () => fillForm(cachedStories.find(s => s.id === b.dataset.edit))));
     $("storyListBox").querySelectorAll("[data-toggle]").forEach(b =>
@@ -310,11 +343,7 @@ async function loadStories() {
         await deleteDoc(doc(db, "idiom_stories", b.dataset.del));
         loadStories();
       }));
-  } catch (err) {
-    $("storyListBox").innerHTML = `<div class="msg err">載入失敗:${esc(err.message)}</div>`;
-  }
 }
-$("btnReloadQ").addEventListener("click", loadStories);
 
 // ===== 新增/編輯 =====
 function fillForm(s) {
