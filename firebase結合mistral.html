@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase 入門教學 - 從零開始打造雲端應用</title>
+    
+    <!-- 引入 Reveal.js 核心 CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.css">
+    
+    <!-- 字體與圖示 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        /* 1. THE SETUP & BACKGROUND */
+        body {
+            background-color: #030712;
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .reveal {
+            background: radial-gradient(circle at 15% 50%, #1e1b4b, #030712 90%);
+        }
+
+        /* 裝飾性背景光暈 */
+        .reveal::before {
+            content: '';
+            position: absolute;
+            top: -20vh;
+            right: -20vw;
+            width: 70vh;
+            height: 70vh;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 60%);
+            border-radius: 50%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .reveal::after {
+            content: '';
+            position: absolute;
+            bottom: -20vh;
+            left: -20vw;
+            width: 60vh;
+            height: 60vh;
+            background: radial-gradient(circle, rgba(147, 51, 234, 0.15) 0%, transparent 60%);
+            border-radius: 50%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* 重置 Reveal.js 預設的一些間距與樣式以符合我們的設計 */
+        .reveal .slides section {
+            padding: 40px;
+            box-sizing: border-box;
+            height: 100%;
+        }
+
+        /* 2. 玻璃擬態樣式 */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+        }
+
+        /* 3. 字體與排版 */
+        .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+            color: #f8fafc;
+            font-weight: 700;
+            font-family: 'Poppins', sans-serif;
+            margin: 0 0 20px 0;
+            line-height: 1.2;
+            text-transform: none; /* 避免 reveal.js 把標題變大寫 */
+        }
+
+        .reveal p, .reveal li, .reveal th, .reveal td {
+            color: #cbd5e1;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            font-size: 26px;
+        }
+
+        .reveal h1 { font-size: 80px; }
+        .reveal h2 { font-size: 50px; text-align: left; border-bottom: 2px solid rgba(6, 182, 212, 0.3); padding-bottom: 15px; margin-bottom: 40px; }
+        .reveal h3 { font-size: 36px; color: #22d3ee; }
+        
+        .subtitle { font-size: 40px !important; color: #22d3ee !important; font-weight: 500; }
+
+        /* 清單樣式 */
+        .reveal ul, .reveal ol {
+            display: block;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        .reveal li {
+            margin-bottom: 15px;
+        }
+
+        /* 4. 版面配置工具 */
+        .flex-center {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            text-align: center;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            height: calc(100% - 100px); /* 扣除標題高度 */
+        }
+
+        .column-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: left;
+        }
+
+        /* 圖片區塊 */
+        .image-wrapper {
+            border-radius: 16px;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+        .image-wrapper img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            margin: 0;
+            background: none;
+            border: none;
+            box-shadow: none;
+        }
+
+        /* 滿版圖片佈局 */
+        .bleed-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            height: 100%;
+            margin: -40px; /* 抵銷 section 的 padding */
+        }
+        .bleed-text {
+            padding: 40px 40px 40px 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: left;
+        }
+        .bleed-img {
+            background-image: url('http://googleusercontent.com/image_collection/image_retrieval/11173746978217132871');
+            background-size: cover;
+            background-position: center;
+            border-radius: 0 16px 16px 0;
+        }
+
+        /* 磁磚式圖文 */
+        .tiled-content {
+            display: flex;
+            gap: 20px;
+            justify-content: space-between;
+            height: 60%;
+        }
+        .tile {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            transition: transform 0.3s ease;
+        }
+        .tile:hover {
+            transform: translateY(-10px);
+        }
+        .tile .icon {
+            color: #22d3ee;
+            font-size: 60px;
+            margin-bottom: 20px;
+            background: rgba(6, 182, 212, 0.1);
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 1px solid rgba(34, 211, 238, 0.3);
+        }
+
+        /* 時間軸 / 步驟 */
+        .timeline-layout {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin-top: 60px;
+        }
+        .timeline-line {
+            background-color: rgba(255, 255, 255, 0.15);
+            height: 4px;
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            transform: translateY(-50%);
+            z-index: 0;
+        }
+        .timeline-item {
+            width: 22%;
+            position: relative;
+            z-index: 1;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background-color: #030712;
+            border-radius: 50%;
+            border: 4px solid #06b6d4;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.6);
+            z-index: 2;
+        }
+        .timeline-content {
+            padding: 20px;
+            margin-top: 40px; /* 偶數往下 */
+        }
+        .timeline-item:nth-child(odd) .timeline-content {
+            margin-top: 0;
+            margin-bottom: 40px; /* 奇數往上 */
+            transform: translateY(-100%);
+        }
+
+        /* 表格 */
+        .reveal table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .reveal th {
+            background: rgba(6, 182, 212, 0.15);
+            color: #22d3ee;
+            font-weight: 700;
+        }
+        .reveal td, .reveal th {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 5. AI 按鈕與對話框樣式 */
+        .ai-btn {
+            background-color: rgba(3, 7, 18, 0.5);
+            border: 1px solid #eab308; /* 金黃色邊框 */
+            color: #eab308;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-family: 'Inter', sans-serif;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 30px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(5px);
+        }
+        .ai-btn:hover {
+            background-color: rgba(234, 179, 8, 0.15);
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(234, 179, 8, 0.3);
+        }
+
+        .ai-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(8px);
+        }
+        .ai-modal-overlay.active {
+            display: flex;
+        }
+        .ai-modal-content {
+            background: #1e293b;
+            border: 1px solid #06b6d4;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            color: #f8fafc;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            font-family: 'Inter', sans-serif;
+            text-align: left;
+        }
+        .ai-modal-close {
+            position: absolute;
+            top: 15px; right: 20px;
+            background: none; border: none;
+            color: #94a3b8; font-size: 28px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .ai-modal-close:hover {
+            color: #f8fafc;
+        }
+        .ai-text-display {
+            font-size: 22px;
+            line-height: 1.8;
+            color: #cbd5e1;
+            margin-top: 20px;
+        }
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #06b6d4;
+            border-radius: 50%;
+            width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 30px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 6. 設定按鈕與 API Key 對話框 */
+        .settings-btn {
+            position: fixed;
+            bottom: 25px;
+            left: 25px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #94a3b8;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 9998;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        .settings-btn:hover {
+            color: #fff;
+            background: rgba(6, 182, 212, 0.3);
+            transform: rotate(90deg);
+            border-color: #06b6d4;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+        }
+        .api-input {
+            width: 100%;
+            padding: 12px;
+            margin: 20px 0;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid #06b6d4;
+            color: #fff;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .api-input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+        }
+        .save-btn {
+            background: #06b6d4;
+            color: #030712;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        .save-btn:hover {
+            background: #22d3ee;
+        }
+    </style>
+</head>
+<body>
+
+<div class="reveal">
+    <div class="slides">
+
+        <!-- 第 1 頁 -->
+        <section>
+            <div class="flex-center">
+                <h1>Firebase 入門教學</h1>
+                <p class="subtitle">從零開始打造雲端應用</p>
+                <p style="margin-top: 40px; color: #94a3b8;">Google 提供的一站式 App 開發平台</p>
+            </div>
+        </section>
+
+        <!-- 第 2 頁 -->
+        <section>
+            <h2>Firebase 能做什麼？</h2>
+            <div class="two-column">
+                <div class="column-content">
+                    <h3>你是否遇過以下需求？</h3>
+                    <ul>
+                        <li>網站需要登入功能 (Google, FB)</li>
+                        <li>想儲存應用程式的動態資料</li>
+                        <li>想架設並發布網站到網際網路</li>
+                        <li>想傳送推播通知給使用者</li>
+                        <li><strong style="color: #fff;">不想自己架設伺服器！</strong></li>
+                    </ul>
+                    <div style="margin-top: 20px; border-left: 4px solid #22d3ee; padding-left: 20px;" class="glass-panel">
+                        <p style="margin: 0; font-size: 22px;">Firebase 就像一棟已經蓋好的科技大樓，你只要「租」裡面的服務即可，一個平台完成 App 的後端功能。</p>
+                    </div>
+                </div>
+                <div class="image-wrapper glass-panel">
+                    <img src="http://googleusercontent.com/image_collection/image_retrieval/11924362312455802691" alt="Tech Cloud">
+                </div>
+            </div>
+        </section>
+
+        <!-- 第 3 頁 -->
+        <section>
+            <h2>Firebase 核心架構</h2>
+            <p style="text-align: left; margin-bottom: 40px;">Firebase = BaaS (Backend as a Service)，免去管理 Server 的煩惱。</p>
+            <div class="tiled-content">
+                <div class="tile glass-panel">
+                    <div class="icon"><i class="fa-solid fa-user-shield"></i></div>
+                    <h3 style="font-size: 28px;">Auth</h3>
+                    <p style="font-size: 18px;">身分驗證</p>
+                </div>
+                <div class="tile glass-panel">
+                    <div class="icon"><i class="fa-solid fa-database"></i></div>
+                    <h3 style="font-size: 28px;">Firestore</h3>
+                    <p style="font-size: 18px;">即時資料庫</p>
+                </div>
+                <div class="tile glass-panel">
+                    <div class="icon"><i class="fa-solid fa-folder-open"></i></div>
+                    <h3 style="font-size: 28px;">Storage</h3>
+                    <p style="font-size: 18px;">檔案儲存</p>
+                </div>
+                <div class="tile glass-panel">
+                    <div class="icon"><i class="fa-solid fa-globe"></i></div>
+                    <h3 style="font-size: 28px;">Hosting</h3>
+                    <p style="font-size: 18px;">網站部署</p>
+                </div>
+                <div class="tile glass-panel">
+                    <div class="icon"><i class="fa-solid fa-robot"></i></div>
+                    <h3 style="font-size: 28px;">Functions</h3>
+                    <p style="font-size: 18px;">雲端自動程式</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第 4 頁 -->
+        <section>
+            <h2>Authentication 身分驗證</h2>
+            <div class="two-column">
+                <div class="glass-panel column-content" style="justify-content: flex-start;">
+                    <h3><i class="fa-solid fa-school" style="margin-right: 15px;"></i>生活化：大門警衛</h3>
+                    <p>進入門禁森嚴的校園：</p>
+                    <ol>
+                        <li>訪客來到校門口</li>
+                        <li>警衛查驗證件</li>
+                        <li>發給專屬「通行證」</li>
+                        <li>允許進入校園使用設施</li>
+                    </ol>
+                </div>
+                <div class="glass-panel column-content" style="justify-content: flex-start;">
+                    <h3><i class="fa-brands fa-google" style="margin-right: 15px;"></i>Firebase 驗證</h3>
+                    <p>支援 Google, Apple, Email：</p>
+                    <ol>
+                        <li>使用者來到你的網站</li>
+                        <li>Auth 處理第三方登入</li>
+                        <li>核發專屬的「UID」</li>
+                        <li>開始安全地存取資料庫</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第 5 頁 -->
+        <section>
+            <h2>Firestore 雲端資料庫</h2>
+            <div class="two-column">
+                <div class="glass-panel column-content" style="justify-content: flex-start;">
+                    <h3><i class="fa-solid fa-table" style="margin-right: 15px;"></i>比喻：Google 試算表</h3>
+                    <ul>
+                        <li><strong>Collection (集合)：</strong><br>就像試算表的「分頁」</li>
+                        <li><strong>Document (文件)：</strong><br>就像表格中的「某一列」</li>
+                        <li><strong>Field (欄位)：</strong><br>具體的資料內容 (姓名、電話)</li>
+                    </ul>
+                    
+                    <!-- 加入 AI 按鈕，並傳入該頁面的主題 -->
+                    <button class="ai-btn" onclick="askAI('什麼是 Firestore 雲端資料庫？')">
+                        聽不懂？請 AI 用白話文解釋 ✨
+                    </button>
+                </div>
+                <div class="glass-panel column-content" style="justify-content: flex-start;">
+                    <h3><i class="fa-solid fa-network-wired" style="margin-right: 15px;"></i>特性：NoSQL</h3>
+                    <ul>
+                        <li>不需要預先定義資料表結構</li>
+                        <li>採用彈性的 JSON 樹狀結構</li>
+                        <li><strong>即時同步：</strong> 一人更新，所有人畫面自動改變</li>
+                        <li>適合處理大規模數據擴展</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第 6 頁 -->
+        <section>
+            <h2>Cloud Storage 雲端硬碟</h2>
+            <div class="two-column">
+                <div class="column-content">
+                    <h3>存放大型媒體檔案</h3>
+                    <p>📷 圖片、🎬 影片、📄 PDF 甚至是音樂，都可以存放在 Storage。</p>
+                    <ul style="margin-top: 20px;">
+                        <li>使用者在前端上傳照片</li>
+                        <li>產生一組「下載網址」</li>
+                        <li>將該網址記錄到 Firestore</li>
+                    </ul>
+                    <div style="margin-top: 20px; background: rgba(6, 182, 212, 0.2); padding: 15px; border-radius: 8px; border-left: 4px solid #06b6d4;">
+                        <p style="font-weight: 700; color: #fff; margin: 0; font-size: 22px;">Storage 放檔案，Firestore 放資料！</p>
+                    </div>
+                </div>
+                <div class="image-wrapper glass-panel">
+                    <img src="http://googleusercontent.com/image_collection/image_retrieval/10343064258316898351" alt="Storage Folder">
+                </div>
+            </div>
+        </section>
+
+        <!-- 第 7 頁 -->
+        <section>
+            <div class="bleed-layout">
+                <div class="bleed-text">
+                    <h2 style="border-bottom: none; margin-bottom: 10px;">Hosting 網站部署</h2>
+                    <h3 style="margin-bottom: 30px;">發布網站到全世界</h3>
+                    <p>不需買虛擬主機，一行 <code>firebase deploy</code> 就能上線。</p>
+                    <ul style="color: #cbd5e1; font-size: 24px; margin-top: 20px;">
+                        <li><strong>免費 HTTPS：</strong> 自動配置 SSL</li>
+                        <li><strong>全球 CDN：</strong> 快取在全球節點，載入極快</li>
+                        <li><strong>快速回退：</strong> 一鍵還原到上個版本</li>
+                    </ul>
+                </div>
+                <div class="bleed-img"></div>
+            </div>
+        </section>
+
+        <!-- 第 8 頁 -->
+        <section>
+            <h2>Cloud Functions 雲端函式</h2>
+            <div class="two-column">
+                <div class="glass-panel column-content" style="justify-content: flex-start;">
+                    <h3><i class="fa-solid fa-bell" style="margin-right: 15px;"></i>比喻：待命的機器人</h3>
+                    <p>傳統伺服器一直開著很耗電：</p>
+                    <ul>
+                        <li>平常處於休息狀態 (不計費)</li>
+                        <li>「有人按門鈴」才開始工作</li>
+                        <li>把交代的工作快速做完</li>
+                        <li>做完馬上回去休息</li>
+                    </ul>
+                </div>
+                <div class="glass-panel column-content" style="justify-content: flex-start;">
+                    <h3><i class="fa-solid fa-bolt" style="margin-right: 15px;"></i>用途：自動化腳本</h3>
+                    <p>設定「觸發條件」在雲端執行：</p>
+                    <ul>
+                        <li><strong>資料庫：</strong> 新增留言時寄 Email</li>
+                        <li><strong>驗證：</strong> 註冊時建立初始設定</li>
+                        <li><strong>排程：</strong> 每天半夜統整報表</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第 9 頁 -->
+        <section>
+            <h2>Firebase 完整運作流程</h2>
+            <p style="text-align: left;">各服務緊密相連，打造無伺服器 (Serverless) 體驗。</p>
+            
+            <div class="timeline-layout">
+                <div class="timeline-line"></div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content glass-panel">
+                        <h3 style="font-size: 24px;">1. 驗證登入</h3>
+                        <p style="font-size: 18px; margin-bottom:0;">透過 <strong>Auth</strong> 取得 UID。</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content glass-panel">
+                        <h3 style="font-size: 24px;">2. 讀寫存取</h3>
+                        <p style="font-size: 18px; margin-bottom:0;">憑證安全存取 <strong>Firestore</strong> 與 <strong>Storage</strong>。</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content glass-panel">
+                        <h3 style="font-size: 24px;">3. 背景觸發</h3>
+                        <p style="font-size: 18px; margin-bottom:0;">資料變更觸發 <strong>Functions</strong>。</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content glass-panel">
+                        <h3 style="font-size: 24px;">4. 全球發布</h3>
+                        <p style="font-size: 18px; margin-bottom:0;">網頁透過 <strong>Hosting</strong> 發布 CDN。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第 10 頁 -->
+        <section>
+            <h2>今日總結</h2>
+            <div class="glass-panel" style="padding: 10px 30px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>服務</th>
+                            <th>核心功能</th>
+                            <th>比喻</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="color: #22d3ee; font-weight: bold;">Auth</td>
+                            <td>第三方登入與身分驗證</td>
+                            <td>大門警衛</td>
+                        </tr>
+                        <tr>
+                            <td style="color: #22d3ee; font-weight: bold;">Firestore</td>
+                            <td>儲存即時動態資料</td>
+                            <td>雲端試算表</td>
+                        </tr>
+                        <tr>
+                            <td style="color: #22d3ee; font-weight: bold;">Storage</td>
+                            <td>儲存大型媒體檔案</td>
+                            <td>雲端硬碟</td>
+                        </tr>
+                        <tr>
+                            <td style="color: #22d3ee; font-weight: bold;">Hosting</td>
+                            <td>部署靜態網站與 CDN</td>
+                            <td>網站空間</td>
+                        </tr>
+                        <tr>
+                            <td style="color: #22d3ee; font-weight: bold;">Functions</td>
+                            <td>雲端自動執行程式</td>
+                            <td>機器人助手</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <h3 style="margin-top: 30px; font-size: 28px; text-align: center;">
+                💡 把困難的後端交給 Google，專心做好產品！
+            </h3>
+        </section>
+
+    </div>
+</div>
+
+<!-- 設定 API Key 按鈕 (固定在左下角) -->
+<button class="settings-btn" onclick="openSettings()" title="設定 API Key">
+    <i class="fa-solid fa-gear"></i>
+</button>
+
+<!-- 設定 API Key 的彈出視窗 Modal -->
+<div class="ai-modal-overlay" id="settingsModal">
+    <div class="ai-modal-content" style="max-width: 450px;">
+        <button class="ai-modal-close" onclick="closeSettings()"><i class="fa-solid fa-xmark"></i></button>
+        <h3 style="color: #22d3ee; margin-top: 0; font-size: 24px;"><i class="fa-solid fa-key"></i> 設定 API Key</h3>
+        <p style="color: #cbd5e1; font-size: 16px; margin-top: 10px; line-height: 1.5;">請貼上您的 Mistral API Key。<br>金鑰將只會儲存在您的瀏覽器中，不會外洩給任何人。</p>
+        <input type="password" id="apiKeyInput" class="api-input" placeholder="Enter Mistral API Key...">
+        <button class="save-btn" onclick="saveApiKey()">儲存設定</button>
+        <p id="saveStatus" style="font-size: 16px; margin-top: 15px; text-align: center; height: 24px; font-weight: 500;"></p>
+    </div>
+</div>
+
+<!-- AI 解釋用的彈出視窗 Modal -->
+<div class="ai-modal-overlay" id="aiModal">
+    <div class="ai-modal-content">
+        <button class="ai-modal-close" onclick="closeAI()"><i class="fa-solid fa-xmark"></i></button>
+        <h3 style="color: #eab308; margin-top: 0;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 白話文老師</h3>
+        <div id="aiContent" class="ai-text-display">
+            <!-- 內容會由 JS 動態填入 -->
+        </div>
+    </div>
+</div>
+
+<!-- 引入 Reveal.js 核心腳本 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.js"></script>
+<script>
+    // 1. 初始化 Reveal.js
+    Reveal.initialize({
+        width: 1280,
+        height: 720,
+        margin: 0.1,
+        hash: true,
+        transition: 'convex', // 可更改轉場效果: 'none', 'fade', 'slide', 'convex', 'concave', 'zoom'
+        controls: true,
+        progress: true,
+        center: false // 關閉置中，讓我們的自定義排版生效
+    });
+
+    // 2. 設置 Web Audio API 來產生轉場音效 (加入安全機制)
+    let audioCtx = null;
+
+    function playTransitionSound() {
+        try {
+            // 延遲初始化 AudioContext，避免瀏覽器在互動前報錯
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(600, audioCtx.currentTime); 
+            oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1); 
+
+            gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime); 
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.15);
+        } catch(e) {
+            console.warn("音效播放被瀏覽器安全機制阻擋", e);
+        }
+    }
+
+    // 3. 監聽 Reveal.js 的翻頁事件
+    Reveal.on('slidechanged', event => {
+        playTransitionSound();
+    });
+
+    // 4. AI 功能實作 (Mistral API 串接)
+    function getApiKey() {
+        return localStorage.getItem('mistral_api_key') || "";
+    }
+
+    function openSettings() {
+        document.getElementById('settingsModal').classList.add('active');
+        document.getElementById('apiKeyInput').value = localStorage.getItem('mistral_api_key') || '';
+        document.getElementById('saveStatus').innerText = "";
+    }
+
+    function closeSettings() {
+        document.getElementById('settingsModal').classList.remove('active');
+    }
+
+    function saveApiKey() {
+        const key = document.getElementById('apiKeyInput').value.trim();
+        if (key) {
+            localStorage.setItem('mistral_api_key', key);
+            document.getElementById('saveStatus').innerText = "✅ API Key 已儲存！";
+            document.getElementById('saveStatus').style.color = "#4ade80";
+            setTimeout(closeSettings, 1200);
+        } else {
+            localStorage.removeItem('mistral_api_key');
+            document.getElementById('saveStatus').innerText = "🗑️ API Key 已清除。";
+            document.getElementById('saveStatus').style.color = "#94a3b8";
+            setTimeout(closeSettings, 1200);
+        }
+    }
+
+    function closeAI() {
+        document.getElementById('aiModal').classList.remove('active');
+    }
+
+    // 呼叫 Mistral 的函數，包含重試機制
+    async function fetchMistralExplanation(topic) {
+        const currentKey = getApiKey();
+        const retries = 3;
+        const delays = [1000, 2000, 4000];
+        const url = `https://api.mistral.ai/v1/chat/completions`;
+        
+        const payload = {
+            model: "mistral-small-latest", // 這裡使用 mistral-small 兼顧速度與品質
+            messages: [
+                {
+                    role: "system",
+                    content: "你是一位親切、幽默的科技講師。請用極度白話、生動的生活化比喻，向完全沒有基礎的初學者解釋使用者給予的科技名詞。字數請嚴格控制在 100 字左右，並使用適當的 emoji 讓語氣活潑。"
+                },
+                {
+                    role: "user",
+                    content: `請向初學者解釋：「${topic}」`
+                }
+            ]
+        };
+
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentKey}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401) throw new Error("API Key 無效");
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data.choices?.[0]?.message?.content || "AI 似乎恍神了，請再試一次。";
+            } catch (error) {
+                if (error.message === "API Key 無效") {
+                    return "❌ 錯誤：API Key 無效，請點擊左下角齒輪重新設定。";
+                }
+                if (i === retries - 1) {
+                    return "抱歉，目前 AI 老師太忙碌了，請稍後再試！(連線逾時)";
+                }
+                await new Promise(res => setTimeout(res, delays[i]));
+            }
+        }
+    }
+
+    // 點擊按鈕觸發的事件
+    async function askAI(topic) {
+        const currentKey = getApiKey();
+        if (!currentKey) {
+            openSettings();
+            document.getElementById('saveStatus').innerText = "⚠️ 請先設定 API Key 才能呼叫 AI";
+            document.getElementById('saveStatus').style.color = "#eab308";
+            return;
+        }
+
+        const modal = document.getElementById('aiModal');
+        const content = document.getElementById('aiContent');
+        
+        // 顯示 Modal 與載入動畫
+        modal.classList.add('active');
+        content.innerHTML = `
+            <div class="loader"></div>
+            <p style="text-align:center; color: #94a3b8;">AI 老師正在思考絕佳的比喻...</p>
+        `;
+        
+        // 取得 AI 回應並顯示
+        const explanation = await fetchMistralExplanation(topic);
+        content.innerHTML = explanation.replace(/\n/g, '<br>');
+    }
+</script>
+
+</body>
+</html>
