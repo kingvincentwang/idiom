@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>會員系統 - Firebase Authentication</title>
+<title>會員系統 - 註冊審核制</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -80,9 +80,11 @@
     border-radius: 8px;
     font-size: 14px;
     display: none;
+    line-height: 1.6;
   }
   .msg.error { display: block; background: #fdecea; color: #b0413e; }
   .msg.success { display: block; background: #e7f6ec; color: #1e7e46; }
+  .msg.warning { display: block; background: #fef7e0; color: #9a6b00; }
   #user-panel { display: none; text-align: center; }
   #user-email { font-weight: bold; color: #1a2a6c; word-break: break-all; }
   .hint { font-size: 12px; color: #888; margin-top: -10px; margin-bottom: 14px; }
@@ -119,7 +121,6 @@
   </div>
 </div>
 
-<!-- Firebase SDK (v10 modular, CDN) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
@@ -129,9 +130,15 @@
     signOut,
     onAuthStateChanged
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    getFirestore,
+    doc,
+    setDoc,
+    getDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   // ★★★ 請換成你自己的 Firebase 設定 ★★★
-  // Firebase Console → 專案設定 → 一般 → 你的應用程式 → SDK 設定
   const firebaseConfig = {
     apiKey: "AIzaSyA_er0I9K3yMwFvkYNLNow4tPEAG7PAl50",
     authDomain: "member-login-5c129.firebaseapp.com",
@@ -140,10 +147,12 @@
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  const db = getFirestore(app);
 
-  let mode = 'login'; // 'login' 或 'register'
+  let mode = 'login';
+  // 標記「目前正在跑註冊/審核檢查流程」，避免 onAuthStateChanged 誤切換畫面
+  let processing = false;
 
-  // ===== 切換登入/註冊分頁 =====
   window.switchTab = function (newMode) {
     mode = newMode;
     document.getElementById('tab-login').classList.toggle('active', mode === 'login');
@@ -152,7 +161,6 @@
     hideMsg();
   };
 
-  // ===== 送出（登入或註冊）=====
   window.handleSubmit = async function () {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
@@ -165,43 +173,104 @@
 
     btn.disabled = true;
     btn.textContent = '處理中…';
+    processing = true;
 
     try {
       if (mode === 'register') {
-        await createUserWithEmailAndPassword(auth, email, password);
-        showMsg('✅ 註冊成功，已自動登入！', 'success');
+        await doRegister(email, password);
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
-        showMsg('✅ 登入成功！', 'success');
+        await doLogin(email, password);
       }
     } catch (err) {
       showMsg(translateError(err.code), 'error');
     } finally {
+      processing = false;
       btn.disabled = false;
       btn.textContent = (mode === 'login') ? '登入' : '註冊';
     }
   };
 
-  // ===== 登出 =====
+  // ===== 註冊：建立帳號 → 寫入審核資料 → 登出 =====
+  async function doRegister(email, password) {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+
+    // 在 Firestore 建立使用者文件，approved 預設 false
+    await setDoc(doc(db, 'users', cred.user.uid), {
+      email: email,
+      approved: false,
+      createdAt: serverTimestamp()
+    });
+
+    // 立即登出，等待管理員審核
+    await signOut(auth);
+    showMsg('✅ 註冊成功！你的帳號正在等待管理員審核，審核通過後即可登入。', 'warning');
+  }
+
+  // ===== 登入：驗證成功後檢查審核狀態 =====
+  async function doLogin(email, password) {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+
+    const snap = await getDoc(doc(db, 'users', cred.user.uid));
+
+    if (!snap.exists()) {
+      // 舊帳號沒有 users 文件（例如審核機制上線前註冊的），補建一筆待審核
+      await setDoc(doc(db, 'users', cred.user.uid), {
+        email: email,
+        approved: false,
+        createdAt: serverTimestamp()
+      });
+      await signOut(auth);
+      showMsg('⏳ 你的帳號尚未通過審核，請等待管理員審核。', 'warning');
+      return;
+    }
+
+    if (snap.data().approved !== true) {
+      await signOut(auth);
+      showMsg('⏳ 你的帳號尚未通過審核，請等待管理員審核。', 'warning');
+      return;
+    }
+
+    // 審核通過 → 顯示會員面板
+    showUserPanel(cred.user);
+    showMsg('✅ 登入成功！', 'success');
+  }
+
   window.handleLogout = async function () {
     await signOut(auth);
+    showAuthPanel();
   };
 
-  // ===== 監聽登入狀態（頁面重整也會保持登入）=====
-  onAuthStateChanged(auth, (user) => {
-    const authPanel = document.getElementById('auth-panel');
-    const userPanel = document.getElementById('user-panel');
-    if (user) {
-      authPanel.style.display = 'none';
-      userPanel.style.display = 'block';
-      document.getElementById('user-email').textContent = user.email;
-    } else {
-      authPanel.style.display = 'block';
-      userPanel.style.display = 'none';
+  // ===== 頁面載入 / 重新整理時恢復登入狀態（同樣要檢查審核）=====
+  onAuthStateChanged(auth, async (user) => {
+    if (processing) return; // 註冊/登入流程中，畫面由流程自己控制
+    if (!user) {
+      showAuthPanel();
+      return;
+    }
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (snap.exists() && snap.data().approved === true) {
+        showUserPanel(user);
+      } else {
+        await signOut(auth);
+        showAuthPanel();
+      }
+    } catch (e) {
+      console.error(e);
+      showAuthPanel();
     }
   });
 
-  // ===== 錯誤訊息中文化 =====
+  function showUserPanel(user) {
+    document.getElementById('auth-panel').style.display = 'none';
+    document.getElementById('user-panel').style.display = 'block';
+    document.getElementById('user-email').textContent = user.email;
+  }
+  function showAuthPanel() {
+    document.getElementById('auth-panel').style.display = 'block';
+    document.getElementById('user-panel').style.display = 'none';
+  }
+
   function translateError(code) {
     const map = {
       'auth/email-already-in-use': '這個 Email 已經註冊過了',
@@ -212,6 +281,7 @@
       'auth/invalid-credential': 'Email 或密碼錯誤',
       'auth/too-many-requests': '嘗試次數過多，請稍後再試',
       'auth/network-request-failed': '網路連線失敗，請檢查網路',
+      'permission-denied': '資料庫權限不足，請檢查 Firestore 安全規則',
     };
     return map[code] || ('發生錯誤：' + code);
   }
