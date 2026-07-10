@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>會員系統 - Firebase Authentication</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1a2a6c, #2a4d8f, #1f6f8b);
+    padding: 20px;
+  }
+  .card {
+    width: 100%;
+    max-width: 400px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+  h1 {
+    font-size: 22px;
+    text-align: center;
+    color: #1a2a6c;
+    margin-bottom: 24px;
+  }
+  .tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #d0d7e2;
+  }
+  .tabs button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: #f0f3f8;
+    cursor: pointer;
+    font-size: 15px;
+    color: #555;
+  }
+  .tabs button.active {
+    background: #2a4d8f;
+    color: #fff;
+    font-weight: bold;
+  }
+  label { display: block; font-size: 14px; color: #444; margin-bottom: 6px; }
+  input {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 16px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 15px;
+  }
+  input:focus { outline: 2px solid #2a4d8f; border-color: transparent; }
+  .btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #2a4d8f;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .btn:hover { background: #1a2a6c; }
+  .btn:disabled { background: #999; cursor: not-allowed; }
+  .btn-secondary { background: #b0413e; margin-top: 12px; }
+  .btn-secondary:hover { background: #8e332f; }
+  .msg {
+    margin-top: 14px;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: none;
+  }
+  .msg.error { display: block; background: #fdecea; color: #b0413e; }
+  .msg.success { display: block; background: #e7f6ec; color: #1e7e46; }
+  #user-panel { display: none; text-align: center; }
+  #user-email { font-weight: bold; color: #1a2a6c; word-break: break-all; }
+  .hint { font-size: 12px; color: #888; margin-top: -10px; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <!-- 登入 / 註冊面板 -->
+  <div id="auth-panel">
+    <h1>🔐 會員系統</h1>
+    <div class="tabs">
+      <button id="tab-login" class="active" onclick="switchTab('login')">登入</button>
+      <button id="tab-register" onclick="switchTab('register')">註冊</button>
+    </div>
+
+    <label for="email">Email</label>
+    <input type="email" id="email" placeholder="example@gmail.com" autocomplete="email">
+
+    <label for="password">密碼</label>
+    <input type="password" id="password" placeholder="至少 6 個字元" autocomplete="current-password">
+    <div class="hint">Firebase 要求密碼至少 6 個字元</div>
+
+    <button class="btn" id="submit-btn" onclick="handleSubmit()">登入</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <!-- 登入成功後的會員面板 -->
+  <div id="user-panel">
+    <h1>👋 歡迎回來</h1>
+    <p>你已登入為：</p>
+    <p id="user-email" style="margin: 12px 0;"></p>
+    <button class="btn btn-secondary" onclick="handleLogout()">登出</button>
+  </div>
+</div>
+
+<!-- Firebase SDK (v10 modular, CDN) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  // ★★★ 請換成你自己的 Firebase 設定 ★★★
+  // Firebase Console → 專案設定 → 一般 → 你的應用程式 → SDK 設定
+  const firebaseConfig = {
+    apiKey: "AIzaSyA_er0I9K3yMwFvkYNLNow4tPEAG7PAl50",
+    authDomain: "member-login-5c129.firebaseapp.com",
+    projectId: "member-login-5c129",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  let mode = 'login'; // 'login' 或 'register'
+
+  // ===== 切換登入/註冊分頁 =====
+  window.switchTab = function (newMode) {
+    mode = newMode;
+    document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+    document.getElementById('tab-register').classList.toggle('active', mode === 'register');
+    document.getElementById('submit-btn').textContent = (mode === 'login') ? '登入' : '註冊';
+    hideMsg();
+  };
+
+  // ===== 送出（登入或註冊）=====
+  window.handleSubmit = async function () {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('submit-btn');
+
+    if (!email || !password) {
+      showMsg('請輸入 Email 和密碼', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '處理中…';
+
+    try {
+      if (mode === 'register') {
+        await createUserWithEmailAndPassword(auth, email, password);
+        showMsg('✅ 註冊成功，已自動登入！', 'success');
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+        showMsg('✅ 登入成功！', 'success');
+      }
+    } catch (err) {
+      showMsg(translateError(err.code), 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = (mode === 'login') ? '登入' : '註冊';
+    }
+  };
+
+  // ===== 登出 =====
+  window.handleLogout = async function () {
+    await signOut(auth);
+  };
+
+  // ===== 監聽登入狀態（頁面重整也會保持登入）=====
+  onAuthStateChanged(auth, (user) => {
+    const authPanel = document.getElementById('auth-panel');
+    const userPanel = document.getElementById('user-panel');
+    if (user) {
+      authPanel.style.display = 'none';
+      userPanel.style.display = 'block';
+      document.getElementById('user-email').textContent = user.email;
+    } else {
+      authPanel.style.display = 'block';
+      userPanel.style.display = 'none';
+    }
+  });
+
+  // ===== 錯誤訊息中文化 =====
+  function translateError(code) {
+    const map = {
+      'auth/email-already-in-use': '這個 Email 已經註冊過了',
+      'auth/invalid-email': 'Email 格式不正確',
+      'auth/weak-password': '密碼強度不足（至少 6 個字元）',
+      'auth/user-not-found': '找不到這個帳號，請先註冊',
+      'auth/wrong-password': '密碼錯誤',
+      'auth/invalid-credential': 'Email 或密碼錯誤',
+      'auth/too-many-requests': '嘗試次數過多，請稍後再試',
+      'auth/network-request-failed': '網路連線失敗，請檢查網路',
+    };
+    return map[code] || ('發生錯誤：' + code);
+  }
+
+  function showMsg(text, type) {
+    const el = document.getElementById('msg');
+    el.textContent = text;
+    el.className = 'msg ' + type;
+  }
+  function hideMsg() {
+    document.getElementById('msg').className = 'msg';
+  }
+</script>
+
+</body>
+</html>
