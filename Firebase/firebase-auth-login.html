@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>會員系統 - Google 登入</title>
+<title>會員系統 - Google 登入審核制</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -27,8 +27,9 @@
   h1 {
     font-size: 22px;
     color: #1a2a6c;
-    margin-bottom: 24px;
+    margin-bottom: 8px;
   }
+  .subtitle { font-size: 14px; color: #777; margin-bottom: 24px; }
   .btn {
     width: 100%;
     padding: 12px;
@@ -53,13 +54,16 @@
   .btn:disabled { opacity: 0.6; cursor: not-allowed; }
   .msg {
     margin-top: 14px;
-    padding: 10px;
+    padding: 12px;
     border-radius: 8px;
     font-size: 14px;
     display: none;
-    line-height: 1.6;
+    line-height: 1.7;
+    text-align: left;
   }
   .msg.error { display: block; background: #fdecea; color: #b0413e; }
+  .msg.success { display: block; background: #e7f6ec; color: #1e7e46; }
+  .msg.warning { display: block; background: #fef7e0; color: #9a6b00; }
   #user-panel { display: none; }
   #user-photo {
     width: 72px;
@@ -78,14 +82,15 @@
   <!-- 登入面板 -->
   <div id="auth-panel">
     <h1>🔐 會員系統</h1>
+    <div class="subtitle">首次登入即為註冊申請，通過審核後方可使用</div>
     <button class="btn btn-google" id="google-btn" onclick="handleGoogleLogin()">
       <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-      使用 Google 帳號登入
+      使用 Google 帳號登入 / 註冊
     </button>
     <div class="msg" id="msg"></div>
   </div>
 
-  <!-- 登入成功後的會員面板 -->
+  <!-- 審核通過後的會員面板 -->
   <div id="user-panel">
     <h1>👋 歡迎回來</h1>
     <img id="user-photo" src="" alt="頭像" referrerpolicy="no-referrer">
@@ -104,6 +109,13 @@
     signOut,
     onAuthStateChanged
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    getFirestore,
+    doc,
+    setDoc,
+    getDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   // ★★★ 請換成你自己的 Firebase 設定 ★★★
   const firebaseConfig = {
@@ -114,22 +126,55 @@
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  const db = getFirestore(app);
   const provider = new GoogleAuthProvider();
 
-  // 若只想讓學校網域帳號登入，取消下面這行的註解（僅是提示，仍需搭配後續驗證）
+  // 若只想讓學校網域帳號登入，取消下面這行的註解
   // provider.setCustomParameters({ hd: 'gses.hcc.edu.tw' });
 
-  // ===== Google 登入 =====
+  // 標記「登入流程進行中」，避免 onAuthStateChanged 搶著切畫面
+  let processing = false;
+
+  // ===== Google 登入（含註冊申請與審核檢查）=====
   window.handleGoogleLogin = async function () {
     const btn = document.getElementById('google-btn');
     btn.disabled = true;
+    processing = true;
     hideMsg();
+
     try {
-      await signInWithPopup(auth, provider);
-      // 成功後 onAuthStateChanged 會自動切換畫面
+      const cred = await signInWithPopup(auth, provider);
+      const user = cred.user;
+      const userRef = doc(db, 'users', user.uid);
+      const snap = await getDoc(userRef);
+
+      if (!snap.exists()) {
+        // ── 第一次登入 → 建立申請資料，等待審核 ──
+        await setDoc(userRef, {
+          email: user.email,
+          name: user.displayName || '',
+          photoURL: user.photoURL || '',
+          approved: false,
+          createdAt: serverTimestamp()
+        });
+        await signOut(auth);
+        showMsg('✅ 已收到你的註冊申請！請等待管理員審核，通過後即可用同一個 Google 帳號登入。', 'warning');
+        return;
+      }
+
+      if (snap.data().approved !== true) {
+        // ── 已申請但尚未通過 ──
+        await signOut(auth);
+        showMsg('⏳ 你的帳號尚未通過審核，請耐心等待管理員審核。', 'warning');
+        return;
+      }
+
+      // ── 審核通過 ──
+      showUserPanel(user);
     } catch (err) {
-      showMsg(translateError(err.code), 'error');
+      showMsg(translateError(err.code || err.message), 'error');
     } finally {
+      processing = false;
       btn.disabled = false;
     }
   };
@@ -137,23 +182,41 @@
   // ===== 登出 =====
   window.handleLogout = async function () {
     await signOut(auth);
+    showAuthPanel();
   };
 
-  // ===== 登入狀態監聽（重整頁面保持登入）=====
-  onAuthStateChanged(auth, (user) => {
-    const authPanel = document.getElementById('auth-panel');
-    const userPanel = document.getElementById('user-panel');
-    if (user) {
-      authPanel.style.display = 'none';
-      userPanel.style.display = 'block';
-      document.getElementById('user-photo').src = user.photoURL || '';
-      document.getElementById('user-name').textContent = user.displayName || '';
-      document.getElementById('user-email').textContent = user.email || '';
-    } else {
-      authPanel.style.display = 'block';
-      userPanel.style.display = 'none';
+  // ===== 頁面載入 / 重新整理時恢復登入狀態（同樣檢查審核）=====
+  onAuthStateChanged(auth, async (user) => {
+    if (processing) return;
+    if (!user) {
+      showAuthPanel();
+      return;
+    }
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (snap.exists() && snap.data().approved === true) {
+        showUserPanel(user);
+      } else {
+        await signOut(auth);
+        showAuthPanel();
+      }
+    } catch (e) {
+      console.error(e);
+      showAuthPanel();
     }
   });
+
+  function showUserPanel(user) {
+    document.getElementById('auth-panel').style.display = 'none';
+    document.getElementById('user-panel').style.display = 'block';
+    document.getElementById('user-photo').src = user.photoURL || '';
+    document.getElementById('user-name').textContent = user.displayName || '';
+    document.getElementById('user-email').textContent = user.email || '';
+  }
+  function showAuthPanel() {
+    document.getElementById('auth-panel').style.display = 'block';
+    document.getElementById('user-panel').style.display = 'none';
+  }
 
   function translateError(code) {
     const map = {
@@ -163,6 +226,7 @@
       'auth/unauthorized-domain': '此網域未授權，請到 Firebase Console 的已授權網域加入目前網域',
       'auth/network-request-failed': '網路連線失敗，請檢查網路',
       'auth/operation-not-allowed': 'Google 登入尚未啟用，請到 Firebase Console 開啟',
+      'permission-denied': '資料庫權限不足，請檢查 Firestore 安全規則',
     };
     return map[code] || ('發生錯誤：' + code);
   }
