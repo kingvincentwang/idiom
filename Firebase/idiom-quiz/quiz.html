@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成語測驗</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; min-height: 100vh; background: #f0f3f8; }
+  header {
+    background: #1a2a6c; color: #fff; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  header .left { font-weight: bold; font-size: 17px; }
+  header .user-info { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  header img { width: 32px; height: 32px; border-radius: 50%; }
+  header a { color: #cfe0ff; text-decoration: none; font-size: 14px; }
+  header a:hover { text-decoration: underline; }
+  header button { padding: 6px 14px; border: none; border-radius: 6px; background: #b0413e; color: #fff; cursor: pointer; }
+  header button:hover { background: #8e332f; }
+  main { max-width: 640px; margin: 32px auto; padding: 0 20px; }
+  .card { background: #fff; border-radius: 14px; padding: 28px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
+
+  .progress-bar { height: 8px; background: #e3e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
+  .progress-fill { height: 100%; background: #2a4d8f; width: 0%; transition: width .3s; }
+  .qnum { font-size: 14px; color: #888; margin-bottom: 8px; }
+  .qtext { font-size: 20px; color: #1a2a6c; font-weight: bold; line-height: 1.6; margin-bottom: 22px; }
+  .option {
+    display: block; width: 100%; text-align: left; padding: 14px 16px; margin-bottom: 12px;
+    border: 2px solid #d8dfea; border-radius: 10px; background: #fff; font-size: 16px; color: #333; cursor: pointer;
+    transition: all .15s;
+  }
+  .option:hover:not(:disabled) { border-color: #2a4d8f; background: #f5f8ff; }
+  .option:disabled { cursor: default; }
+  .option.correct { border-color: #2e7d32; background: #e8f5e9; color: #1b5e20; font-weight: bold; }
+  .option.wrong { border-color: #c62828; background: #ffebee; color: #b71c1c; }
+
+  .next-btn {
+    width: 100%; padding: 13px; border: none; border-radius: 10px; background: #2a4d8f; color: #fff;
+    font-size: 16px; cursor: pointer; margin-top: 8px; display: none;
+  }
+  .next-btn:hover { background: #1a2a6c; }
+
+  /* 結果畫面 */
+  #result { display: none; text-align: center; }
+  #result .score-big { font-size: 52px; font-weight: bold; color: #1a2a6c; margin: 10px 0; }
+  #result .score-sub { color: #666; font-size: 16px; margin-bottom: 8px; }
+  #result .emoji { font-size: 48px; }
+  #result .actions { margin-top: 26px; display: flex; gap: 12px; flex-wrap: wrap; }
+  #result .actions button, #result .actions a {
+    flex: 1; min-width: 140px; padding: 13px; border: none; border-radius: 10px; font-size: 15px;
+    cursor: pointer; text-decoration: none; text-align: center;
+  }
+  .btn-retry { background: #2a4d8f; color: #fff; }
+  .btn-scores { background: #eef2f8; color: #1a2a6c; border: 1px solid #cdd8e8 !important; }
+  .saving { color: #999; font-size: 14px; margin-top: 14px; }
+
+  .center-msg { text-align: center; color: #888; padding: 30px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="left">📝 成語測驗</div>
+  <div class="user-info">
+    <a href="member.html">🏠 會員區</a>
+    <a href="scores.html">📊 我的成績</a>
+    <a href="admin.html" id="admin-link" style="display:none;">⚙️ 管理員區</a>
+    <img id="user-photo" src="" alt="" referrerpolicy="no-referrer">
+    <span id="user-name"></span>
+    <button onclick="doLogout()">登出</button>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <!-- 測驗進行區 -->
+    <div id="quiz">
+      <div class="center-msg" id="loading">題目載入中…</div>
+      <div id="quiz-body" style="display:none;">
+        <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+        <div class="qnum" id="qnum"></div>
+        <div class="qtext" id="qtext"></div>
+        <div id="options"></div>
+        <button class="next-btn" id="next-btn" onclick="nextQuestion()">下一題</button>
+      </div>
+    </div>
+
+    <!-- 結果區 -->
+    <div id="result">
+      <div class="emoji" id="result-emoji">🎉</div>
+      <div class="score-big" id="result-score"></div>
+      <div class="score-sub" id="result-sub"></div>
+      <div class="saving" id="saving">成績儲存中…</div>
+      <div class="actions">
+        <button class="btn-retry" onclick="location.reload()">再測一次</button>
+        <a class="btn-scores" href="scores.html">查看成績紀錄</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+  import { requireAuth, logout, isAdmin, db } from './auth-guard.js';
+  import { doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const QUESTIONS_PER_QUIZ = 10; // 每次抽幾題
+
+  let currentUser = null;
+  let quizQuestions = [];  // 本次抽出的題目（選項已洗牌）
+  let currentIndex = 0;
+  let score = 0;
+  let answered = false;
+
+  requireAuth(async (user) => {
+    currentUser = user;
+    document.getElementById('user-photo').src = user.photoURL || '';
+    document.getElementById('user-name').textContent = user.displayName || user.email;
+
+    // 是管理員才顯示「管理員區」連結
+    if (await isAdmin(user)) {
+      document.getElementById('admin-link').style.display = 'inline';
+    }
+
+    try {
+      const snap = await getDoc(doc(db, 'appData', 'idioms'));
+      if (!snap.exists() || !snap.data().questions?.length) {
+        document.getElementById('loading').textContent = '題庫是空的，請先用 seed-quiz.html 建立題目。';
+        return;
+      }
+      const bank = snap.data().questions;
+      quizQuestions = pickAndShuffle(bank, QUESTIONS_PER_QUIZ);
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('quiz-body').style.display = 'block';
+      renderQuestion();
+    } catch (e) {
+      document.getElementById('loading').textContent = '讀取題庫失敗：' + (e.code || e.message);
+    }
+  });
+
+  // 隨機抽 n 題，並把每題的選項洗牌（同時記住正確答案的新位置）
+  function pickAndShuffle(bank, n) {
+    const picked = shuffle([...bank]).slice(0, Math.min(n, bank.length));
+    return picked.map(item => {
+      const correctText = item.options[item.answer];
+      const shuffledOptions = shuffle([...item.options]);
+      return {
+        q: item.q,
+        options: shuffledOptions,
+        answer: shuffledOptions.indexOf(correctText)
+      };
+    });
+  }
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function renderQuestion() {
+    answered = false;
+    const q = quizQuestions[currentIndex];
+    document.getElementById('progress').style.width =
+      ((currentIndex) / quizQuestions.length * 100) + '%';
+    document.getElementById('qnum').textContent =
+      '第 ' + (currentIndex + 1) + ' / ' + quizQuestions.length + ' 題';
+    document.getElementById('qtext').textContent = q.q;
+
+    const box = document.getElementById('options');
+    box.innerHTML = '';
+    q.options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option';
+      btn.textContent = opt;
+      btn.onclick = () => selectOption(i);
+      box.appendChild(btn);
+    });
+    document.getElementById('next-btn').style.display = 'none';
+  }
+
+  function selectOption(chosen) {
+    if (answered) return;
+    answered = true;
+    const q = quizQuestions[currentIndex];
+    const buttons = document.querySelectorAll('.option');
+
+    buttons.forEach((btn, i) => {
+      btn.disabled = true;
+      if (i === q.answer) btn.classList.add('correct');
+      if (i === chosen && chosen !== q.answer) btn.classList.add('wrong');
+    });
+
+    if (chosen === q.answer) score++;
+
+    const nextBtn = document.getElementById('next-btn');
+    nextBtn.textContent = (currentIndex + 1 < quizQuestions.length) ? '下一題' : '看結果';
+    nextBtn.style.display = 'block';
+  }
+
+  window.nextQuestion = function () {
+    currentIndex++;
+    if (currentIndex < quizQuestions.length) {
+      renderQuestion();
+    } else {
+      showResult();
+    }
+  };
+
+  async function showResult() {
+    document.getElementById('quiz').style.display = 'none';
+    document.getElementById('result').style.display = 'block';
+
+    const total = quizQuestions.length;
+    const pct = Math.round(score / total * 100);
+    document.getElementById('result-score').textContent = score + ' / ' + total;
+    document.getElementById('result-sub').textContent = '正確率 ' + pct + '%';
+    document.getElementById('result-emoji').textContent =
+      pct >= 90 ? '🏆' : pct >= 60 ? '🎉' : '💪';
+
+    // 寫入成績紀錄（records 集合）
+    try {
+      await addDoc(collection(db, 'records'), {
+        uid: currentUser.uid,
+        email: currentUser.email,
+        name: currentUser.displayName || '',
+        mode: 'idiom',
+        score: score,
+        total: total,
+        percent: pct,
+        takenAt: Date.now(),        // 給前端即時排序用
+        createdAt: serverTimestamp() // 伺服器正式時間
+      });
+      document.getElementById('saving').textContent = '✓ 成績已儲存';
+    } catch (e) {
+      document.getElementById('saving').textContent = '✗ 成績儲存失敗：' + (e.code || e.message);
+    }
+  }
+
+  window.doLogout = logout;
+</script>
+
+</body>
+</html>

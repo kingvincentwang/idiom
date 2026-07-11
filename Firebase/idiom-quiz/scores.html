@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的成績</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; min-height: 100vh; background: #f0f3f8; }
+  header {
+    background: #1a2a6c; color: #fff; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  header .left { font-weight: bold; font-size: 17px; }
+  header .user-info { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  header img { width: 32px; height: 32px; border-radius: 50%; }
+  header a { color: #cfe0ff; text-decoration: none; font-size: 14px; }
+  header a:hover { text-decoration: underline; }
+  header button { padding: 6px 14px; border: none; border-radius: 6px; background: #b0413e; color: #fff; cursor: pointer; }
+  header button:hover { background: #8e332f; }
+  main { max-width: 720px; margin: 32px auto; padding: 0 20px; }
+
+  .stats { display: flex; gap: 14px; margin-bottom: 22px; flex-wrap: wrap; }
+  .stat {
+    flex: 1; min-width: 140px; background: #fff; border-radius: 12px; padding: 20px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.06); text-align: center;
+  }
+  .stat .num { font-size: 30px; font-weight: bold; color: #1a2a6c; }
+  .stat .label { font-size: 13px; color: #777; margin-top: 4px; }
+
+  .list-card { background: #fff; border-radius: 12px; padding: 8px 0; box-shadow: 0 3px 12px rgba(0,0,0,0.06); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 12px 18px; text-align: left; font-size: 15px; }
+  th { color: #888; font-size: 13px; border-bottom: 2px solid #eef1f6; }
+  tbody tr { border-bottom: 1px solid #f2f4f8; }
+  tbody tr:last-child { border-bottom: none; }
+  .pct-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 13px; font-weight: bold; }
+  .pct-high { background: #e8f5e9; color: #2e7d32; }
+  .pct-mid  { background: #fff8e1; color: #b7791f; }
+  .pct-low  { background: #ffebee; color: #c62828; }
+
+  .center-msg { text-align: center; color: #888; padding: 40px 0; }
+  .empty a { color: #2a4d8f; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="left">📊 我的成績</div>
+  <div class="user-info">
+    <a href="member.html">🏠 會員區</a>
+    <a href="quiz.html">📝 開始測驗</a>
+    <a href="admin.html" id="admin-link" style="display:none;">⚙️ 管理員區</a>
+    <img id="user-photo" src="" alt="" referrerpolicy="no-referrer">
+    <span id="user-name"></span>
+    <button onclick="doLogout()">登出</button>
+  </div>
+</header>
+
+<main>
+  <div id="loading" class="center-msg">成績載入中…</div>
+
+  <div id="content" style="display:none;">
+    <div class="stats">
+      <div class="stat"><div class="num" id="stat-count">0</div><div class="label">測驗次數</div></div>
+      <div class="stat"><div class="num" id="stat-avg">0%</div><div class="label">平均正確率</div></div>
+      <div class="stat"><div class="num" id="stat-best">0%</div><div class="label">最佳成績</div></div>
+    </div>
+
+    <div class="list-card">
+      <table>
+        <thead>
+          <tr><th>日期時間</th><th>得分</th><th>正確率</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="empty" class="center-msg empty" style="display:none;">
+    還沒有任何成績紀錄。<br><a href="quiz.html">前往測驗 →</a>
+  </div>
+</main>
+
+<script type="module">
+  import { requireAuth, logout, isAdmin, db } from './auth-guard.js';
+  import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  requireAuth(async (user) => {
+    document.getElementById('user-photo').src = user.photoURL || '';
+    document.getElementById('user-name').textContent = user.displayName || user.email;
+
+    // 是管理員才顯示「管理員區」連結
+    if (await isAdmin(user)) {
+      document.getElementById('admin-link').style.display = 'inline';
+    }
+
+    try {
+      // 只用 where(uid==自己)，不加 orderBy → 不需要複合索引
+      const q = query(collection(db, 'records'), where('uid', '==', user.uid));
+      const snap = await getDocs(q);
+
+      const records = [];
+      snap.forEach(d => records.push(d.data()));
+
+      document.getElementById('loading').style.display = 'none';
+
+      if (records.length === 0) {
+        document.getElementById('empty').style.display = 'block';
+        return;
+      }
+
+      // 前端排序：最新的在上面（用 takenAt 毫秒時間戳）
+      records.sort((a, b) => (b.takenAt || 0) - (a.takenAt || 0));
+
+      // 統計
+      const count = records.length;
+      const avg = Math.round(records.reduce((s, r) => s + (r.percent || 0), 0) / count);
+      const best = Math.max(...records.map(r => r.percent || 0));
+      document.getElementById('stat-count').textContent = count;
+      document.getElementById('stat-avg').textContent = avg + '%';
+      document.getElementById('stat-best').textContent = best + '%';
+
+      // 列表
+      const tbody = document.getElementById('rows');
+      records.forEach(r => {
+        const tr = document.createElement('tr');
+        const dt = r.takenAt ? new Date(r.takenAt) : null;
+        const dtStr = dt ? formatDate(dt) : '—';
+        const pct = r.percent || 0;
+        const cls = pct >= 90 ? 'pct-high' : pct >= 60 ? 'pct-mid' : 'pct-low';
+        tr.innerHTML =
+          '<td>' + dtStr + '</td>' +
+          '<td>' + (r.score ?? '?') + ' / ' + (r.total ?? '?') + '</td>' +
+          '<td><span class="pct-badge ' + cls + '">' + pct + '%</span></td>';
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('content').style.display = 'block';
+    } catch (e) {
+      document.getElementById('loading').textContent = '讀取成績失敗：' + (e.code || e.message);
+    }
+  });
+
+  function formatDate(d) {
+    const p = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '/' + p(d.getMonth() + 1) + '/' + p(d.getDate()) +
+           ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  window.doLogout = logout;
+</script>
+
+</body>
+</html>

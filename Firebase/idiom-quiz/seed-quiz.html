@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成語題庫種子工具</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: #263238; padding: 20px;
+  }
+  .card { width: 100%; max-width: 480px; background: #fff; border-radius: 12px; padding: 28px; }
+  h1 { font-size: 20px; color: #263238; margin-bottom: 8px; }
+  p.desc { font-size: 14px; color: #666; margin-bottom: 20px; line-height: 1.6; }
+  button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; margin-bottom: 10px; }
+  .btn-login { background: #455a64; color: #fff; }
+  .btn-seed { background: #2e7d32; color: #fff; }
+  .btn-seed:disabled { background: #aaa; cursor: not-allowed; }
+  .log { margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px; font-size: 13px;
+         font-family: monospace; white-space: pre-wrap; color: #333; min-height: 60px; max-height: 240px; overflow-y: auto; }
+  .back-links { margin-top: 18px; padding-top: 16px; border-top: 1px solid #eee; display: flex; gap: 18px; font-size: 14px; }
+  .back-links a { color: #455a64; text-decoration: none; }
+  .back-links a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>📚 成語題庫種子工具</h1>
+  <p class="desc">
+    管理員專用。按下按鈕會把 20 題成語測驗題寫入 Firestore 的
+    <code>appData/idioms</code>。需以「管理員 Google 帳號」登入（UID 在 <code>admins</code> 集合裡）。
+  </p>
+  <button class="btn-login" id="login-btn" onclick="doLogin()">① 用管理員帳號登入</button>
+  <button class="btn-seed" id="seed-btn" onclick="doSeed()" disabled>② 寫入題庫（20 題）</button>
+  <div class="log" id="log">尚未登入…</div>
+  <div class="back-links">
+    <a href="admin.html">← 回管理員區</a>
+    <a href="member.html">🏠 會員區</a>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  // ★★★ 與其他檔案使用「同一份」Firebase 設定 ★★★
+  const firebaseConfig = {
+    apiKey: "AIzaSyA_er0I9K3yMwFvkYNLNow4tPEAG7PAl50",
+    authDomain: "member-login-5c129.firebaseapp.com",
+    projectId: "member-login-5c129",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  // 題庫：answer 是正確選項的索引（0 起算）。顯示時 quiz.html 會把選項隨機洗牌。
+  const QUESTIONS = [
+    { id: 1,  q: "「一暴十寒」的意思最接近？", options: ["做事沒有恆心，時常中斷", "天氣忽冷忽熱", "一個人力量單薄", "把東西曝曬十天"], answer: 0 },
+    { id: 2,  q: "「畫蛇添足」比喻什麼？", options: ["多此一舉，反而壞事", "錦上添花更完美", "畫技非常高超", "做事細心周到"], answer: 0 },
+    { id: 3,  q: "「守株待兔」形容？", options: ["死守狹隘經驗、不知變通", "勤勞耕作有收穫", "很有耐心地等待", "細心保護樹木"], answer: 0 },
+    { id: 4,  q: "「亡羊補牢」的寓意是？", options: ["出問題後及時補救仍不算晚", "損失已無法挽回", "養羊要格外小心", "修補羊圈十分困難"], answer: 0 },
+    { id: 5,  q: "「井底之蛙」比喻？", options: ["見識短淺的人", "住在井裡的青蛙", "深藏不露的高人", "喜歡安靜的人"], answer: 0 },
+    { id: 6,  q: "「胸有成竹」的意思是？", options: ["做事前已有全盤把握", "胸口長了竹子", "身材十分瘦削", "特別喜愛畫竹"], answer: 0 },
+    { id: 7,  q: "「杯弓蛇影」形容？", options: ["疑神疑鬼、自相驚擾", "酒量非常好", "眼力極為敏銳", "善於觀察細節"], answer: 0 },
+    { id: 8,  q: "「臥薪嘗膽」比喻？", options: ["刻苦自勵、發憤圖強", "生活十分困苦", "喜歡品嚐苦味", "睡在柴草上"], answer: 0 },
+    { id: 9,  q: "「班門弄斧」的意思？", options: ["在行家面前賣弄本領", "技藝比別人高超", "木工手藝精湛", "勇於接受挑戰"], answer: 0 },
+    { id: 10, q: "「囫圇吞棗」比喻？", options: ["學習不加分析、籠統接受", "吃東西速度很快", "腸胃消化不良", "貪心永不滿足"], answer: 0 },
+    { id: 11, q: "「對牛彈琴」諷刺？", options: ["對不懂的人講道理、白費口舌", "音樂造詣高深", "非常喜愛動物", "居住環境優美"], answer: 0 },
+    { id: 12, q: "「愚公移山」讚揚？", options: ["有恆心毅力、不畏艱難", "天生力大無窮", "為人愚昧固執", "熱愛勞動工作"], answer: 0 },
+    { id: 13, q: "「刻舟求劍」比喻？", options: ["拘泥固執、不知變通", "努力尋找失物", "划船技術高超", "記憶力很強"], answer: 0 },
+    { id: 14, q: "「掩耳盜鈴」形容？", options: ["自欺欺人", "聽力不太好", "手腳很俐落", "膽子非常大"], answer: 0 },
+    { id: 15, q: "「望梅止渴」比喻？", options: ["用空想安慰自己", "口渴難以忍耐", "喜歡吃梅子", "望向遠方發呆"], answer: 0 },
+    { id: 16, q: "「畫龍點睛」比喻？", options: ["在關鍵處加一筆使整體生動", "繪畫十分精細", "根本多此一舉", "字跡龍飛鳳舞"], answer: 0 },
+    { id: 17, q: "「南轅北轍」形容？", options: ["行動和目的正好相反", "交通十分便利", "方向感很好", "車馬人潮眾多"], answer: 0 },
+    { id: 18, q: "「濫竽充數」比喻？", options: ["沒有真才實學卻混在行家中", "樂器數量很多", "現場人數眾多", "演奏非常動聽"], answer: 0 },
+    { id: 19, q: "「狐假虎威」諷刺？", options: ["倚仗別人權勢欺壓人", "為人機智聰明", "外表勇猛威武", "野生動物凶猛"], answer: 0 },
+    { id: 20, q: "「鷸蚌相爭」的寓意是？", options: ["雙方相持不下，讓第三者得利", "兩敗俱傷、同歸於盡", "各不相讓、勢均力敵", "勢不兩立、你死我活"], answer: 0 },
+  ];
+
+  function log(msg) { document.getElementById('log').textContent += '\n' + msg; }
+
+  window.doLogin = async function () {
+    try { await signInWithPopup(auth, provider); }
+    catch (e) { log('登入失敗：' + (e.code || e.message)); }
+  };
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      document.getElementById('log').textContent = '已登入：' + user.email;
+      document.getElementById('seed-btn').disabled = false;
+    } else {
+      document.getElementById('log').textContent = '尚未登入…';
+      document.getElementById('seed-btn').disabled = true;
+    }
+  });
+
+  window.doSeed = async function () {
+    const btn = document.getElementById('seed-btn');
+    btn.disabled = true;
+    try {
+      await setDoc(doc(db, 'appData', 'idioms'), {
+        questions: QUESTIONS,
+        count: QUESTIONS.length,
+        updatedAt: serverTimestamp()
+      });
+      log('✓ 已寫入 appData/idioms（' + QUESTIONS.length + ' 題）');
+      log('\n完成！現在打開 quiz.html 就能開始測驗。');
+    } catch (e) {
+      log('✗ 寫入失敗：' + (e.code || e.message));
+      log('（若是 permission-denied，代表你的帳號不在 admins 集合裡）');
+      btn.disabled = false;
+    }
+  };
+</script>
+
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理員區</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; min-height: 100vh; background: #f0f3f8; }
+  header {
+    background: #7a5b00; color: #fff; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  header .left { font-weight: bold; font-size: 17px; }
+  header .nav { display: flex; align-items: center; gap: 14px; font-size: 14px; }
+  header .nav a { color: #ffe9b0; text-decoration: none; }
+  header .nav a:hover { text-decoration: underline; }
+  header img { width: 32px; height: 32px; border-radius: 50%; }
+  header button { padding: 6px 14px; border: none; border-radius: 6px; background: #b0413e; color: #fff; cursor: pointer; }
+  header button:hover { background: #8e332f; }
+
+  main { max-width: 880px; margin: 40px auto; padding: 0 20px; }
+  .welcome { margin-bottom: 26px; }
+  .welcome h1 { color: #7a5b00; font-size: 26px; }
+  .welcome p { color: #666; margin-top: 6px; font-size: 15px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+  .app-card {
+    display: block; text-decoration: none; background: #fff; border-radius: 14px; padding: 26px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07); transition: transform .15s, box-shadow .15s; border: 1px solid #eef1f6;
+  }
+  .app-card:hover { transform: translateY(-4px); box-shadow: 0 10px 26px rgba(122,91,0,0.18); }
+  .app-card .icon { font-size: 40px; }
+  .app-card .title { font-size: 19px; font-weight: bold; color: #7a5b00; margin: 12px 0 6px; }
+  .app-card .desc { font-size: 14px; color: #777; line-height: 1.6; }
+  .app-card.soon { opacity: .55; pointer-events: none; }
+  .app-card.soon .title::after { content: "（即將推出）"; font-size: 13px; color: #aaa; font-weight: normal; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="left">⚙️ 管理員區</div>
+  <div class="nav">
+    <a href="member.html">🏠 會員區</a>
+    <img id="user-photo" src="" alt="" referrerpolicy="no-referrer">
+    <span id="user-name"></span>
+    <button onclick="doLogout()">登出</button>
+  </div>
+</header>
+
+<main>
+  <div class="welcome">
+    <h1>管理員後台 ⚙️</h1>
+    <p>以下功能僅限管理員使用。</p>
+  </div>
+
+  <div class="grid">
+    <!-- 題庫管理 -->
+    <a class="app-card" href="seed-quiz.html">
+      <div class="icon">📚</div>
+      <div class="title">題庫管理</div>
+      <div class="desc">寫入或更新成語測驗題庫。</div>
+    </a>
+
+    <!-- 預留：會員審核後台 -->
+    <a class="app-card soon" href="#">
+      <div class="icon">✅</div>
+      <div class="title">會員審核</div>
+      <div class="desc">核准或拒絕待審核的註冊申請。</div>
+    </a>
+
+    <!-- 預留：全班成績 -->
+    <a class="app-card soon" href="#">
+      <div class="icon">📈</div>
+      <div class="title">全班成績</div>
+      <div class="desc">檢視所有會員的測驗成績。</div>
+    </a>
+  </div>
+</main>
+
+<script type="module">
+  import { requireAdmin, logout } from './auth-guard.js';
+
+  requireAdmin((user) => {
+    document.getElementById('user-photo').src = user.photoURL || '';
+    document.getElementById('user-name').textContent = user.displayName || user.email;
+  });
+
+  window.doLogout = logout;
+</script>
+
+</body>
+</html>

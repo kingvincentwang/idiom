@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>系統首頁</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; min-height: 100vh; background: #f0f3f8; }
+  header {
+    background: #1a2a6c; color: #fff; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  header .left { font-weight: bold; font-size: 17px; }
+  header .user-info { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  header img { width: 32px; height: 32px; border-radius: 50%; }
+  header button { padding: 6px 14px; border: none; border-radius: 6px; background: #b0413e; color: #fff; cursor: pointer; }
+  header button:hover { background: #8e332f; }
+
+  main { max-width: 880px; margin: 40px auto; padding: 0 20px; }
+  .welcome { margin-bottom: 26px; }
+  .welcome h1 { color: #1a2a6c; font-size: 26px; }
+  .welcome p { color: #666; margin-top: 6px; font-size: 15px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+  .app-card {
+    display: block; text-decoration: none; background: #fff; border-radius: 14px; padding: 26px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07); transition: transform .15s, box-shadow .15s;
+    border: 1px solid #eef1f6;
+  }
+  .app-card:hover { transform: translateY(-4px); box-shadow: 0 10px 26px rgba(26,42,108,0.16); }
+  .app-card .icon { font-size: 40px; }
+  .app-card .title { font-size: 19px; font-weight: bold; color: #1a2a6c; margin: 12px 0 6px; }
+  .app-card .desc { font-size: 14px; color: #777; line-height: 1.6; }
+
+  /* 管理員專用卡片，預設隱藏，是管理員才顯示 */
+  .admin-only { display: none; border: 1px dashed #f0b429; background: #fffdf5; }
+  .admin-only .title { color: #9a6b00; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="left">🏫 關西國小・系統首頁</div>
+  <div class="user-info">
+    <img id="user-photo" src="" alt="" referrerpolicy="no-referrer">
+    <span id="user-name"></span>
+    <button onclick="doLogout()">登出</button>
+  </div>
+</header>
+
+<main>
+  <div class="welcome">
+    <h1>歡迎回來 👋</h1>
+    <p>請選擇要使用的系統。</p>
+  </div>
+
+  <div class="grid">
+    <!-- 成語測驗 -->
+    <a class="app-card" href="quiz.html">
+      <div class="icon">📝</div>
+      <div class="title">成語測驗</div>
+      <div class="desc">隨機抽題作答，測驗你的成語功力。</div>
+    </a>
+
+    <!-- 我的成績 -->
+    <a class="app-card" href="scores.html">
+      <div class="icon">📊</div>
+      <div class="title">我的成績</div>
+      <div class="desc">查看歷次測驗紀錄與統計。</div>
+    </a>
+
+    <!-- ↓↓↓ 之後新增系統，複製一張卡片、改連結與文字即可 ↓↓↓ -->
+    <!--
+    <a class="app-card" href="其他系統.html">
+      <div class="icon">🎯</div>
+      <div class="title">系統名稱</div>
+      <div class="desc">系統說明。</div>
+    </a>
+    -->
+
+    <!-- 管理員專用：只有 admins 名單內的帳號會看到 -->
+    <a class="app-card admin-only" id="admin-card" href="admin.html">
+      <div class="icon">⚙️</div>
+      <div class="title">管理員區</div>
+      <div class="desc">題庫管理、會員審核、成績檢視。</div>
+    </a>
+  </div>
+</main>
+
+<script type="module">
+  import { requireAuth, logout, db } from './auth-guard.js';
+  import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  requireAuth(async (user) => {
+    document.getElementById('user-photo').src = user.photoURL || '';
+    document.getElementById('user-name').textContent = user.displayName || user.email;
+
+    // 若是管理員，顯示題庫管理卡片
+    try {
+      const adminSnap = await getDoc(doc(db, 'admins', user.uid));
+      if (adminSnap.exists()) {
+        document.getElementById('admin-card').style.display = 'block';
+      }
+    } catch (e) {
+      // 讀不到 admins（非管理員）→ 卡片維持隱藏，正常情況，不需處理
+    }
+  });
+
+  window.doLogout = logout;
+</script>
+
+</body>
+</html>
