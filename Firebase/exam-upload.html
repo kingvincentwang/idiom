@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>試卷上傳與檢索系統 - 試卷保密安全版</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* 隱藏滾動條但保持功能 */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 font-sans flex flex-col justify-between">
+
+  <!-- 導航欄 -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md">
+          <i data-lucide="shield-check" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <span class="text-base sm:text-lg font-bold tracking-wider block">校園試卷安全管理系統</span>
+          <span class="text-[10px] text-slate-400 font-mono">Confidential Exam Storage V2.6-Live</span>
+        </div>
+      </div>
+      
+      <!-- 帳號登入/狀態區 -->
+      <div class="flex items-center space-x-3">
+        <!-- 當前角色徽章 -->
+        <div id="roleBadgeContainer" class="flex items-center space-x-1.5 bg-slate-800 px-3 py-1 rounded-full text-xs">
+          <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+          <span id="roleBadgeText" class="font-medium text-slate-300">訪客模式</span>
+        </div>
+
+        <div id="authContainer" class="flex items-center space-x-3">
+          <div class="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主要內容區 -->
+  <main class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 flex-1 w-full">
+    
+    <!-- 歡迎區與統計 -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-gradient-to-br from-slate-800 to-indigo-950 text-white p-6 rounded-2xl shadow-lg flex items-center justify-between col-span-1 md:col-span-2">
+        <div class="space-y-2">
+          <h1 class="text-2xl font-bold flex items-center gap-2">
+            <i data-lucide="lock" class="text-amber-400 w-6 h-6"></i>
+            試卷保密安全系統
+          </h1>
+          <p class="text-slate-300 text-sm leading-relaxed">
+            本平台已啟用 <strong class="text-amber-300">「試卷保密原則 (Confidentiality Rule)」</strong>。一般教師登入後僅能檢視與管理自己所上傳之試卷；只有系統管理者可檢索及刪除全校所有試卷檔案。未登入者無法查看任何內容。
+          </p>
+        </div>
+        <i data-lucide="eye-off" class="w-20 h-20 text-slate-700 opacity-20 hidden sm:block"></i>
+      </div>
+      
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+        <div class="flex justify-between items-center">
+          <span class="text-slate-500 font-medium text-sm">目前您可存取的試卷</span>
+          <span id="roleTypeLabel" class="bg-slate-100 text-slate-600 text-[10px] px-2.5 py-1 rounded-full font-bold">權限評估中</span>
+        </div>
+        <div class="my-4">
+          <span id="totalExamsCount" class="text-4xl font-extrabold text-slate-800">0</span>
+          <span class="text-slate-500 text-sm ml-1">份</span>
+        </div>
+        <div class="text-[11px] text-slate-400 flex items-center">
+          <i data-lucide="activity" class="w-3.5 h-3.5 mr-1 text-emerald-500 animate-pulse"></i>
+          已套用安全加密通道連線 (SSL + Role Query)
+        </div>
+      </div>
+    </div>
+
+    <!-- 核心功能區 -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- 左：上傳區 -->
+      <section class="lg:col-span-5 space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+          
+          <!-- 上傳權限鎖定遮罩 -->
+          <div id="uploadLockOverlay" class="absolute inset-0 bg-white/95 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center text-center p-6 transition-all duration-300">
+            <div class="bg-indigo-50 text-indigo-600 p-4 rounded-full mb-3 shadow-inner">
+              <i data-lucide="user-x" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800">未登入安全通道</h3>
+            <p class="text-xs text-slate-500 mt-2 max-w-[280px] mx-auto leading-relaxed">
+              基於試卷保密原則，您必須使用 Google 帳號進行身份登入以解鎖試卷上傳與檢視權限。
+            </p>
+            <button onclick="window.loginWithGoogle()" class="mt-5 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-[0.98] flex items-center space-x-2">
+              <svg class="w-4 h-4" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              <span>使用 Google 帳號登入</span>
+            </button>
+          </div>
+
+          <div class="flex items-center space-x-2 pb-4 mb-6 border-b border-slate-100">
+            <i data-lucide="upload-cloud" class="text-indigo-600 w-5 h-5"></i>
+            <h2 class="text-lg font-bold text-slate-800">上傳新試卷</h2>
+          </div>
+          
+          <form id="uploadForm" class="space-y-4">
+            <!-- 標題 -->
+            <div>
+              <label class="block text-sm font-semibold text-slate-600 mb-1">試卷標題 <span class="text-rose-500">*</span></label>
+              <input type="text" id="examTitle" required placeholder="例如：115學年度 第一學期 物理期末考" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <!-- 科目 -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-600 mb-1">科目 <span class="text-rose-500">*</span></label>
+                <select id="examSubject" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm bg-white">
+                  <option value="國文">國文</option>
+                  <option value="英文">英文</option>
+                  <option value="數學">數學</option>
+                  <option value="物理">物理</option>
+                  <option value="化學">化學</option>
+                  <option value="生物">生物</option>
+                  <option value="歷史">歷史</option>
+                  <option value="地理">地理</option>
+                  <option value="公民">公民</option>
+                  <option value="資訊/其他">資訊/其他</option>
+                </select>
+              </div>
+
+              <!-- 年級 -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-600 mb-1">適用年級 <span class="text-rose-500">*</span></label>
+                <select id="examGrade" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm bg-white">
+                  <option value="國中一年級">國中一年級</option>
+                  <option value="國中二年級">國中二年級</option>
+                  <option value="國中三年級">國中三年級</option>
+                  <option value="高中一年級">高中一年級</option>
+                  <option value="高中二年級">高中二年級</option>
+                  <option value="高中三年級">高中三年級</option>
+                  <option value="其他">其他</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 備註說明 -->
+            <div>
+              <label class="block text-sm font-semibold text-slate-600 mb-1">備註/說明</label>
+              <textarea id="examDescription" rows="2" placeholder="選填，可輸入試卷範圍、難易度或答題注意事項..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm resize-none"></textarea>
+            </div>
+
+            <!-- 檔案拖曳上傳 -->
+            <div>
+              <label class="block text-sm font-semibold text-slate-600 mb-1">上傳試卷檔案 <span class="text-rose-500">*</span></label>
+              <div id="dropZone" class="border-2 border-dashed border-slate-200 hover:border-indigo-500 rounded-2xl p-6 text-center cursor-pointer transition-all bg-slate-50/50">
+                <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg,.txt" class="hidden">
+                <div id="dropZoneContent" class="space-y-2">
+                  <div class="flex justify-center">
+                    <div class="bg-indigo-50 text-indigo-600 p-3 rounded-full">
+                      <i data-lucide="file-up" class="w-6 h-6"></i>
+                    </div>
+                  </div>
+                  <p class="text-sm font-medium text-slate-700">點擊此處或拖曳檔案至此</p>
+                  <p class="text-xs text-slate-400">支援 PDF、JPG、PNG、TXT (檔案上限 1MB)</p>
+                </div>
+                <!-- 選擇檔案後顯示 -->
+                <div id="fileInfoZone" class="hidden flex items-center justify-between p-3 bg-indigo-50 rounded-xl text-left border border-indigo-100">
+                  <div class="flex items-center space-x-3 overflow-hidden">
+                    <div class="bg-indigo-600 text-white p-2 rounded-lg flex-shrink-0">
+                      <i id="selectedFileIcon" data-lucide="file-text" class="w-5 h-5"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                      <p id="selectedFileName" class="text-sm font-bold text-slate-800 truncate">exam_paper.pdf</p>
+                      <p id="selectedFileSize" class="text-xs text-indigo-600 font-medium">0 KB</p>
+                    </div>
+                  </div>
+                  <button type="button" id="clearFileBtn" class="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-slate-100 transition-all">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 上傳進度條 -->
+            <div id="uploadProgressContainer" class="hidden space-y-1.5">
+              <div class="flex justify-between items-center text-xs">
+                <span id="progressStatus" class="font-medium text-indigo-600">正在處理檔案...</span>
+                <span id="progressPercent" class="font-bold text-indigo-600">0%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div id="progressBar" class="bg-indigo-600 h-2 w-0 transition-all duration-300 rounded-full"></div>
+              </div>
+            </div>
+
+            <!-- 提交按鈕 -->
+            <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold transition-all shadow-md hover:shadow-lg active:scale-[0.98] flex justify-center items-center space-x-2">
+              <i data-lucide="upload" class="w-5 h-5"></i>
+              <span>安全儲存並上傳至 Firebase</span>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- 右：試卷清單 -->
+      <section class="lg:col-span-7 space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-slate-100 gap-4">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="eye" class="text-indigo-600 w-5 h-5"></i>
+              <h2 id="listHeaderTitle" class="text-lg font-bold text-slate-800">您上傳的試卷清單</h2>
+            </div>
+            
+            <!-- 搜尋與篩選 -->
+            <div class="flex items-center space-x-2">
+              <div class="relative w-full sm:w-48">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                  <i data-lucide="search" class="w-4 h-4"></i>
+                </span>
+                <input type="text" id="searchQuery" placeholder="搜尋您的考卷..." class="pl-9 pr-4 py-1.5 w-full text-xs sm:text-sm rounded-xl border border-slate-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+              </div>
+              <select id="filterSubject" class="px-2 py-1.5 text-xs sm:text-sm rounded-xl border border-slate-200 outline-none bg-white">
+                <option value="全部">全部學科</option>
+                <option value="國文">國文</option>
+                <option value="英文">英文</option>
+                <option value="數學">數學</option>
+                <option value="物理">物理</option>
+                <option value="化學">化學</option>
+                <option value="生物">生物</option>
+                <option value="歷史">歷史</option>
+                <option value="地理">地理</option>
+                <option value="公民">公民</option>
+                <option value="資訊/其他">資訊/其他</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 試卷載入狀態 -->
+          <div id="listLoader" class="flex flex-col items-center justify-center py-20 space-y-3">
+            <div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-sm font-medium text-slate-500">驗證身份並載入雲端試卷中...</p>
+          </div>
+
+          <!-- 試卷安全阻擋與說明 -->
+          <div id="permissionErrorState" class="hidden flex flex-col items-center justify-center py-16 text-center space-y-4 px-6 border-2 border-dashed border-rose-100 rounded-2xl bg-rose-50/30">
+            <div class="bg-rose-50 text-rose-600 p-4 rounded-full">
+              <i data-lucide="shield-alert" class="w-12 h-12"></i>
+            </div>
+            <div>
+              <p class="text-base font-bold text-slate-800">雲端安全通道權限不足</p>
+              <p class="text-xs text-slate-500 mt-2 max-w-md mx-auto leading-relaxed">
+                這通常是因為您尚未在 Firebase Console 設定對應的安全規則 (Firestore Rules)。<br>
+                請確保您已於 Firebase 設定中發佈符合您登入狀態的讀寫安全性條款。
+              </p>
+            </div>
+          </div>
+
+          <!-- 試卷空狀態 -->
+          <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-center space-y-4">
+            <div id="emptyStateIcon" class="bg-slate-50 text-slate-400 p-4 rounded-full">
+              <i data-lucide="folder-open" class="w-12 h-12"></i>
+            </div>
+            <div>
+              <p id="emptyStateTitle" class="text-base font-bold text-slate-700">尚未上傳任何試卷</p>
+              <p id="emptyStateMsg" class="text-xs text-slate-400 mt-1">您在此處上傳的試卷將受到嚴密保密保護，其他人無法查閱。</p>
+            </div>
+          </div>
+
+          <!-- 試卷卡片容器 -->
+          <div id="examsListContainer" class="hidden space-y-4 max-h-[600px] overflow-y-auto pr-1 no-scrollbar">
+            <!-- 動態生成試卷卡片 -->
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- 頁尾聲明 -->
+  <footer class="bg-slate-900 text-slate-500 text-center py-4 text-xs border-t border-slate-800">
+    <div class="max-w-7xl mx-auto px-4">
+      <p>© 2026 校園試卷安全管理平台. 全校試卷保密安全技術支援</p>
+      <p class="mt-1 text-[10px] text-slate-600">系統基於 Firebase 端對端分流機制，確保學術資料安全傳輸不洩漏</p>
+    </div>
+  </footer>
+
+  <!-- 彈出視窗 1：精美通知提示框 -->
+  <div id="toastNotification" class="fixed bottom-6 right-6 z-50 transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-none">
+    <div id="toastContent" class="flex items-center space-x-3 px-5 py-3.5 rounded-2xl shadow-xl border bg-white border-slate-100 text-slate-800">
+      <div id="toastIconContainer" class="p-1 rounded-lg">
+        <i id="toastIcon" data-lucide="check" class="w-5 h-5 text-white"></i>
+      </div>
+      <div>
+        <p id="toastTitle" class="text-sm font-bold">通知標題</p>
+        <p id="toastMessage" class="text-xs text-slate-500 mt-0.5">通知說明內容...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈出視窗 2：試卷線上預覽 Modal -->
+  <div id="previewModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col max-h-[90vh] overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-indigo-50">
+        <div class="flex items-center space-x-3">
+          <div class="bg-indigo-600 text-white p-2 rounded-lg">
+            <i data-lucide="eye" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 id="modalExamTitle" class="text-base font-bold text-slate-800 truncate max-w-md sm:max-w-xl">試卷標題</h3>
+            <div class="flex items-center space-x-2 mt-0.5">
+              <span id="modalExamSubject" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md font-bold">學科</span>
+              <span id="modalExamGrade" class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md">年級</span>
+            </div>
+          </div>
+        </div>
+        <button id="closePreviewBtn" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-white/50 transition-all">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="flex-1 p-6 bg-slate-100 overflow-y-auto flex items-center justify-center min-h-[300px]">
+        <div id="previewCanvas" class="w-full h-full min-h-[400px] flex items-center justify-center bg-white rounded-xl shadow-inner overflow-hidden relative">
+          <!-- 預覽 -->
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 border-t border-slate-100 flex justify-between items-center bg-white">
+        <span id="modalFileInfo" class="text-xs text-slate-400">檔案大小: 0 KB</span>
+        <div class="flex space-x-3">
+          <button id="modalDownloadBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center space-x-2">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>下載原始檔案</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈出視窗 3：自訂安全確認刪除 Modal -->
+  <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-center space-y-4">
+      <div class="mx-auto bg-rose-50 text-rose-500 w-12 h-12 rounded-full flex items-center justify-center">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-slate-800">確定要刪除此試卷？</h3>
+        <p id="confirmModalMessage" class="text-sm text-slate-500 mt-2 leading-relaxed">
+          您即將永久刪除「<span id="deleteTargetTitle" class="font-bold text-slate-800"></span>」試卷檔案。<br>此動作將永久從 Firebase 雲端移除，且無法復原。
+        </p>
+      </div>
+      <div class="flex space-x-3 pt-2">
+        <button id="cancelDeleteBtn" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-semibold transition-all">
+          取消
+        </button>
+        <button id="confirmDeleteBtn" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm">
+          確認刪除
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase 11.6.1 SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, query, where, onSnapshot, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // 系統常數
+    const DEFAULT_APP_ID = "exam-upload-hub";
+    const appId = typeof __app_id !== 'undefined' ? __app_id : DEFAULT_APP_ID;
+    
+    // 定義上傳檔案大小上限 (1MB 限制)
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 1 MB
+
+    // ===============================================================
+    // 💡 您的 Google Chat Webhook 專用常數設定處 💡
+    // ===============================================================
+    const GOOGLE_CHAT_WEBHOOK_URL = "https://chat.googleapis.com/v1/spaces/AAQAKfC1jlk/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=HoS6_6S-ROis7Wg7cLV6zzo0Pkdl9Okz94K3tcBhxZk"; // 👈 請直接在此替換您從 Google Chat 取得的真實 Webhook 網址
+
+    // ===============================================================
+    // 💡 管理者設定區 💡
+    // ===============================================================
+    const ADMIN_EMAILS = [
+      "admin@example.com",
+      "hs3591@gapp.hcc.edu.tw",
+      "principal@school.edu.tw",
+      "academic.director@school.edu.tw"
+    ];
+
+    // 初始化環境專屬的 Firebase 設定
+    let firebaseConfig;
+    if (typeof __firebase_config !== 'undefined') {
+      firebaseConfig = JSON.parse(__firebase_config);
+    } else {
+      firebaseConfig = {
+        apiKey: "AIzaSyA1YQLF3huAb3qkYmAqvhEyEjC4q2TnyEQ",
+  authDomain: "gemini-ai-e8574.firebaseapp.com",
+  projectId: "gemini-ai-e8574",
+  storageBucket: "gemini-ai-e8574.firebasestorage.app",
+  messagingSenderId: "782307685751",
+  appId: "1:782307685751:web:9f541753ce1a5cf02add72",
+  measurementId: "G-3F487H1BJ2"
+      };
+    }
+
+    // 初始化 Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // 全域變數
+    let currentUser = null;
+    let selectedFileBase64 = "";
+    let selectedFileName = "";
+    let selectedFileType = "";
+    let selectedFileSize = 0;
+    let examsDataList = [];
+    let deleteTargetId = null;
+    let unsubscribeExams = null;
+
+    // 初始化 Lucide 圖標
+    lucide.createIcons();
+
+    // DOM 元素
+    const authContainer = document.getElementById("authContainer");
+    const uploadLockOverlay = document.getElementById("uploadLockOverlay");
+    const roleBadgeContainer = document.getElementById("roleBadgeContainer");
+    const roleBadgeText = document.getElementById("roleBadgeText");
+    const roleTypeLabel = document.getElementById("roleTypeLabel");
+    const listHeaderTitle = document.getElementById("listHeaderTitle");
+
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
+    const dropZoneContent = document.getElementById("dropZoneContent");
+    const fileInfoZone = document.getElementById("fileInfoZone");
+    const selectedFileNameEl = document.getElementById("selectedFileName");
+    const selectedFileSizeEl = document.getElementById("selectedFileSize");
+    const selectedFileIcon = document.getElementById("selectedFileIcon");
+    const clearFileBtn = document.getElementById("clearFileBtn");
+    
+    const uploadForm = document.getElementById("uploadForm");
+    const examTitle = document.getElementById("examTitle");
+    const examSubject = document.getElementById("examSubject");
+    const examGrade = document.getElementById("examGrade");
+    const examDescription = document.getElementById("examDescription");
+    const submitBtn = document.getElementById("submitBtn");
+
+    const uploadProgressContainer = document.getElementById("uploadProgressContainer");
+    const progressStatus = document.getElementById("progressStatus");
+    const progressPercent = document.getElementById("progressPercent");
+    const progressBar = document.getElementById("progressBar");
+
+    const listLoader = document.getElementById("listLoader");
+    const emptyState = document.getElementById("emptyState");
+    const emptyStateIcon = document.getElementById("emptyStateIcon");
+    const emptyStateTitle = document.getElementById("emptyStateTitle");
+    const emptyStateMsg = document.getElementById("emptyStateMsg");
+    const permissionErrorState = document.getElementById("permissionErrorState");
+    
+    const examsListContainer = document.getElementById("examsListContainer");
+    const totalExamsCount = document.getElementById("totalExamsCount");
+
+    const searchQuery = document.getElementById("searchQuery");
+    const filterSubject = document.getElementById("filterSubject");
+
+    const previewModal = document.getElementById("previewModal");
+    const closePreviewBtn = document.getElementById("closePreviewBtn");
+    const modalExamTitle = document.getElementById("modalExamTitle");
+    const modalExamSubject = document.getElementById("modalExamSubject");
+    const modalExamGrade = document.getElementById("modalExamGrade");
+    const modalFileInfo = document.getElementById("modalFileInfo");
+    const modalDownloadBtn = document.getElementById("modalDownloadBtn");
+    const previewCanvas = document.getElementById("previewCanvas");
+
+    const confirmModal = document.getElementById("confirmModal");
+    const deleteTargetTitle = document.getElementById("deleteTargetTitle");
+    const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+    const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+
+    // ==========================================
+    // 1. 安全角色判斷 (深度除錯防呆版)
+    // ==========================================
+    const checkUserRole = (user) => {
+      if (!user || user.isAnonymous) {
+        return "GUEST"; 
+      }
+
+      const emailToCompare = (user.email || "").toLowerCase().trim();
+      const isAdminEmail = ADMIN_EMAILS.some(adminEmail => {
+        return adminEmail.toLowerCase().trim() === emailToCompare;
+      });
+
+      if (isAdminEmail) {
+        return "ADMIN"; // 系統管理者
+      }
+
+      return "TEACHER"; // 一般上傳教師
+    };
+
+    // ==========================================
+    // 2. Firebase 驗證監聽 (遵循 RULE 3)
+    // ==========================================
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        updateUserUI(user);
+        startExamsRealtimeListener(user);
+      } else {
+        currentUser = null;
+        try {
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(auth);
+          }
+        } catch (error) {
+          console.error("安全通道啟動失敗:", error);
+          updateUserUI(null);
+        }
+      }
+    });
+
+    const updateUserUI = (user) => {
+      if (!user) {
+        authContainer.innerHTML = `
+          <div class="flex items-center space-x-2 bg-rose-950 px-3 py-1.5 rounded-full text-xs text-rose-300">
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+            <span>連線中斷</span>
+          </div>
+        `;
+        uploadLockOverlay.classList.remove("hidden");
+        return;
+      }
+
+      const role = checkUserRole(user);
+
+      if (role === "GUEST") {
+        roleBadgeContainer.className = "flex items-center space-x-1.5 bg-slate-800 px-3 py-1 rounded-full text-xs";
+        roleBadgeContainer.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span><span id="roleBadgeText" class="font-medium text-slate-300">未登入 (訪客)</span>`;
+        roleTypeLabel.innerText = "無法存取";
+        roleTypeLabel.className = "bg-rose-50 text-rose-600 text-[10px] px-2.5 py-1 rounded-full font-bold";
+
+        authContainer.innerHTML = `
+          <button onclick="window.loginWithGoogle()" class="flex items-center space-x-1.5 bg-white text-slate-900 px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all shadow-sm">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <span>Google 登入</span>
+          </button>
+        `;
+        uploadLockOverlay.classList.remove("hidden");
+
+      } else if (role === "TEACHER") {
+        roleBadgeContainer.className = "flex items-center space-x-1.5 bg-indigo-950 px-3 py-1 rounded-full text-xs border border-indigo-800/40";
+        roleBadgeContainer.innerHTML = `<span class="w-2 h-2 rounded-full bg-indigo-400"></span><span id="roleBadgeText" class="font-medium text-indigo-300">保密教師帳戶</span>`;
+        roleTypeLabel.innerText = "保密：僅限本人";
+        roleTypeLabel.className = "bg-indigo-50 text-indigo-600 text-[10px] px-2.5 py-1 rounded-full font-bold";
+
+        const avatarUrl = user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.uid}`;
+        authContainer.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <img src="${avatarUrl}" class="w-8 h-8 rounded-full border-2 border-slate-700 shadow-sm" alt="Avatar">
+            <div class="hidden sm:block text-left text-white">
+              <p class="text-xs font-bold leading-tight truncate max-w-[120px]">${user.displayName || '上傳教師'}</p>
+              <p class="text-[10px] text-slate-400 leading-none truncate max-w-[120px]">${user.email}</p>
+            </div>
+            <button onclick="window.logout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-1.5 rounded-lg transition-all" title="登出系統">
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+        uploadLockOverlay.classList.add("hidden");
+
+      } else if (role === "ADMIN") {
+        roleBadgeContainer.className = "flex items-center space-x-1.5 bg-amber-950 px-3 py-1 rounded-full text-xs border border-amber-500/40";
+        roleBadgeContainer.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span><span id="roleBadgeText" class="font-medium text-amber-300">系統管理員</span>`;
+        roleTypeLabel.innerText = "超級管理：全部可見";
+        roleTypeLabel.className = "bg-amber-100 text-amber-800 text-[10px] px-2.5 py-1 rounded-full font-bold";
+
+        const avatarUrl = user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.uid}`;
+        authContainer.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <img src="${avatarUrl}" class="w-8 h-8 rounded-full border-2 border-amber-500 shadow-sm" alt="Avatar">
+            <div class="hidden sm:block text-left text-white">
+              <p class="text-xs font-bold leading-tight truncate text-amber-300 max-w-[120px]">${user.displayName || '管理專員'}</p>
+              <p class="text-[10px] text-slate-400 leading-none truncate max-w-[120px]">${user.email || '管理帳戶'}</p>
+            </div>
+            <button onclick="window.logout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-1.5 rounded-lg transition-all" title="登出系統">
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+        uploadLockOverlay.classList.add("hidden");
+      }
+      lucide.createIcons();
+    };
+
+    window.loginWithGoogle = async () => {
+      const provider = new GoogleAuthProvider();
+      try {
+        await signInWithPopup(auth, provider);
+        showToast("登入成功", "歡迎！已順利切換至安全雲端通道。", "success");
+      } catch (error) {
+        console.error("Google 登入失敗:", error);
+        showToast("登入失敗", "登入程序遭取消或發生錯誤: " + error.message, "error");
+      }
+    };
+
+    window.logout = async () => {
+      try {
+        await signOut(auth);
+        showToast("安全登出", "已登出。依保密原則，系統已清除您在本機的所有考卷快取。", "warning");
+      } catch (error) {
+        console.error("登出發生錯誤:", error);
+      }
+    };
+
+    // ==========================================
+    // 3. Google Chat 自動背景推播通知 (CORS 容錯 & Fire-and-Forget 技術)
+    // ==========================================
+    const triggerGoogleChatNotify = async (examPayload) => {
+      // 檢查 Webhook URL 是否有被設定，若是預設 placeholder 或為空則不發送
+      if (!GOOGLE_CHAT_WEBHOOK_URL || GOOGLE_CHAT_WEBHOOK_URL.includes("AAAA8X05R90")) {
+        console.warn("[Google Chat Webhook] 未填寫真實 Webhook 網址，將跳過背景推播通知。");
+        return;
+      }
+
+      try {
+        const currentZoneTime = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+        const sizeKB = ((examPayload.fileSize || 0) / 1024).toFixed(1);
+
+        const bodyText = `🔔 *【校園安全試卷系統 - 新試卷上傳通知】*\n` +
+                         `--------------------------------------------------\n` +
+                         `📝 *試卷標題*：${examPayload.title}\n` +
+                         `📚 *學科分類*：${examPayload.subject} (${examPayload.grade})\n` +
+                         `👤 *上傳教師*：${examPayload.uploaderName} (${examPayload.uploaderEmail})\n` +
+                         `📎 *檔案名稱*：${examPayload.fileName} (${sizeKB} KB)\n` +
+                         `✍️ *備註說明*：${examPayload.description || '無'}\n` +
+                         `⏰ *上傳時間*：${currentZoneTime}\n` +
+                         `--------------------------------------------------\n` +
+                         `🔒 _本訊息由校園試卷保密安全系統自動發送_`;
+
+        // 使用 mode: 'no-cors' 發送，直接跨過網頁端 CORS 的阻擋限制 (Fire-and-Forget)
+        await fetch(GOOGLE_CHAT_WEBHOOK_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'text/plain;charset=UTF-8'
+          },
+          body: JSON.stringify({ text: bodyText })
+        });
+        
+        console.log("[Google Chat Webhook] 新試卷通知已成功在背景發送！");
+      } catch (err) {
+        console.error("[Google Chat Webhook] 發送即時通知失敗:", err);
+      }
+    };
+
+    // ==========================================
+    // 4. Firestore 試卷保密即時同步與寫入 (RULE 1, 2, 3)
+    // ==========================================
+    const startExamsRealtimeListener = (user) => {
+      if (unsubscribeExams) {
+        unsubscribeExams();
+        unsubscribeExams = null;
+      }
+
+      const role = checkUserRole(user);
+
+      if (role === "GUEST") {
+        examsDataList = [];
+        listLoader.classList.add("hidden");
+        permissionErrorState.classList.add("hidden");
+        renderExamsList();
+        return;
+      }
+
+      listLoader.classList.remove("hidden");
+      emptyState.classList.add("hidden");
+      permissionErrorState.classList.add("hidden");
+      examsListContainer.classList.add("hidden");
+
+      // 遵循 RULE 1 Path
+      const examsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'exams');
+      
+      let secureQuery;
+
+      if (role === "ADMIN") {
+        // 管理者：拉取全部試卷
+        secureQuery = examsCollectionRef;
+        listHeaderTitle.innerText = "全校所有試卷清單 (系統管理)";
+        searchQuery.placeholder = "搜尋所有上傳的考卷...";
+      } else {
+        // 教師：僅拉取符合自己 UID 的試卷 (保密原則)
+        secureQuery = query(examsCollectionRef, where('uploaderUid', '==', user.uid));
+        listHeaderTitle.innerText = "您上傳的專屬試卷 (保密中)";
+        searchQuery.placeholder = "搜尋您的考卷...";
+      }
+
+      // 開始即時監聽 (落實 Rule 2)
+      unsubscribeExams = onSnapshot(secureQuery, (querySnapshot) => {
+        examsDataList = [];
+        querySnapshot.forEach((doc) => {
+          examsDataList.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+
+        // 在記憶體中進行時間排序
+        examsDataList.sort((a, b) => {
+          const tA = a.createdAt?.seconds || 0;
+          const tB = b.createdAt?.seconds || 0;
+          return tB - tA; 
+        });
+
+        permissionErrorState.classList.add("hidden");
+        renderExamsList();
+      }, (error) => {
+        console.error("Firestore 保密監聽載入失敗:", error);
+        listLoader.classList.add("hidden");
+        examsListContainer.classList.add("hidden");
+        emptyState.classList.add("hidden");
+        permissionErrorState.classList.remove("hidden");
+        showToast("同步權限被拒絕", "請確認您在 Firebase 後台已發佈對應的安全規則", "error");
+      });
+    };
+
+    // 上傳試卷並即時推播
+    uploadForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      if (!currentUser || currentUser.isAnonymous) {
+        showToast("上傳受限", "請先以 Google 帳號登入解鎖", "warning");
+        return;
+      }
+
+      if (!selectedFileBase64) {
+        showToast("未選取檔案", "請先點擊拖曳上傳試卷檔案", "warning");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.classList.replace("bg-indigo-600", "bg-indigo-400");
+      submitBtn.innerHTML = `
+        <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+        <span>正在寫入安全資料庫...</span>
+      `;
+
+      const examPayload = {
+        title: examTitle.value.trim(),
+        subject: examSubject.value,
+        grade: examGrade.value,
+        description: examDescription.value.trim(),
+        fileName: selectedFileName,
+        fileType: selectedFileType,
+        fileSize: selectedFileSize,
+        fileData: selectedFileBase64, 
+        uploaderUid: currentUser.uid,
+        uploaderName: currentUser.displayName || '未具名教師',
+        uploaderEmail: currentUser.email || '無電子郵件',
+        createdAt: serverTimestamp()
+      };
+
+      try {
+        const uniqueId = crypto.randomUUID();
+        // 遵循 RULE 1
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'exams', uniqueId);
+
+        await setDoc(docRef, examPayload);
+        showToast("上傳成功", `《${examTitle.value}》已寫入雲端防護層並通知 Google Chat。`, "success");
+        
+        // 🚀 核心更新：任何人只要成功上傳試卷，便在背景「立即」發送推播通知至內嵌 Webhook
+        triggerGoogleChatNotify(examPayload);
+
+        uploadForm.reset();
+        resetFileInput();
+      } catch (error) {
+        console.error("上傳發佈失敗:", error);
+        showToast("發佈失敗", "儲存時發生錯誤: " + error.message, "error");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.classList.replace("bg-indigo-400", "bg-indigo-600");
+        submitBtn.innerHTML = `
+          <i data-lucide="upload" class="w-5 h-5 mr-2"></i>
+          <span>安全儲存並上傳至 Firebase</span>
+        `;
+        lucide.createIcons();
+      }
+    });
+
+    // ==========================================
+    // 5. 自訂刪除視窗與邏輯
+    // ==========================================
+    window.triggerDeleteExam = (examId, titleText) => {
+      deleteTargetId = examId;
+      deleteTargetTitle.innerText = titleText;
+      confirmModal.classList.remove("hidden");
+    };
+
+    cancelDeleteBtn.addEventListener("click", () => {
+      confirmModal.classList.add("hidden");
+      deleteTargetId = null;
+    });
+
+    confirmDeleteBtn.addEventListener("click", async () => {
+      if (!deleteTargetId) return;
+
+      try {
+        // 遵循 RULE 1
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'exams', deleteTargetId);
+        await deleteDoc(docRef);
+        showToast("刪除成功", "該份試卷已從雲端安全庫永久抹除", "success");
+      } catch (error) {
+        console.error("刪除失敗:", error);
+        showToast("刪除失敗", "無此檔案的抹除權限", "error");
+      } finally {
+        confirmModal.classList.add("hidden");
+        deleteTargetId = null;
+      }
+    });
+
+    // ==========================================
+    // 6. 檔案處理
+    // ==========================================
+    const getFileIconName = (fileName) => {
+      if (!fileName) return 'file-text';
+      const ext = fileName.split('.').pop().toLowerCase();
+      if (ext === 'pdf') return 'file-type';
+      if (['jpg', 'jpeg', 'png'].includes(ext)) return 'file-image';
+      return 'file-text';
+    };
+
+    const handleSelectedFile = (file) => {
+      if (!file) return;
+
+      if (file.size > MAX_FILE_SIZE) {
+        showToast("檔案超限", "基於儲存效能考量，試卷上限為 1 MB，請先將檔案轉檔或壓縮。", "warning");
+        return;
+      }
+
+      selectedFileName = file.name;
+      selectedFileType = file.type || "application/octet-stream";
+      selectedFileSize = file.size;
+
+      const reader = new FileReader();
+      uploadProgressContainer.classList.remove("hidden");
+      progressBar.style.width = "20%";
+      progressPercent.innerText = "20%";
+      progressStatus.innerText = "檔案轉換編碼中...";
+
+      reader.onload = (e) => {
+        selectedFileBase64 = e.target.result;
+        
+        progressBar.style.width = "100%";
+        progressPercent.innerText = "100%";
+        progressStatus.innerText = "安全讀取完成！";
+
+        dropZoneContent.classList.add("hidden");
+        fileInfoZone.classList.remove("hidden");
+        selectedFileNameEl.innerText = selectedFileName;
+        selectedFileSizeEl.innerText = (selectedFileSize / 1024).toFixed(1) + " KB";
+        
+        selectedFileIcon.setAttribute("data-lucide", getFileIconName(selectedFileName));
+        lucide.createIcons();
+
+        setTimeout(() => {
+          uploadProgressContainer.classList.add("hidden");
+        }, 1000);
+      };
+
+      reader.onerror = () => {
+        showToast("錯誤", "讀取檔案失敗", "error");
+        uploadProgressContainer.classList.add("hidden");
+      };
+
+      reader.readAsDataURL(file);
+    };
+
+    dropZone.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", (e) => handleSelectedFile(e.target.files[0]));
+
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("border-indigo-500", "bg-indigo-50/30");
+    });
+
+    ["dragleave", "drop"].forEach(event => {
+      dropZone.addEventListener(event, (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("border-indigo-500", "bg-indigo-50/30");
+      });
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+      if (e.dataTransfer.files.length > 0) {
+        handleSelectedFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    clearFileBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      resetFileInput();
+    });
+
+    const resetFileInput = () => {
+      fileInput.value = "";
+      selectedFileBase64 = "";
+      selectedFileName = "";
+      selectedFileType = "";
+      selectedFileSize = 0;
+      fileInfoZone.classList.add("hidden");
+      dropZoneContent.classList.remove("hidden");
+      uploadProgressContainer.classList.add("hidden");
+    };
+
+    // ==========================================
+    // 7. 試卷清單渲染與保密卡片繪製
+    // ==========================================
+    const renderExamsList = () => {
+      listLoader.classList.add("hidden");
+      
+      const role = checkUserRole(currentUser);
+
+      // A. 如果是未登入訪客：顯示需登入的保密空狀態
+      if (role === "GUEST") {
+        emptyStateIcon.className = "bg-slate-100 text-indigo-600 p-4 rounded-full";
+        emptyStateIcon.innerHTML = `<i data-lucide="shield-alert" class="w-12 h-12"></i>`;
+        emptyStateTitle.innerText = "已啟動全校試卷保密原則";
+        emptyStateMsg.innerText = "依學術試卷保密規定，所有試卷不開放非登入訪客查看。請在右上角使用校園 Google 帳號登入後，才能管理或查看您個人上傳的檔案。";
+        
+        emptyState.classList.remove("hidden");
+        examsListContainer.classList.add("hidden");
+        totalExamsCount.innerText = "0";
+        lucide.createIcons();
+        return;
+      }
+
+      const queryVal = searchQuery.value.toLowerCase().trim();
+      const subjectFilter = filterSubject.value;
+
+      // 記憶體中對當前角色已授權的資料做二次過濾 (遵循 RULE 2)
+      const filtered = examsDataList.filter(exam => {
+        const titleStr = exam.title || "";
+        const descStr = exam.description || "";
+        const fileStr = exam.fileName || "";
+        const uploaderNameStr = exam.uploaderName || "";
+
+        const matchSearch = titleStr.toLowerCase().includes(queryVal) || 
+                            descStr.toLowerCase().includes(queryVal) ||
+                            fileStr.toLowerCase().includes(queryVal) ||
+                            uploaderNameStr.toLowerCase().includes(queryVal);
+        const matchSubject = (subjectFilter === "全部" || exam.subject === subjectFilter);
+        return matchSearch && matchSubject;
+      });
+
+      totalExamsCount.innerText = filtered.length;
+
+      if (filtered.length === 0) {
+        emptyStateIcon.className = "bg-slate-50 text-slate-400 p-4 rounded-full";
+        emptyStateIcon.innerHTML = `<i data-lucide="folder-open" class="w-12 h-12"></i>`;
+        emptyStateTitle.innerText = "查無您的試卷";
+        emptyStateMsg.innerText = "此處沒有您上傳的試卷記錄。您可以利用左側上傳表單，新增您的第一份試卷檔案。";
+        
+        emptyState.classList.remove("hidden");
+        examsListContainer.classList.add("hidden");
+        lucide.createIcons();
+        return;
+      }
+
+      emptyState.classList.add("hidden");
+      examsListContainer.classList.remove("hidden");
+
+      examsListContainer.innerHTML = filtered.map(exam => {
+        let displayTime = "時間讀取中";
+        if (exam.createdAt) {
+          const date = new Date(exam.createdAt.seconds * 1000);
+          displayTime = `${date.getFullYear()}/${String(date.getMonth()+1).padStart(2,'0')}/${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')} : ${String(date.getMinutes()).padStart(2,'0')}`;
+        }
+
+        const fileSizeNum = exam.fileSize || 0;
+        const sizeInKB = (fileSizeNum / 1024).toFixed(1) + " KB";
+        const safeFileName = exam.fileName || "未命名檔案";
+        const iconName = getFileIconName(safeFileName);
+        const safeTitle = exam.title || "未命名試卷";
+
+        // 管理者可以看到所有人的刪除鍵 / 一般教師只能刪除自己上傳的
+        const canDelete = (role === "ADMIN") || (currentUser && exam.uploaderUid === currentUser.uid);
+
+        return `
+          <div class="bg-slate-50 hover:bg-slate-100/60 p-4 rounded-xl border border-slate-100 hover:border-slate-200 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-start space-x-3 overflow-hidden">
+              <div class="bg-white p-2.5 rounded-lg border border-slate-200 text-indigo-600 flex-shrink-0 mt-0.5">
+                <i data-lucide="${iconName}" class="w-6 h-6"></i>
+              </div>
+              <div class="overflow-hidden">
+                <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                  <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-md">${exam.subject || '未分類'}</span>
+                  <span class="bg-slate-200 text-slate-700 text-[10px] font-medium px-2 py-0.5 rounded-md">${exam.grade || '未分類'}</span>
+                  <span class="text-[10px] text-slate-400 font-mono">${displayTime}</span>
+                </div>
+                <h3 class="text-sm font-bold text-slate-800 mt-1 truncate" title="${escapeHTML(safeTitle)}">${escapeHTML(safeTitle)}</h3>
+                <p class="text-xs text-slate-500 mt-0.5 truncate">${escapeHTML(exam.description || "無備註說明...")}</p>
+                
+                <div class="flex items-center space-x-3 mt-1.5 flex-wrap gap-y-1">
+                  <span class="text-[10px] text-indigo-500 flex items-center">
+                    <i data-lucide="paperclip" class="w-3 h-3 mr-0.5"></i>
+                    ${escapeHTML(safeFileName)} (${sizeInKB})
+                  </span>
+                  
+                  <span class="text-[10px] text-slate-400 flex items-center bg-slate-100 px-1.5 py-0.5 rounded-md">
+                    <i data-lucide="user" class="w-3 h-3 mr-0.5 text-slate-500"></i>
+                    上傳人: ${escapeHTML(exam.uploaderName || '匿名')} (${escapeHTML(exam.uploaderEmail || '無資訊')})
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex items-center space-x-2 self-end md:self-center">
+              <button onclick="window.viewExamItem('${exam.id}')" class="bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 shadow-sm">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                <span>預覽</span>
+              </button>
+              <button onclick="window.downloadExamFileDirectly('${exam.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 shadow-sm">
+                <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i>
+                <span>下載</span>
+              </button>
+              ${canDelete ? `
+                <button onclick="window.triggerDeleteExam('${exam.id}', '${safeTitle.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition-all" title="刪除此試卷">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    };
+
+    searchQuery.addEventListener("input", renderExamsList);
+    filterSubject.addEventListener("change", renderExamsList);
+
+    // ==========================================
+    // 8. 預覽與安全下載邏輯
+    // ==========================================
+    window.viewExamItem = (examId) => {
+      const exam = examsDataList.find(e => e.id === examId);
+      if (!exam) return;
+
+      const safeTitle = exam.title || "未命名試卷";
+      const safeFileName = exam.fileName || "未命名檔案";
+
+      modalExamTitle.innerText = safeTitle;
+      modalExamSubject.innerText = exam.subject || "未分類";
+      modalExamGrade.innerText = exam.grade || "未分類";
+      modalFileInfo.innerText = `檔案名稱: ${safeFileName} | 大小: ${((exam.fileSize || 0) / 1024).toFixed(1)} KB`;
+
+      previewCanvas.innerHTML = '<div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>';
+      previewModal.classList.remove("hidden");
+
+      modalDownloadBtn.onclick = () => window.downloadExamFileDirectly(examId);
+
+      setTimeout(() => {
+        renderPreviewInModal(exam);
+      }, 300);
+    };
+
+    const renderPreviewInModal = (exam) => {
+      const safeFileName = exam.fileName || "";
+      const ext = safeFileName.split('.').pop().toLowerCase();
+      const base64Data = exam.fileData;
+
+      if (!base64Data) {
+        previewCanvas.innerHTML = `
+          <div class="text-center p-8 space-y-4">
+            <div class="bg-rose-50 text-rose-600 p-4 rounded-full inline-block">
+              <i data-lucide="file-warning" class="w-10 h-10"></i>
+            </div>
+            <p class="text-sm font-semibold text-slate-700">檔案資料缺失</p>
+            <p class="text-xs text-slate-400">此筆測試資料未包含 Base64 檔案實體，無法提供線上預覽</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      if (['jpg', 'jpeg', 'png'].includes(ext)) {
+        previewCanvas.innerHTML = `<img src="${base64Data}" alt="試卷預覽" class="max-w-full max-h-[60vh] object-contain rounded-lg">`;
+      } else if (ext === 'pdf') {
+        previewCanvas.innerHTML = `<iframe src="${base64Data}" class="w-full h-[60vh] rounded-lg border-0" type="application/pdf"></iframe>`;
+      } else if (ext === 'txt') {
+        try {
+          const base64Content = base64Data.split(',')[1];
+          const decodedText = decodeURIComponent(atob(base64Content).split('').map(function(c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
+
+          previewCanvas.innerHTML = `
+            <div class="w-full h-[60vh] p-4 text-left font-mono text-xs overflow-auto bg-slate-50 border border-slate-100 rounded-lg no-scrollbar">
+              <pre class="whitespace-pre-wrap word-break break-all">${escapeHTML(decodedText)}</pre>
+            </div>
+          `;
+        } catch (e) {
+          previewCanvas.innerHTML = `<div class="text-slate-400 text-sm flex flex-col items-center justify-center space-y-2"><i data-lucide="alert-circle" class="w-8 h-8"></i><span>無法讀取純文字內容</span></div>`;
+          lucide.createIcons();
+        }
+      } else {
+        previewCanvas.innerHTML = `
+          <div class="text-center p-8 space-y-4">
+            <div class="bg-indigo-50 text-indigo-600 p-4 rounded-full inline-block">
+              <i data-lucide="file-warning" class="w-10 h-10"></i>
+            </div>
+            <p class="text-sm font-semibold text-slate-700">此檔案格式不支援線上預覽</p>
+            <p class="text-xs text-slate-400">請點擊下方「下載原始檔案」按鈕即可在您的裝置開啟閱讀</p>
+          </div>
+        `;
+        lucide.createIcons();
+      }
+    };
+
+    closePreviewBtn.addEventListener("click", () => {
+      previewModal.classList.add("hidden");
+      previewCanvas.innerHTML = "";
+    });
+
+    previewModal.addEventListener("click", (e) => {
+      if (e.target === previewModal) {
+        previewModal.classList.add("hidden");
+        previewCanvas.innerHTML = "";
+      }
+    });
+
+    window.downloadExamFileDirectly = (examId) => {
+      const exam = examsDataList.find(e => e.id === examId);
+      if (!exam) return;
+
+      try {
+        const base64Data = exam.fileData;
+        if (!base64Data) {
+          showToast("無法下載", "該試卷檔案資料遺失，無法還原", "error");
+          return;
+        }
+
+        const parts = base64Data.split(',');
+        const mime = parts[0].match(/:(.*?);/)[1];
+        const raw = atob(parts[1]);
+        const rawLength = raw.length;
+        const uInt8Array = new Uint8Array(rawLength);
+
+        for (let i = 0; i < rawLength; ++i) {
+          uInt8Array[i] = raw.charCodeAt(i);
+        }
+
+        const blob = new Blob([uInt8Array], { type: mime });
+        const downloadUrl = URL.createObjectURL(blob);
+        
+        const tempLink = document.createElement('a');
+        tempLink.href = downloadUrl;
+        tempLink.download = exam.fileName || "download_exam_paper";
+        document.body.appendChild(tempLink);
+        
+        tempLink.click();
+        
+        document.body.removeChild(tempLink);
+        URL.revokeObjectURL(downloadUrl);
+
+        showToast("下載成功", `正在匯出《${exam.fileName || '試卷'}》`, "success");
+      } catch (error) {
+        console.error("下載還原失敗:", error);
+        showToast("下載失敗", "還原編碼失敗", "error");
+      }
+    };
+
+    const escapeHTML = (str) => {
+      if (!str) return "";
+      return str.replace(/[&<>'"]/g, 
+        tag => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          "'": '&#39;',
+          '"': '&quot;'
+        }[tag] || tag)
+      );
+    };
+
+    // ==========================================
+    // 9. 全域通知系統
+    // ==========================================
+    const showToast = (title, message, type = "success") => {
+      const toast = document.getElementById("toastNotification");
+      const toastContent = document.getElementById("toastContent");
+      const toastIconContainer = document.getElementById("toastIconContainer");
+      const toastIcon = document.getElementById("toastIcon");
+      const toastTitle = document.getElementById("toastTitle");
+      const toastMessage = document.getElementById("toastMessage");
+
+      if (type === "success") {
+        toastIconContainer.className = "bg-emerald-500 p-1.5 rounded-lg text-white shadow-md";
+        toastIcon.setAttribute("data-lucide", "check-circle-2");
+      } else if (type === "warning") {
+        toastIconContainer.className = "bg-amber-500 p-1.5 rounded-lg text-white shadow-md";
+        toastIcon.setAttribute("data-lucide", "alert-triangle");
+      } else {
+        toastIconContainer.className = "bg-rose-500 p-1.5 rounded-lg text-white shadow-md";
+        toastIcon.setAttribute("data-lucide", "x-circle");
+      }
+
+      toastTitle.innerText = title;
+      toastMessage.innerText = message;
+
+      lucide.createIcons();
+
+      toast.classList.remove("translate-y-10", "opacity-0", "pointer-events-none");
+      toast.classList.add("translate-y-0", "opacity-100");
+
+      setTimeout(() => {
+        toast.classList.remove("translate-y-0", "opacity-100");
+        toast.classList.add("translate-y-10", "opacity-0", "pointer-events-none");
+      }, 3500);
+    };
+
+  </script>
+</body>
+</html>
