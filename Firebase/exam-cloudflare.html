@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校園試卷安全管理系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F7F3EA; --card:#FFFFFF; --ink:#21303F; --muted:#6B7A88;
+    --seal:#B5402A; --seal-dark:#933421; --line:#E3DAC8; --ok:#2E7D52;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Noto Sans TC',sans-serif;background:var(--paper);color:var(--ink);
+    min-height:100vh;line-height:1.6;
+    background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(33,48,63,.035) 39px,rgba(33,48,63,.035) 40px);
+  }
+  h1,h2,.serif{font-family:'Noto Serif TC',serif}
+
+  /* ===== 印章標誌（signature element） ===== */
+  .seal{
+    width:52px;height:52px;flex:none;border:3px solid var(--seal);border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Noto Serif TC',serif;font-weight:900;font-size:26px;color:var(--seal);
+    transform:rotate(-4deg);background:rgba(181,64,42,.06);
+    box-shadow:inset 0 0 0 1.5px rgba(181,64,42,.25);
+  }
+
+  /* ===== 頁首 ===== */
+  header{
+    position:sticky;top:0;z-index:20;background:rgba(247,243,234,.92);backdrop-filter:blur(6px);
+    border-bottom:2px solid var(--ink);
+  }
+  .header-inner{max-width:1060px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:14px}
+  .header-inner h1{font-size:1.25rem;font-weight:900;letter-spacing:.06em}
+  .header-inner .sub{font-size:.78rem;color:var(--muted);letter-spacing:.12em}
+  .spacer{flex:1}
+  .user-chip{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
+    border-radius:999px;padding:5px 6px 5px 14px;font-size:.85rem}
+  .user-chip img{width:30px;height:30px;border-radius:50%}
+  .badge-admin{background:var(--seal);color:#fff;font-size:.7rem;padding:2px 8px;border-radius:999px;letter-spacing:.1em}
+
+  /* ===== 版面 ===== */
+  main{max-width:1060px;margin:0 auto;padding:28px 20px 60px}
+  .grid{display:grid;grid-template-columns:360px 1fr;gap:24px;align-items:start}
+  @media(max-width:840px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;
+    box-shadow:0 1px 3px rgba(33,48,63,.06)}
+  .card h2{font-size:1.05rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .card h2::before{content:"";width:8px;height:8px;background:var(--seal);border-radius:2px;transform:rotate(45deg)}
+
+  /* ===== 表單 ===== */
+  label{display:block;font-size:.82rem;font-weight:500;color:var(--muted);margin:14px 0 5px;letter-spacing:.05em}
+  input[type=text],select{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;
+    font:inherit;font-size:.92rem;background:#FDFCF9;color:var(--ink)
+  }
+  input:focus,select:focus{outline:2px solid var(--seal);outline-offset:1px;border-color:transparent}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .file-drop{
+    margin-top:14px;border:2px dashed var(--line);border-radius:10px;padding:22px 14px;text-align:center;
+    color:var(--muted);font-size:.85rem;cursor:pointer;transition:border-color .15s,background .15s
+  }
+  .file-drop:hover,.file-drop.drag{border-color:var(--seal);background:rgba(181,64,42,.04)}
+  .file-drop strong{color:var(--ink)}
+  .file-picked{color:var(--ok);font-weight:500;word-break:break-all}
+  button{font:inherit;cursor:pointer;border:none;border-radius:8px;transition:background .15s,transform .05s}
+  button:active{transform:translateY(1px)}
+  .btn-primary{
+    width:100%;margin-top:20px;padding:12px;background:var(--seal);color:#fff;
+    font-size:.95rem;font-weight:700;letter-spacing:.2em
+  }
+  .btn-primary:hover{background:var(--seal-dark)}
+  .btn-primary:disabled{background:#C9BFAE;cursor:not-allowed;letter-spacing:.05em}
+  .hint{font-size:.75rem;color:var(--muted);margin-top:10px}
+
+  /* ===== 清單 ===== */
+  .list-head{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+  .list-head .count{font-size:.8rem;color:var(--muted)}
+  .exam-item{
+    display:flex;align-items:center;gap:14px;padding:14px 4px;border-bottom:1px solid var(--line)
+  }
+  .exam-item:last-child{border-bottom:none}
+  .exam-ico{
+    width:42px;height:42px;flex:none;border:1.5px solid var(--line);border-radius:8px;background:#FDFCF9;
+    display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;color:var(--seal);
+    letter-spacing:.05em
+  }
+  .exam-info{flex:1;min-width:0}
+  .exam-info .t{font-weight:700;font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .exam-info .m{font-size:.78rem;color:var(--muted)}
+  .exam-info .m .who{color:var(--seal);font-weight:500}
+  .exam-actions{display:flex;gap:8px;flex:none}
+  .btn-sm{padding:7px 14px;font-size:.8rem;font-weight:500;border:1px solid var(--line);background:var(--card)}
+  .btn-dl{color:var(--ink)} .btn-dl:hover{border-color:var(--seal);color:var(--seal)}
+  .btn-del{color:var(--muted)} .btn-del:hover{border-color:#C0392B;color:#C0392B;background:#FDF3F1}
+  .empty{padding:44px 10px;text-align:center;color:var(--muted);font-size:.9rem}
+  .empty .seal{margin:0 auto 14px;opacity:.4}
+
+  /* ===== 登入畫面 ===== */
+  #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .login-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:44px 40px;
+    max-width:400px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(33,48,63,.08)}
+  .login-card .seal{width:72px;height:72px;font-size:38px;margin:0 auto 22px}
+  .login-card h1{font-size:1.45rem;font-weight:900;letter-spacing:.08em}
+  .login-card p{font-size:.85rem;color:var(--muted);margin:10px 0 28px}
+  .btn-google{
+    display:inline-flex;align-items:center;gap:10px;padding:12px 26px;background:var(--ink);color:#fff;
+    font-size:.92rem;font-weight:500;border-radius:10px
+  }
+  .btn-google:hover{background:#31445A}
+  .btn-google svg{width:18px;height:18px}
+
+  /* ===== 通用 ===== */
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
+    padding:11px 22px;border-radius:10px;font-size:.88rem;z-index:99;opacity:0;transition:opacity .25s;pointer-events:none
+  }
+  .toast.show{opacity:1}
+  .toast.err{background:#C0392B}
+  .hidden{display:none!important}
+  .btn-logout{background:none;border:none;color:var(--muted);font-size:.78rem;padding:4px 8px;text-decoration:underline}
+  .btn-logout:hover{color:var(--seal)}
+  footer{text-align:center;font-size:.75rem;color:var(--muted);padding:20px}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ============ 登入畫面 ============ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="seal">試</div>
+    <h1>校園試卷安全管理系統</h1>
+    <p>使用學校 Google 帳號登入即可上傳試卷。<br>每位老師僅能檢視自己上傳的檔案。</p>
+    <button class="btn-google" id="btn-login">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.35 11.1H12v2.9h5.35c-.5 2.5-2.6 3.9-5.35 3.9a6 6 0 1 1 0-12c1.5 0 2.9.55 3.95 1.5l2.15-2.15A9 9 0 1 0 12 21c5.2 0 8.65-3.65 8.65-8.8 0-.4-.1-.75-.3-1.1z"/></svg>
+      使用 Google 帳號登入
+    </button>
+  </div>
+</div>
+
+<!-- ============ 主畫面 ============ -->
+<div id="app-screen" class="hidden">
+  <header>
+    <div class="header-inner">
+      <div class="seal" style="width:40px;height:40px;font-size:20px">試</div>
+      <div>
+        <h1>校園試卷安全管理系統</h1>
+        <div class="sub">EXAM SECURE ARCHIVE</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="user-chip">
+        <span id="u-name"></span>
+        <span id="u-admin" class="badge-admin hidden">管理員</span>
+        <img id="u-photo" alt="" referrerpolicy="no-referrer">
+      </div>
+      <button class="btn-logout" id="btn-logout">登出</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid">
+      <!-- 上傳表單 -->
+      <div class="card">
+        <h2>上傳試卷</h2>
+        <form id="upload-form">
+          <label for="f-title">試卷名稱</label>
+          <input type="text" id="f-title" placeholder="例：114-1 期末評量 國語" required maxlength="60">
+          <div class="row2">
+            <div>
+              <label for="f-grade">年級</label>
+              <select id="f-grade" required>
+                <option value="" disabled selected>選擇年級</option>
+                <option>一年級</option><option>二年級</option><option>三年級</option>
+                <option>四年級</option><option>五年級</option><option>六年級</option>
+              </select>
+            </div>
+            <div>
+              <label for="f-subject">科目</label>
+              <select id="f-subject" required>
+                <option value="" disabled selected>選擇科目</option>
+                <option>國語</option><option>數學</option><option>英語</option>
+                <option>自然</option><option>社會</option><option>其他</option>
+              </select>
+            </div>
+          </div>
+          <label for="f-type">評量類型</label>
+          <select id="f-type" required>
+            <option value="" disabled selected>選擇類型</option>
+            <option>定期評量</option><option>平時評量</option><option>補考</option><option>其他</option>
+          </select>
+
+          <div class="file-drop" id="file-drop">
+            <span id="file-drop-text"><strong>點擊選擇</strong>或拖曳檔案至此<br>PDF / Word，700 KB 以內</span>
+          </div>
+          <input type="file" id="f-file" class="hidden" accept=".pdf,.doc,.docx">
+
+          <button type="submit" class="btn-primary" id="btn-upload">上　傳</button>
+          <p class="hint">上傳後將自動通知教務處（Google Chat）。檔案僅限本人與管理員檢視。</p>
+        </form>
+      </div>
+
+      <!-- 試卷清單 -->
+      <div class="card">
+        <div class="list-head">
+          <h2 id="list-title">我的試卷</h2>
+          <span class="count" id="list-count"></span>
+        </div>
+        <div id="exam-list">
+          <div class="empty">
+            <div class="seal">卷</div>
+            載入中…
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>關西國小 教務處 · Designed by Vincent Wang, assisted by AI</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ============ Firebase compat SDK ============ -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+<script>
+/* ================================================================
+ * 設定區 —— 部署前請修改以下三處
+ * ================================================================ */
+// 1️⃣ Firebase 設定：Firebase Console → 專案設定 → 一般 → 你的應用程式
+const firebaseConfig = {
+  apiKey: "AIzaSyA1YQLF3huAb3qkYmAqvhEyEjC4q2TnyEQ",
+  authDomain: "gemini-ai-e8574.firebaseapp.com",
+  projectId: "gemini-ai-e8574",
+  storageBucket: "gemini-ai-e8574.firebasestorage.app",
+  messagingSenderId: "782307685751",
+  appId: "1:782307685751:web:9f541753ce1a5cf02add72"
+};
+
+// 2️⃣ 管理員 Email 白名單（⚠️ 必須與 firestore.rules 內的名單完全一致）
+const ADMIN_EMAILS = [
+  "hs3591@gapp.hcc.edu.tw"
+];
+
+// 3️⃣ Cloudflare Worker 通知網址（部署 worker.js 後取得）
+const NOTIFY_URL = "https://exam-notify.hs3591.workers.dev/";
+
+// Firestore 資料路徑（與 R-Page 版共用同一批資料，勿改）
+const EXAMS_PATH = "artifacts/exam-upload-hub/public/data/exams";
+const MAX_FILE_BYTES = 700 * 1024; // Firestore 單一文件上限 1MB，Base64 後留安全空間
+
+/* ================================================================
+ * 初始化
+ * ================================================================ */
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let currentUser = null;
+let isAdmin = false;
+let unsubscribe = null;
+let pickedFile = null;
+
+const $ = id => document.getElementById(id);
+
+/* ================================================================
+ * 登入 / 登出
+ * ================================================================ */
+$("btn-login").addEventListener("click", () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(e => toast("登入失敗：" + e.message, true));
+});
+$("btn-logout").addEventListener("click", () => auth.signOut());
+
+auth.onAuthStateChanged(user => {
+  currentUser = user;
+  if (user) {
+    isAdmin = ADMIN_EMAILS.includes(user.email);
+    $("u-name").textContent = user.displayName || user.email;
+    $("u-photo").src = user.photoURL || "";
+    $("u-admin").classList.toggle("hidden", !isAdmin);
+    $("list-title").textContent = isAdmin ? "全校試卷" : "我的試卷";
+    $("login-screen").classList.add("hidden");
+    $("app-screen").classList.remove("hidden");
+    startListening();
+  } else {
+    if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+    $("app-screen").classList.add("hidden");
+    $("login-screen").classList.remove("hidden");
+  }
+});
+
+/* ================================================================
+ * 檔案選擇（點擊 + 拖曳）
+ * ================================================================ */
+const drop = $("file-drop"), fileInput = $("f-file");
+drop.addEventListener("click", () => fileInput.click());
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("drag"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("drag"));
+drop.addEventListener("drop", e => {
+  e.preventDefault(); drop.classList.remove("drag");
+  if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener("change", () => { if (fileInput.files.length) setFile(fileInput.files[0]); });
+
+function setFile(f) {
+  const okTypes = /\.(pdf|doc|docx)$/i;
+  if (!okTypes.test(f.name)) { toast("僅接受 PDF 或 Word 檔案", true); return; }
+  if (f.size > MAX_FILE_BYTES) {
+    toast(`檔案過大（${(f.size/1024).toFixed(0)} KB），上限 700 KB。建議將 Word 匯出為壓縮後的 PDF。`, true);
+    return;
+  }
+  pickedFile = f;
+  $("file-drop-text").innerHTML = `<span class="file-picked">✓ ${escapeHtml(f.name)}（${(f.size/1024).toFixed(0)} KB）</span>`;
+}
+
+/* ================================================================
+ * 上傳
+ * ================================================================ */
+$("upload-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!pickedFile) { toast("請先選擇檔案", true); return; }
+  const btn = $("btn-upload");
+  btn.disabled = true; btn.textContent = "上傳中…";
+
+  try {
+    const base64 = await fileToBase64(pickedFile);
+    const data = {
+      title:      $("f-title").value.trim(),
+      grade:      $("f-grade").value,
+      subject:    $("f-subject").value,
+      examType:   $("f-type").value,
+      fileName:   pickedFile.name,
+      fileSize:   pickedFile.size,
+      fileData:   base64,
+      uploaderUid:   currentUser.uid,
+      uploaderName:  currentUser.displayName || "",
+      uploaderEmail: currentUser.email,
+      createdAt:  firebase.firestore.FieldValue.serverTimestamp()
+    };
+    await db.collection(EXAMS_PATH).add(data);
+    toast("上傳成功！");
+    notifyChat(data); // 通知失敗不影響上傳結果
+    e.target.reset();
+    pickedFile = null;
+    $("file-drop-text").innerHTML = `<strong>點擊選擇</strong>或拖曳檔案至此<br>PDF / Word，700 KB 以內`;
+  } catch (err) {
+    console.error(err);
+    toast("上傳失敗：" + err.message, true);
+  } finally {
+    btn.disabled = false; btn.textContent = "上　傳";
+  }
+});
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result); // dataURL 格式，含 MIME 前綴
+    r.onerror = () => rej(new Error("讀取檔案失敗"));
+    r.readAsDataURL(file);
+  });
+}
+
+/* ================================================================
+ * Google Chat 通知（經 Cloudflare Worker 中繼）
+ * ================================================================ */
+async function notifyChat(d) {
+  if (!NOTIFY_URL || NOTIFY_URL.includes("YOUR_SUBDOMAIN")) return;
+  try {
+    await fetch(NOTIFY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: d.title, grade: d.grade, subject: d.subject,
+        examType: d.examType, uploader: d.uploaderName || d.uploaderEmail
+      })
+    });
+  } catch (e) { console.warn("Chat 通知失敗（不影響上傳）", e); }
+}
+
+/* ================================================================
+ * 清單（即時監聽）
+ * ================================================================ */
+function startListening() {
+  if (unsubscribe) unsubscribe();
+  // ⚠️ 非管理員必須帶 where 條件，否則會被 Security Rules 拒絕整個查詢
+  const col = db.collection(EXAMS_PATH);
+  const query = isAdmin ? col : col.where("uploaderUid", "==", currentUser.uid);
+
+  unsubscribe = query.onSnapshot(snap => {
+    const items = [];
+    snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+    // 客戶端排序，避免 where + orderBy 需要建立複合索引
+    items.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    renderList(items);
+  }, err => {
+    console.error(err);
+    $("exam-list").innerHTML = `<div class="empty">讀取失敗：${escapeHtml(err.message)}<br>請確認 Firestore 安全規則已部署。</div>`;
+  });
+}
+
+function renderList(items) {
+  $("list-count").textContent = items.length ? `共 ${items.length} 份` : "";
+  if (!items.length) {
+    $("exam-list").innerHTML = `<div class="empty"><div class="seal">卷</div>目前沒有試卷，從左側表單開始上傳。</div>`;
+    return;
+  }
+  $("exam-list").innerHTML = items.map(it => {
+    const ext = (it.fileName || "").split(".").pop().toUpperCase().slice(0, 4);
+    const date = it.createdAt ? new Date(it.createdAt.seconds * 1000).toLocaleDateString("zh-TW") : "—";
+    const who = isAdmin ? `<span class="who">${escapeHtml(it.uploaderName || it.uploaderEmail || "")}</span> · ` : "";
+    return `
+      <div class="exam-item">
+        <div class="exam-ico">${escapeHtml(ext)}</div>
+        <div class="exam-info">
+          <div class="t">${escapeHtml(it.title)}</div>
+          <div class="m">${who}${escapeHtml(it.grade)} ${escapeHtml(it.subject)} · ${escapeHtml(it.examType)} · ${date}</div>
+        </div>
+        <div class="exam-actions">
+          <button class="btn-sm btn-dl" data-dl="${it.id}">下載</button>
+          <button class="btn-sm btn-del" data-del="${it.id}">刪除</button>
+        </div>
+      </div>`;
+  }).join("");
+
+  document.querySelectorAll("[data-dl]").forEach(b =>
+    b.addEventListener("click", () => downloadExam(b.dataset.dl, items)));
+  document.querySelectorAll("[data-del]").forEach(b =>
+    b.addEventListener("click", () => deleteExam(b.dataset.del, items)));
+}
+
+/* ================================================================
+ * 下載 / 刪除
+ * ================================================================ */
+function downloadExam(id, items) {
+  const it = items.find(x => x.id === id);
+  if (!it || !it.fileData) { toast("找不到檔案資料", true); return; }
+  const a = document.createElement("a");
+  a.href = it.fileData;            // dataURL 可直接下載
+  a.download = it.fileName || "exam";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+async function deleteExam(id, items) {
+  const it = items.find(x => x.id === id);
+  if (!it) return;
+  if (!confirm(`確定刪除「${it.title}」？此動作無法復原。`)) return;
+  try {
+    await db.collection(EXAMS_PATH).doc(id).delete();
+    toast("已刪除");
+  } catch (e) {
+    toast("刪除失敗：" + e.message, true);
+  }
+}
+
+/* ================================================================
+ * 工具
+ * ================================================================ */
+let toastTimer = null;
+function toast(msg, isErr) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.toggle("err", !!isErr);
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 3500);
+}
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+</script>
+</body>
+</html>
