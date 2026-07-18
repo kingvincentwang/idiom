@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校園文章投稿系統</title>
+<style>
+  #app-root { max-width: 860px; margin: 0 auto; padding: 16px; font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; color: #333; }
+  #app-root * { box-sizing: border-box; }
+  #app-root .header { background: linear-gradient(135deg, #4a6fa5, #2c4a72); color: #fff; border-radius: 12px; padding: 22px 24px; margin-bottom: 16px; }
+  #app-root .header h1 { margin: 0 0 6px; font-size: 24px !important; }
+  #app-root .header p { margin: 0; font-size: 14px !important; opacity: .9; }
+
+  /* 分頁 */
+  #app-root .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  #app-root .tab-btn { flex: 1; padding: 10px 0; border: 2px solid #4a6fa5; background: #fff; color: #4a6fa5; border-radius: 8px; cursor: pointer; font-size: 15px !important; font-weight: bold; transition: .2s; }
+  #app-root .tab-btn.active { background: #4a6fa5; color: #fff; }
+
+  /* 卡片與表單 */
+  #app-root .card { background: #fff; border: 1px solid #e0e6ef; border-radius: 12px; padding: 22px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  #app-root .field { margin-bottom: 14px; }
+  #app-root .field label { display: block; font-size: 14px !important; font-weight: bold; margin-bottom: 5px; }
+  #app-root .field label .req { color: #d9534f; }
+  #app-root .field input, #app-root .field select, #app-root .field textarea {
+    width: 100%; padding: 9px 12px; border: 1px solid #c5cede; border-radius: 8px;
+    font-size: 15px !important; font-family: inherit; background: #fafbfd;
+  }
+  #app-root .field input:focus, #app-root .field select:focus, #app-root .field textarea:focus {
+    outline: none; border-color: #4a6fa5; background: #fff;
+  }
+  #app-root .field textarea { min-height: 220px; resize: vertical; line-height: 1.7; }
+  #app-root .char-count { text-align: right; font-size: 12px !important; color: #999; margin-top: 3px; }
+
+  #app-root .submit-btn { width: 100%; padding: 13px; background: #4a6fa5; color: #fff; border: none; border-radius: 8px; font-size: 16px !important; font-weight: bold; cursor: pointer; transition: .2s; }
+  #app-root .submit-btn:hover:not(:disabled) { background: #2c4a72; }
+  #app-root .submit-btn:disabled { background: #a9b6c9; cursor: not-allowed; }
+
+  /* 訊息提示 */
+  #app-root .msg { display: none; padding: 12px 16px; border-radius: 8px; margin-bottom: 14px; font-size: 14px !important; }
+  #app-root .msg.success { display: block; background: #e6f4ea; color: #1e7d3a; border: 1px solid #b7dfc2; }
+  #app-root .msg.error   { display: block; background: #fdecea; color: #b02a25; border: 1px solid #f2b8b5; }
+
+  /* 文章列表 */
+  #app-root .article-item { border-bottom: 1px solid #eef1f6; padding: 14px 4px; }
+  #app-root .article-item:last-child { border-bottom: none; }
+  #app-root .article-title { font-size: 16px !important; font-weight: bold; color: #2c4a72; margin: 0 0 4px; }
+  #app-root .article-meta { font-size: 13px !important; color: #888; margin-bottom: 6px; }
+  #app-root .article-meta .cat { display: inline-block; background: #eef3fa; color: #4a6fa5; border-radius: 20px; padding: 1px 10px; margin-right: 8px; font-size: 12px !important; }
+  #app-root .article-preview { font-size: 14px !important; color: #555; line-height: 1.6; margin: 0; white-space: pre-wrap; }
+  #app-root .empty-hint { text-align: center; color: #999; padding: 30px 0; font-size: 14px !important; }
+
+  /* 狀態標籤 */
+  #app-root .status-tag { display: inline-block; border-radius: 20px; padding: 1px 10px; font-size: 12px !important; font-weight: bold; margin-left: 6px; }
+  #app-root .status-pending  { background: #fff4e0; color: #b57708; }
+  #app-root .status-approved { background: #e6f4ea; color: #1e7d3a; }
+  #app-root .status-rejected { background: #fdecea; color: #b02a25; }
+
+  /* 審稿後台 */
+  #app-root .admin-login-box { text-align: center; padding: 30px 0; }
+  #app-root .google-btn { padding: 11px 26px; background: #fff; border: 2px solid #4a6fa5; color: #4a6fa5; border-radius: 8px; font-size: 15px !important; font-weight: bold; cursor: pointer; }
+  #app-root .google-btn:hover { background: #eef3fa; }
+  #app-root .admin-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  #app-root .admin-user { font-size: 13px !important; color: #666; }
+  #app-root .logout-btn { padding: 5px 14px; background: #fff; border: 1px solid #c5cede; border-radius: 6px; cursor: pointer; font-size: 13px !important; color: #666; }
+  #app-root .filter-btns { display: flex; gap: 6px; margin-bottom: 12px; }
+  #app-root .filter-btn { padding: 6px 16px; border: 1px solid #c5cede; background: #fff; border-radius: 20px; cursor: pointer; font-size: 13px !important; color: #555; }
+  #app-root .filter-btn.active { background: #4a6fa5; border-color: #4a6fa5; color: #fff; font-weight: bold; }
+  #app-root .review-content { background: #fafbfd; border: 1px solid #eef1f6; border-radius: 8px; padding: 12px; margin: 8px 0; font-size: 14px !important; line-height: 1.7; white-space: pre-wrap; max-height: 320px; overflow-y: auto; }
+  #app-root .review-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  #app-root .act-btn { padding: 7px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px !important; font-weight: bold; color: #fff; }
+  #app-root .act-btn:disabled { opacity: .5; cursor: not-allowed; }
+  #app-root .act-approve { background: #2e9e4f; }
+  #app-root .act-reject  { background: #d9534f; }
+  #app-root .act-revert  { background: #8a97ab; }
+  #app-root .act-delete  { background: #6c3483; }
+
+  #app-root .footer { text-align: center; font-size: 12px !important; color: #aab; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div id="app-root">
+
+  <div class="header">
+    <h1>📝 校園文章投稿系統</h1>
+    <p>歡迎踴躍投稿！文章送出後將由承辦人審稿，通過後刊登於文章列表。</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-submit-btn" onclick="switchTab('submit')">✍️ 我要投稿</button>
+    <button class="tab-btn" id="tab-list-btn" onclick="switchTab('list')">📚 文章列表</button>
+    <button class="tab-btn" id="tab-admin-btn" onclick="switchTab('admin')">🔐 審稿後台</button>
+  </div>
+
+  <!-- 分頁一：投稿表單 -->
+  <div id="tab-submit" class="card">
+    <div id="form-msg" class="msg"></div>
+
+    <div class="field">
+      <label>作者姓名 <span class="req">*</span></label>
+      <input type="text" id="f-author" maxlength="30" placeholder="請輸入姓名">
+    </div>
+
+    <div class="field">
+      <label>班級／單位 <span class="req">*</span></label>
+      <input type="text" id="f-class" maxlength="30" placeholder="例：六年甲班 / 教務處">
+    </div>
+
+    <div class="field">
+      <label>文章類別 <span class="req">*</span></label>
+      <select id="f-category">
+        <option value="">請選擇類別</option>
+        <option>心得感想</option>
+        <option>校園報導</option>
+        <option>創作文章</option>
+        <option>閱讀心得</option>
+        <option>其他</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>文章標題 <span class="req">*</span></label>
+      <input type="text" id="f-title" maxlength="60" placeholder="請輸入標題">
+    </div>
+
+    <div class="field">
+      <label>文章內容 <span class="req">*</span></label>
+      <textarea id="f-content" maxlength="5000" placeholder="請輸入文章內容（最多 5000 字）" oninput="updateCount()"></textarea>
+      <div class="char-count"><span id="char-now">0</span> / 5000 字</div>
+    </div>
+
+    <button class="submit-btn" id="submit-btn" onclick="submitArticle()">送出投稿</button>
+  </div>
+
+  <!-- 分頁二：文章列表（僅顯示審核通過） -->
+  <div id="tab-list" class="card" style="display:none;">
+    <div id="article-list"><div class="empty-hint">載入中…</div></div>
+  </div>
+
+  <!-- 分頁三：審稿後台 -->
+  <div id="tab-admin" class="card" style="display:none;">
+    <!-- 未登入 -->
+    <div id="admin-login" class="admin-login-box">
+      <p style="font-size:14px !important; color:#666; margin-bottom:16px;">審稿功能僅限管理員使用，請以 Google 帳號登入。</p>
+      <button class="google-btn" onclick="adminLogin()">🔑 使用 Google 帳號登入</button>
+      <div id="login-msg" class="msg" style="margin-top:14px;"></div>
+    </div>
+
+    <!-- 已登入 -->
+    <div id="admin-panel" style="display:none;">
+      <div class="admin-bar">
+        <span class="admin-user">👤 <span id="admin-email"></span></span>
+        <button class="logout-btn" onclick="adminLogout()">登出</button>
+      </div>
+      <div class="filter-btns">
+        <button class="filter-btn active" id="filter-pending"  onclick="setFilter('pending')">⏳ 待審 (<span id="cnt-pending">0</span>)</button>
+        <button class="filter-btn" id="filter-approved" onclick="setFilter('approved')">✅ 已通過 (<span id="cnt-approved">0</span>)</button>
+        <button class="filter-btn" id="filter-rejected" onclick="setFilter('rejected')">❌ 已退稿 (<span id="cnt-rejected">0</span>)</button>
+      </div>
+      <div id="review-list"><div class="empty-hint">載入中…</div></div>
+    </div>
+  </div>
+
+  <div class="footer">關西國小 資訊組 Vincent Wang 製作 · AI 協力開發</div>
+</div>
+
+<!-- Firebase compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+/* ========== 設定區 ========== */
+const firebaseConfig = {
+  apiKey: "AIzaSyA6j_OT2BzUvnhQxg7X3aKpKXwmXXXnO8s",
+  authDomain: "message-18d78.firebaseapp.com",
+  projectId: "message-18d78"
+};
+
+// 管理員 Google 帳號（可多個）。必須和 Firestore 安全規則中的清單一致！
+const ADMIN_EMAILS = ["hs3591@gses.hcc.edu.tw"];
+
+// Google Chat Webhook（新投稿通知）
+const CHAT_WEBHOOK = "https://chat.googleapis.com/v1/spaces/AAQANujEbrg/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=VIqoxld1LcclK48AoRrvBc8bSDebK72sWD20dY6SP3M";
+
+const COLLECTION = "articles";
+/* ============================ */
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+let currentFilter = 'pending';
+let adminDocs = [];   // 審稿後台快取
+let adminUnsub = null;
+
+/* ---------- 分頁切換（只改 display，不重建 DOM） ---------- */
+function switchTab(name) {
+  ['submit', 'list', 'admin'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = (t === name) ? 'block' : 'none';
+    document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === name);
+  });
+}
+
+/* ---------- 字數統計 ---------- */
+function updateCount() {
+  document.getElementById('char-now').textContent =
+    document.getElementById('f-content').value.length;
+}
+
+/* ---------- 訊息提示 ---------- */
+function showMsg(id, type, text) {
+  const el = document.getElementById(id);
+  el.className = 'msg ' + type;
+  el.textContent = text;
+  if (type === 'success') setTimeout(() => { el.className = 'msg'; }, 5000);
+}
+
+/* ---------- 送出投稿（狀態預設為待審 pending） ---------- */
+async function submitArticle() {
+  const author   = document.getElementById('f-author').value.trim();
+  const cls      = document.getElementById('f-class').value.trim();
+  const category = document.getElementById('f-category').value;
+  const title    = document.getElementById('f-title').value.trim();
+  const content  = document.getElementById('f-content').value.trim();
+
+  if (!author || !cls || !category || !title || !content) {
+    showMsg('form-msg', 'error', '❌ 請完整填寫所有欄位！');
+    return;
+  }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '送出中…';
+
+  try {
+    await db.collection(COLLECTION).add({
+      author, class: cls, category, title, content,
+      status: 'pending',   // ← 投稿一律先進待審
+      submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    sendChatNotify({ author, cls, category, title, content });
+
+    ['f-author', 'f-class', 'f-title', 'f-content'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-category').value = '';
+    updateCount();
+    showMsg('form-msg', 'success', '✅ 投稿成功！文章將於審稿通過後刊登，感謝您的投稿。');
+  } catch (err) {
+    console.error('投稿失敗：', err);
+    showMsg('form-msg', 'error', '❌ 投稿失敗：' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '送出投稿';
+  }
+}
+
+/* ---------- Google Chat 通知 ---------- */
+function sendChatNotify(d) {
+  const now = new Date().toLocaleString('zh-TW', { hour12: false });
+  const preview = d.content.length > 50 ? d.content.slice(0, 50) + '…' : d.content;
+  const msg = {
+    text:
+      '📝 *新文章投稿通知（待審稿）*\n' +
+      '───────────────\n' +
+      '📌 標題：' + d.title + '\n' +
+      '👤 作者：' + d.author + '（' + d.cls + '）\n' +
+      '🏷️ 類別：' + d.category + '\n' +
+      '🕐 時間：' + now + '\n' +
+      '📄 內容預覽：' + preview + '\n' +
+      '👉 請至系統「審稿後台」審閱'
+  };
+  fetch(CHAT_WEBHOOK, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(msg)
+  }).catch(err => console.warn('Chat 通知發送失敗：', err));
+}
+
+/* ---------- 公開文章列表（僅審核通過，前端排序免建索引） ---------- */
+db.collection(COLLECTION)
+  .where('status', '==', 'approved')
+  .onSnapshot(snap => {
+    const listEl = document.getElementById('article-list');
+    if (snap.empty) {
+      listEl.innerHTML = '<div class="empty-hint">目前還沒有刊登的文章。</div>';
+      return;
+    }
+    const docs = [];
+    snap.forEach(doc => docs.push(doc.data()));
+    docs.sort((a, b) => tsOf(b) - tsOf(a));  // 新→舊
+
+    let html = '';
+    docs.forEach(a => {
+      const time = a.submittedAt ? a.submittedAt.toDate().toLocaleString('zh-TW', { hour12: false }) : '';
+      const preview = (a.content || '').length > 80 ? a.content.slice(0, 80) + '…' : (a.content || '');
+      html += `
+        <div class="article-item">
+          <p class="article-title">${esc(a.title)}</p>
+          <div class="article-meta">
+            <span class="cat">${esc(a.category)}</span>
+            ${esc(a.author)}（${esc(a.class)}）｜${time}
+          </div>
+          <p class="article-preview">${esc(preview)}</p>
+        </div>`;
+    });
+    listEl.innerHTML = html;
+  }, err => {
+    console.error('讀取列表失敗：', err);
+    document.getElementById('article-list').innerHTML =
+      '<div class="empty-hint">讀取失敗，請確認 Firebase 設定與安全規則。</div>';
+  });
+
+function tsOf(a) { return a.submittedAt ? a.submittedAt.toMillis() : 0; }
+
+/* ==================== 審稿後台 ==================== */
+
+/* ---------- 登入 / 登出 ---------- */
+function adminLogin() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err => {
+    console.error('登入失敗：', err);
+    showMsg('login-msg', 'error', '❌ 登入失敗：' + err.message);
+  });
+}
+
+function adminLogout() {
+  auth.signOut();
+}
+
+auth.onAuthStateChanged(user => {
+  const loginBox = document.getElementById('admin-login');
+  const panel = document.getElementById('admin-panel');
+
+  if (user && ADMIN_EMAILS.includes(user.email)) {
+    loginBox.style.display = 'none';
+    panel.style.display = 'block';
+    document.getElementById('admin-email').textContent = user.email;
+    startAdminListener();
+  } else {
+    if (user) {
+      // 已登入但不是管理員
+      showMsg('login-msg', 'error', '❌ 此帳號（' + user.email + '）沒有審稿權限。');
+      auth.signOut();
+    }
+    loginBox.style.display = 'block';
+    panel.style.display = 'none';
+    if (adminUnsub) { adminUnsub(); adminUnsub = null; }
+  }
+});
+
+/* ---------- 監聽全部文章（管理員權限） ---------- */
+function startAdminListener() {
+  if (adminUnsub) return;
+  adminUnsub = db.collection(COLLECTION).onSnapshot(snap => {
+    adminDocs = [];
+    snap.forEach(doc => {
+      const d = doc.data();
+      d._id = doc.id;
+      if (!d.status) d.status = 'pending';  // 舊資料相容
+      adminDocs.push(d);
+    });
+    adminDocs.sort((a, b) => tsOf(b) - tsOf(a));
+    renderReviewList();
+  }, err => {
+    console.error('審稿列表讀取失敗：', err);
+    document.getElementById('review-list').innerHTML =
+      '<div class="empty-hint">讀取失敗：' + esc(err.message) + '</div>';
+  });
+}
+
+/* ---------- 篩選 ---------- */
+function setFilter(f) {
+  currentFilter = f;
+  ['pending', 'approved', 'rejected'].forEach(s =>
+    document.getElementById('filter-' + s).classList.toggle('active', s === f));
+  renderReviewList();
+}
+
+/* ---------- 渲染審稿列表 ---------- */
+function renderReviewList() {
+  // 更新各狀態數量
+  ['pending', 'approved', 'rejected'].forEach(s =>
+    document.getElementById('cnt-' + s).textContent =
+      adminDocs.filter(d => d.status === s).length);
+
+  const listEl = document.getElementById('review-list');
+  const docs = adminDocs.filter(d => d.status === currentFilter);
+  if (docs.length === 0) {
+    listEl.innerHTML = '<div class="empty-hint">此分類目前沒有文章。</div>';
+    return;
+  }
+
+  const tagMap = {
+    pending:  '<span class="status-tag status-pending">⏳ 待審</span>',
+    approved: '<span class="status-tag status-approved">✅ 已通過</span>',
+    rejected: '<span class="status-tag status-rejected">❌ 已退稿</span>'
+  };
+
+  let html = '';
+  docs.forEach(a => {
+    const time = a.submittedAt ? a.submittedAt.toDate().toLocaleString('zh-TW', { hour12: false }) : '';
+    let actions = '';
+    if (a.status === 'pending') {
+      actions = `
+        <button class="act-btn act-approve" onclick="setStatus(this,'${a._id}','approved')">✅ 通過刊登</button>
+        <button class="act-btn act-reject"  onclick="setStatus(this,'${a._id}','rejected')">❌ 退稿</button>`;
+    } else if (a.status === 'approved') {
+      actions = `
+        <button class="act-btn act-revert" onclick="setStatus(this,'${a._id}','pending')">↩️ 下架（退回待審）</button>`;
+    } else {
+      actions = `
+        <button class="act-btn act-revert" onclick="setStatus(this,'${a._id}','pending')">↩️ 恢復待審</button>
+        <button class="act-btn act-delete" onclick="deleteArticle(this,'${a._id}')">🗑️ 永久刪除</button>`;
+    }
+    html += `
+      <div class="article-item">
+        <p class="article-title">${esc(a.title)} ${tagMap[a.status]}</p>
+        <div class="article-meta">
+          <span class="cat">${esc(a.category)}</span>
+          ${esc(a.author)}（${esc(a.class)}）｜${time}
+        </div>
+        <div class="review-content">${esc(a.content)}</div>
+        <div class="review-actions">${actions}</div>
+      </div>`;
+  });
+  listEl.innerHTML = html;
+}
+
+/* ---------- 審核操作 ---------- */
+async function setStatus(btn, id, status) {
+  btn.disabled = true;
+  try {
+    await db.collection(COLLECTION).doc(id).update({
+      status,
+      reviewedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      reviewedBy: auth.currentUser ? auth.currentUser.email : ''
+    });
+    // onSnapshot 會自動重新渲染，不需手動更新畫面
+  } catch (err) {
+    console.error('審核操作失敗：', err);
+    alert('操作失敗：' + err.message);
+    btn.disabled = false;
+  }
+}
+
+async function deleteArticle(btn, id) {
+  if (!confirm('確定要永久刪除這篇文章嗎？此操作無法復原！')) return;
+  btn.disabled = true;
+  try {
+    await db.collection(COLLECTION).doc(id).delete();
+  } catch (err) {
+    console.error('刪除失敗：', err);
+    alert('刪除失敗：' + err.message);
+    btn.disabled = false;
+  }
+}
+
+/* ---------- HTML 跳脫，避免 XSS ---------- */
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+</script>
+</body>
+</html>
