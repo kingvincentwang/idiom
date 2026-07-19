@@ -420,6 +420,163 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* AI 聊天介面 */
+        .chat-messages {
+            margin-top: 20px;
+            height: 380px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding: 5px 10px 5px 0;
+        }
+        .chat-messages::-webkit-scrollbar { width: 6px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: rgba(6, 182, 212, 0.4); border-radius: 3px; }
+        .chat-bubble {
+            max-width: 85%;
+            padding: 14px 18px;
+            border-radius: 14px;
+            font-size: 19px;
+            line-height: 1.7;
+            word-break: break-word;
+        }
+        .chat-bubble.user {
+            align-self: flex-end;
+            background: rgba(6, 182, 212, 0.25);
+            border: 1px solid rgba(34, 211, 238, 0.5);
+            color: #f0fdff;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-bubble.assistant {
+            align-self: flex-start;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(234, 179, 8, 0.5);
+            color: #e2e8f0;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-bubble.assistant.thinking {
+            color: #94a3b8;
+            font-style: italic;
+        }
+        .chat-input-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 14px 18px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid #06b6d4;
+            color: #fff;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 18px;
+            box-sizing: border-box;
+        }
+        .chat-input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+        }
+        .chat-send-btn {
+            background: #eab308;
+            color: #030712;
+            border: none;
+            padding: 0 22px;
+            border-radius: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .chat-send-btn:hover {
+            background: #facc15;
+            box-shadow: 0 0 12px rgba(234, 179, 8, 0.5);
+        }
+        .chat-send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 建立專案四步驟卡片 */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-top: 10px;
+        }
+        .step-card {
+            padding: 22px 20px;
+            position: relative;
+            text-align: left;
+        }
+        .step-num {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #06b6d4, #22d3ee);
+            color: #030712;
+            font-weight: 800;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+        }
+        .step-card code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-size: 15px;
+            color: #a5f3fc;
+        }
+
+        /* 案例探討與練習清單 */
+        .case-columns {
+            display: grid;
+            grid-template-columns: 1fr 1.15fr;
+            gap: 30px;
+            margin-top: 10px;
+        }
+        .case-list {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0 0 0;
+        }
+        .case-list li {
+            margin-bottom: 12px;
+        }
+        .case-list a, .case-list .case-plain {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 17.5px;
+            line-height: 1.5;
+            color: #e2e8f0;
+            text-decoration: none;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 10px 16px;
+            transition: all 0.25s ease;
+        }
+        .case-list a:hover {
+            border-color: #22d3ee;
+            background: rgba(6, 182, 212, 0.15);
+            color: #fff;
+            transform: translateX(6px);
+        }
+        .case-list a i {
+            color: #22d3ee;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+        .case-list .case-plain i {
+            color: #eab308;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+
         /* 6. 設定按鈕與 API Key 對話框 */
         .settings-btn {
             position: fixed;
@@ -534,7 +691,37 @@
             </div>
         </section>
 
-        <!-- 第 4 頁 -->
+        <!-- 第 4 頁：如何新增 Firebase 專案 -->
+        <section>
+            <h2><i class="fa-solid fa-circle-plus" style="margin-right: 15px; color: #22d3ee;"></i>動手做：建立你的第一個 Firebase 專案</h2>
+            <div class="steps-grid">
+                <div class="glass-panel step-card">
+                    <div class="step-num">1</div>
+                    <h3 style="font-size: 22px;">進入 Firebase Console</h3>
+                    <p style="font-size: 17px;">用 Google 帳號登入 <strong style="color: #22d3ee;">console.firebase.google.com</strong>，點「建立專案」。</p>
+                </div>
+                <div class="glass-panel step-card">
+                    <div class="step-num">2</div>
+                    <h3 style="font-size: 22px;">命名專案</h3>
+                    <p style="font-size: 17px;">輸入專案名稱（如 <code>my-first-app</code>），Google Analytics 可先<strong>停用</strong>，加快建立速度。</p>
+                </div>
+                <div class="glass-panel step-card">
+                    <div class="step-num">3</div>
+                    <h3 style="font-size: 22px;">註冊 Web 應用程式</h3>
+                    <p style="font-size: 17px;">在專案總覽點 <strong style="color: #eab308;">&lt;/&gt;</strong> 圖示新增網頁應用程式，取得 <code>firebaseConfig</code> 設定碼。</p>
+                </div>
+                <div class="glass-panel step-card">
+                    <div class="step-num">4</div>
+                    <h3 style="font-size: 22px;">啟用需要的服務</h3>
+                    <p style="font-size: 17px;">左側選單啟用 <strong>Authentication</strong>（選登入方式）與 <strong>Firestore Database</strong>（選測試模式、asia-east1）。</p>
+                </div>
+            </div>
+            <div style="margin-top: 25px; background: rgba(6, 182, 212, 0.15); padding: 15px 25px; border-radius: 10px; border-left: 4px solid #06b6d4;">
+                <p style="margin: 0; font-size: 20px;">💡 <code>firebaseConfig</code> 就是你的專案「地址」——貼進網頁程式碼，前端就能直接連上雲端服務！</p>
+            </div>
+        </section>
+
+        <!-- 第 5 頁 -->
         <section>
             <h2>Firebase 核心架構</h2>
             <p style="text-align: left; margin-bottom: 40px;">Firebase = BaaS (Backend as a Service)，免去管理 Server 的煩惱。</p>
@@ -557,7 +744,7 @@
             </div>
         </section>
 
-        <!-- 第 5 頁 -->
+        <!-- 第 6 頁 -->
         <section>
             <h2>Authentication 身分驗證</h2>
             <div class="two-column">
@@ -584,7 +771,7 @@
             </div>
         </section>
 
-        <!-- 第 6 頁 -->
+        <!-- 第 7 頁 -->
         <section>
             <h2>Firestore 雲端資料庫</h2>
             <div class="two-column">
@@ -609,11 +796,18 @@
                         <li><strong>即時同步：</strong> 一人更新，所有人畫面自動改變</li>
                         <li>適合處理大規模數據擴展</li>
                     </ul>
+
+                    <!-- 前往申請免費 Mistral API Key 的連結 -->
+                    <a class="ai-btn" style="display: block; text-align: center; text-decoration: none; margin-top: auto;"
+                       href="https://v2.auth.mistral.ai/login?flow=405286e9-c50a-4469-99ba-22816538cb0d"
+                       target="_blank" rel="noopener noreferrer">
+                        <i class="fa-solid fa-key" style="margin-right: 10px;"></i>前往申請免費的 Mistral API Key
+                    </a>
                 </div>
             </div>
         </section>
 
-        <!-- 第 7 頁 -->
+        <!-- 第 8 頁 -->
         <section>
             <div class="bleed-layout">
                 <div class="bleed-text">
@@ -630,7 +824,7 @@
             </div>
         </section>
 
-        <!-- 第 8 頁 -->
+        <!-- 第 9 頁 -->
         <section>
             <h2>Firebase 完整運作流程</h2>
             <p style="text-align: left;">各服務緊密相連，打造無伺服器 (Serverless) 體驗。</p>
@@ -661,7 +855,7 @@
             </div>
         </section>
 
-        <!-- 第 9 頁 -->
+        <!-- 第 10 頁 -->
         <section>
             <h2>今日總結</h2>
             <div class="glass-panel" style="padding: 10px 30px;">
@@ -697,6 +891,34 @@
             </h3>
         </section>
 
+        <!-- 第 11 頁：案例探討與練習 -->
+        <section>
+            <h2><i class="fa-solid fa-flask" style="margin-right: 15px; color: #22d3ee;"></i>案例探討與練習</h2>
+            <div class="case-columns">
+                <div class="glass-panel" style="padding: 20px 25px;">
+                    <h3 style="font-size: 26px;"><i class="fa-solid fa-user-shield" style="margin-right: 12px;"></i>Auth 會員登入系統</h3>
+                    <ul class="case-list">
+                        <li><a href="https://vincent-wang.notion.site/Authentic-39986acfae518081a940e5429f3bdf26?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>實作 Auth 會員登入系統（電子郵件/密碼註冊即登入）</a></li>
+                        <li><a href="https://vincent-wang.notion.site/Firestore-39986acfae5180238925ef11eb88716e?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>電子郵件/密碼註冊後須審核才能登入（加入 Firestore）</a></li>
+                        <li><a href="https://vincent-wang.notion.site/google-39986acfae5180b2899cee11346d93cf?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>使用 Google 帳號登入（不需註冊也不需審核）</a></li>
+                        <li><a href="https://vincent-wang.notion.site/google-39a86acfae51804ca6fad6e1800d6c56?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>使用 Google 帳號登入，需註冊後等待審核</a></li>
+                    </ul>
+                </div>
+                <div class="glass-panel" style="padding: 20px 25px;">
+                    <h3 style="font-size: 26px;"><i class="fa-solid fa-laptop-code" style="margin-right: 12px;"></i>專案實作</h3>
+                    <ul class="case-list">
+                        <li><a href="https://vincent-wang.notion.site/github-Firebase-39a86acfae51807fa41dc73957605ca2?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>成語測驗系統（部署至 GitHub + Firebase）</a></li>
+                        <li><a href="https://vincent-wang.notion.site/Firebase-Hosting-39a86acfae51801a9dabc4691b45d8b5?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>成語測驗系統 — 部署至 Firebase Hosting</a></li>
+                        <li><a href="https://vincent-wang.notion.site/R-page-GAS-firebase-39b86acfae5180bba1d9dca27a115e4a?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>成語測驗系統：R-page + Firebase</a></li>
+                        <li><a href="https://vincent-wang.notion.site/R-page-GAS-firebase-39b86acfae5180bba1d9dca27a115e4a?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>R-page + GAS + Firebase 設計閱讀測驗</a></li>
+                        <li><a href="https://vincent-wang.notion.site/html-Firebase-google-chat-GAS-39e86acfae5180adbf86ed1ef8bc1b15?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>HTML + Firebase 試卷上傳系統（Google Chat 放前端或後端 GAS）</a></li>
+                        <li><a href="https://vincent-wang.notion.site/html-Firebase-google-chat-Cloudflare-39f86acfae51802f9a6cef3118467636?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>HTML + Firebase + Google Chat + Cloudflare（後端）試卷上傳即時通知</a></li>
+                        <li><a href="https://vincent-wang.notion.site/HTML-Firebase-Firestore-Firebase-Auth-Google-Google-Chat-Webhook-39b86acfae5180208309e6954b8aa00a?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>純前端 HTML + Firestore + Auth（Google 登入審稿）+ Google Chat Webhook 通知</a></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
     </div>
 </div>
 
@@ -717,13 +939,15 @@
     </div>
 </div>
 
-<!-- AI 解釋用的彈出視窗 Modal -->
+<!-- AI 對話用的彈出視窗 Modal -->
 <div class="ai-modal-overlay" id="aiModal">
-    <div class="ai-modal-content">
+    <div class="ai-modal-content" style="max-width: 700px;">
         <button class="ai-modal-close" onclick="closeAI()"><i class="fa-solid fa-xmark"></i></button>
-        <h3 style="color: #eab308; margin-top: 0;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 白話文老師</h3>
-        <div id="aiContent" class="ai-text-display">
-            <!-- 內容會由 JS 動態填入 -->
+        <h3 style="color: #eab308; margin-top: 0;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 白話文老師 <span style="font-size: 16px; color: #94a3b8; font-weight: normal;">（可以繼續追問喔！）</span></h3>
+        <div id="chatMessages" class="chat-messages"></div>
+        <div class="chat-input-row">
+            <input type="text" id="chatInput" class="chat-input" placeholder="輸入你的問題，按 Enter 送出...">
+            <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
     </div>
 </div>
@@ -790,7 +1014,7 @@
     // 5. 課前即時問卷 (Firebase Firestore 即時統計)
     // ⚠️ 請到 Firebase Console → 專案設定 → 一般 → 你的應用程式，複製 firebaseConfig 貼到下方
     const pollFirebaseConfig = {
-         apiKey: "AIzaSyA1YQLF3huAb3qkYmAqvhEyEjC4q2TnyEQ",
+        apiKey: "AIzaSyA1YQLF3huAb3qkYmAqvhEyEjC4q2TnyEQ",
   authDomain: "gemini-ai-e8574.firebaseapp.com",
   projectId: "gemini-ai-e8574",
   storageBucket: "gemini-ai-e8574.firebasestorage.app",
@@ -946,24 +1170,40 @@
         document.getElementById('aiModal').classList.remove('active');
     }
 
-    // 呼叫 Mistral 的函數，包含重試機制
-    async function fetchMistralExplanation(topic) {
+    // AI 對話狀態
+    let chatHistory = [];   // 只存 user / assistant 訊息
+    let chatBusy = false;
+
+    const CHAT_SYSTEM_PROMPT = "你是一位親切、幽默的科技講師，正在 Firebase 入門課程中回答學員問題。請用極度白話、生動的生活化比喻解釋，每次回覆字數控制在 150 字以內，使用適當的 emoji 讓語氣活潑。若學員追問，請延續前面的對話脈絡回答。";
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.innerText = str;
+        return div.innerHTML;
+    }
+
+    function appendBubble(role, text, extraClass = '') {
+        const box = document.getElementById('chatMessages');
+        const bubble = document.createElement('div');
+        bubble.className = `chat-bubble ${role} ${extraClass}`.trim();
+        bubble.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
+        box.appendChild(bubble);
+        box.scrollTop = box.scrollHeight;
+        return bubble;
+    }
+
+    // 呼叫 Mistral（帶入完整對話歷史），包含重試機制
+    async function fetchMistralChat() {
         const currentKey = getApiKey();
         const retries = 3;
         const delays = [1000, 2000, 4000];
         const url = `https://api.mistral.ai/v1/chat/completions`;
-        
+
         const payload = {
-            model: "mistral-small-latest", // 這裡使用 mistral-small 兼顧速度與品質
+            model: "mistral-small-latest", // 使用 mistral-small 兼顧速度與品質
             messages: [
-                {
-                    role: "system",
-                    content: "你是一位親切、幽默的科技講師。請用極度白話、生動的生活化比喻，向完全沒有基礎的初學者解釋使用者給予的科技名詞。字數請嚴格控制在 100 字左右，並使用適當的 emoji 讓語氣活潑。"
-                },
-                {
-                    role: "user",
-                    content: `請向初學者解釋：「${topic}」`
-                }
+                { role: "system", content: CHAT_SYSTEM_PROMPT },
+                ...chatHistory.slice(-12)   // 只帶最近 12 則，避免對話過長
             ]
         };
 
@@ -971,18 +1211,18 @@
             try {
                 const response = await fetch(url, {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${currentKey}`
                     },
                     body: JSON.stringify(payload)
                 });
-                
+
                 if (!response.ok) {
                     if (response.status === 401) throw new Error("API Key 無效");
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const data = await response.json();
                 return data.choices?.[0]?.message?.content || "AI 似乎恍神了，請再試一次。";
             } catch (error) {
@@ -997,7 +1237,36 @@
         }
     }
 
-    // 點擊按鈕觸發的事件
+    // 送出一則訊息（共用：按鈕自動提問 & 手動輸入）
+    async function sendChatText(text) {
+        if (chatBusy || !text.trim()) return;
+        chatBusy = true;
+        document.getElementById('chatSendBtn').disabled = true;
+
+        appendBubble('user', text);
+        chatHistory.push({ role: 'user', content: text });
+
+        const thinking = appendBubble('assistant', 'AI 老師正在思考絕佳的比喻... 🤔', 'thinking');
+        const reply = await fetchMistralChat();
+        thinking.remove();
+
+        appendBubble('assistant', reply);
+        chatHistory.push({ role: 'assistant', content: reply });
+
+        chatBusy = false;
+        document.getElementById('chatSendBtn').disabled = false;
+        document.getElementById('chatInput').focus();
+    }
+
+    // 使用者從輸入框送出
+    function sendChatMessage() {
+        const input = document.getElementById('chatInput');
+        const text = input.value;
+        input.value = '';
+        sendChatText(text);
+    }
+
+    // 投影片上的按鈕觸發：開啟聊天視窗並自動先問該頁主題
     async function askAI(topic) {
         const currentKey = getApiKey();
         if (!currentKey) {
@@ -1007,20 +1276,16 @@
             return;
         }
 
-        const modal = document.getElementById('aiModal');
-        const content = document.getElementById('aiContent');
-        
-        // 顯示 Modal 與載入動畫
-        modal.classList.add('active');
-        content.innerHTML = `
-            <div class="loader"></div>
-            <p style="text-align:center; color: #94a3b8;">AI 老師正在思考絕佳的比喻...</p>
-        `;
-        
-        // 取得 AI 回應並顯示
-        const explanation = await fetchMistralExplanation(topic);
-        content.innerHTML = explanation.replace(/\n/g, '<br>');
+        document.getElementById('aiModal').classList.add('active');
+        document.getElementById('chatInput').focus();
+        sendChatText(`請用白話文解釋：「${topic}」`);
     }
+
+    // Enter 送出，並避免按鍵事件觸發 Reveal.js 翻頁
+    document.getElementById('chatInput').addEventListener('keydown', (e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') sendChatMessage();
+    });
 </script>
 
 </body>
