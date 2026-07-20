@@ -139,6 +139,7 @@
             border-radius: 16px;
             height: 100%;
             width: 100%;
+			box-sizing: border-box;  /* ← 加這行 */
             overflow: hidden;
             border: 1px solid rgba(6, 182, 212, 0.3);
             display: flex;
@@ -686,7 +687,7 @@
                     </div>
                 </div>
                 <div class="image-wrapper glass-panel">
-                    <img src="firebase.png" alt="Tech Cloud">
+                    <img src="firebase.png" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px;transform: scale(1.1);" alt="Tech Cloud">
                 </div>
             </div>
         </section>
@@ -843,19 +844,44 @@
 
         <!-- 第 8 頁 -->
         <section>
-            <div class="bleed-layout">
-                <div class="bleed-text">
-                    <h2 style="border-bottom: none; margin-bottom: 10px;">Hosting 網站部署</h2>
-                    <h3 style="margin-bottom: 30px;">發布網站到全世界</h3>
+		 <section>
+            <h2>Hosting 網站部署</h2>
+            <div class="two-column">
+                <div class="glass-panel column-content" style="justify-content: flex-start;">
+                    <h3><i class="fa-solid fa-globe" style="margin-right: 15px;"></i>發布網站到全世界</h3>
                     <p>不需買虛擬主機，一行 <code>firebase deploy</code> 就能上線。</p>
-                    <ul style="color: #cbd5e1; font-size: 24px; margin-top: 20px;">
+                    <ul style="margin-top: 20px;">
                         <li><strong>免費 HTTPS：</strong> 自動配置 SSL</li>
                         <li><strong>全球 CDN：</strong> 快取在全球節點，載入極快</li>
                         <li><strong>快速回退：</strong> 一鍵還原到上個版本</li>
                     </ul>
                 </div>
-                <div class="bleed-img"></div>
+                <!-- 右側圖片區塊：把下方 img 的 src 換成你的圖片網址即可 -->
+                <div class="image-wrapper glass-panel" style="display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                    <img src="hosting.png"
+                         alt="Hosting 部署畫面"
+                         style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px;transform: scale(1.2);"
+                         onerror="this.outerHTML='<p style=&quot;color:#64748b; font-size:20px; text-align:center; padding:40px;&quot;><i class=&quot;fa-regular fa-image&quot; style=&quot;font-size:60px; display:block; margin-bottom:10px;&quot;></i>圖片區塊（尚未設定圖片）</p>';">
+                </div>
             </div>
+        </section>
+			<section data-background-image="./images/32.PNG"
+			 data-background-size="contain"
+			 data-background-color="#030712">
+			</section>
+			<section data-background-image="./images/33.PNG"
+			 data-background-size="contain"
+			 data-background-color="#030712">
+			</section>
+			<section data-background-image="./images/34.PNG"
+			 data-background-size="contain"
+			 data-background-color="#030712">
+			</section>
+			<section data-background-image="./images/35.PNG"
+			 data-background-size="contain"
+			 data-background-color="#030712">
+			</section>
+			
         </section>
 
         <!-- 第 9 頁 -->
@@ -925,7 +951,7 @@
             </h3>
         </section>
 
-        <!-- 第 11 頁：案例探討與練習 -->
+          <!-- 第 11 頁：案例探討與練習 -->
         <section>
             <h2><i class="fa-solid fa-flask" style="margin-right: 15px; color: #22d3ee;"></i>案例探討與練習</h2>
             <div class="case-columns">
@@ -937,6 +963,17 @@
                         <li><a href="https://vincent-wang.notion.site/google-39986acfae5180b2899cee11346d93cf?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>使用 Google 帳號登入（不需註冊也不需審核）</a></li>
                         <li><a href="https://vincent-wang.notion.site/google-39a86acfae51804ca6fad6e1800d6c56?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>使用 Google 帳號登入，需註冊後等待審核</a></li>
                     </ul>
+                    <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.15); margin: 25px 0;">
+                    <a href="https://vincent-wang.notion.site/AI-Firebase-39986acfae5180f8b470f8266752dacf?source=copy_link"
+                       target="_blank" rel="noopener noreferrer"
+                       style="display: flex; align-items: center; justify-content: center; gap: 12px;
+                              font-size: 26px; font-weight: 700; color: #eab308; text-decoration: none;
+                              border: 2px solid #eab308; border-radius: 12px; padding: 16px 20px;
+                              background: rgba(234, 179, 8, 0.08); transition: all 0.3s ease;"
+                       onmouseover="this.style.background='rgba(234, 179, 8, 0.2)'; this.style.boxShadow='0 0 20px rgba(234, 179, 8, 0.4)';"
+                       onmouseout="this.style.background='rgba(234, 179, 8, 0.08)'; this.style.boxShadow='none';">
+                        <i class="fa-solid fa-file-signature"></i>完整講義連結
+                    </a>
                 </div>
                 <div class="glass-panel" style="padding: 20px 25px;">
                     <h3 style="font-size: 26px;"><i class="fa-solid fa-laptop-code" style="margin-right: 12px;"></i>專案實作</h3>
@@ -944,7 +981,6 @@
                         <li><a href="https://vincent-wang.notion.site/github-Firebase-39a86acfae51807fa41dc73957605ca2?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>成語測驗系統（部署至 GitHub + Firebase）</a></li>
                         <li><a href="https://vincent-wang.notion.site/Firebase-Hosting-39a86acfae51801a9dabc4691b45d8b5?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>成語測驗系統 — 部署至 Firebase Hosting</a></li>
                         <li><a href="https://vincent-wang.notion.site/R-page-GAS-firebase-39b86acfae5180bba1d9dca27a115e4a?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>成語測驗系統：R-page + Firebase</a></li>
-                        <li><a href="https://vincent-wang.notion.site/R-page-GAS-firebase-39b86acfae5180bba1d9dca27a115e4a?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>R-page + GAS + Firebase 設計閱讀測驗</a></li>
                         <li><a href="https://vincent-wang.notion.site/html-Firebase-google-chat-GAS-39e86acfae5180adbf86ed1ef8bc1b15?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>HTML + Firebase 試卷上傳系統（Google Chat 放前端或後端 GAS）</a></li>
                         <li><a href="https://vincent-wang.notion.site/html-Firebase-google-chat-Cloudflare-39f86acfae51802f9a6cef3118467636?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>HTML + Firebase + Google Chat + Cloudflare（後端）試卷上傳即時通知</a></li>
                         <li><a href="https://vincent-wang.notion.site/HTML-Firebase-Firestore-Firebase-Auth-Google-Google-Chat-Webhook-39b86acfae5180208309e6954b8aa00a?source=copy_link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i>純前端 HTML + Firestore + Auth（Google 登入審稿）+ Google Chat Webhook 通知</a></li>
